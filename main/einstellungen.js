@@ -11,6 +11,7 @@ const STANDARD = {
   imTrayWeiterlaufen: true,
   wacheAn: true,
   wacheOrdner: null, // null = Downloads-Ordner des Benutzers
+  geraeteName: null, // null = Name des Rechners
   benachrichtigungen: { fund: true, warnung: true, scanFertig: true, quarantaene: true },
 };
 
@@ -32,6 +33,9 @@ function erstelleEinstellungen({ datei, verschluessle, entschluessle }) {
     }
     if (teil && 'wacheOrdner' in teil && (teil.wacheOrdner === null || typeof teil.wacheOrdner === 'string')) {
       neu.wacheOrdner = teil.wacheOrdner || null;
+    }
+    if (teil && 'geraeteName' in teil && (teil.geraeteName === null || typeof teil.geraeteName === 'string')) {
+      neu.geraeteName = (teil.geraeteName || '').trim().slice(0, 60) || null;
     }
     for (const name of Object.keys(STANDARD.benachrichtigungen)) {
       if (typeof teil?.benachrichtigungen?.[name] === 'boolean') neu.benachrichtigungen[name] = teil.benachrichtigungen[name];

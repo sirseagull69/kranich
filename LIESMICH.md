@@ -1,59 +1,78 @@
 # Kranich
 
-Geräte-Wächter aus der origami-Familie. Der Schutz des Systems (unter Windows der Defender) ist der Motor, Kranich liest seinen Zustand, stößt Scans an und legt eine zweite Meinung, Autostart-Check und Download-Wache obendrauf.
+Geräte-Wächter aus der origami-Familie. Der Schutz des Systems (unter Windows
+der Defender) ist der Motor. Kranich liest seinen Zustand, stößt Scans an und
+legt eine zweite Meinung, Autostart-Check, Download-Wache und eine eigene
+Quarantäne obendrauf.
 
-Stand: Gerüst der Windows-App.
+## Benutzen
 
-Das Gerüst der App: Fenster, Tray, Einstellungen und die Brücke zwischen
-Oberfläche und Kern. Die Oberfläche ist noch ein Platzhalter, die aus dem
-Canvas kommt als Nächstes.
+Die fertigen Installer liegen auf GitHub unter **Releases**:
 
-## Starten
+- Windows: `Kranich-<Version>-win-x64.exe` herunterladen und starten.
+- Mac: `Kranich-<Version>-mac-arm64.dmg` (Apple-Chip) oder `-x64.dmg` (Intel).
+
+Ohne gekauftes Zertifikat warnt das System beim ersten Start. Unter Windows
+„Weitere Informationen“ und „Trotzdem ausführen“ wählen. Auf dem Mac die App
+mit Rechtsklick und „Öffnen“ starten.
+
+## Was geht
+
+| | Windows | Mac |
+| --- | --- | --- |
+| Schutz des Systems lesen, Funde zeigen | ja | noch nicht |
+| Schnellscan und Vollscan starten | ja | noch nicht |
+| Datei oder Ordner prüfen (Dateiname, VirusTotal) | ja | ja |
+| Download-Wache | ja | ja |
+| Autostart-Check | ja | noch nicht |
+| Quarantäne (wegsperren, wiederherstellen, löschen) | ja | ja |
+
+Noch nicht drin: mehrere Geräte in einer Übersicht, Android, iPhone/iPad,
+Verbindung zu origami, automatische Updates.
+
+## Entwickeln
 
 ```
 npm install
-npm start
+npm start                          die App starten
+KRANICH_SPIELDATEN=fund npm start  mit vorgespieltem Windows-Schutz (fund, warnung, ruhig)
+npm test                           alle Tests
+npm run rauchtest                  echte App starten und durchklicken
+npm run oberflaeche                ui/index.html neu aus dem Canvas bauen
+npm run bauen                      Installer für das eigene System bauen
+```
+
+Einen neuen Installer für alle baut GitHub, sobald eine Version markiert wird:
+
+```
+git tag v0.2.1
+git push --tags
 ```
 
 ## Aufbau
 
 | Ordner | Inhalt |
 | --- | --- |
-| `kern/` | Der Kranich-Kern (Scan, VirusTotal, Download-Wache, Autostart, Defender, Agent) |
-| `main/main.js` | Fenster, Tray, Benachrichtigungen, Start mit dem System |
-| `main/dienste.js` | Alles, was die Oberfläche aufrufen darf. Ohne Electron testbar |
-| `main/einstellungen.js` | Einstellungen. Der VirusTotal-Schlüssel wird nur verschlüsselt gespeichert |
-| `main/preload.js` | Brücke: die Oberfläche bekommt `window.kranich`, sonst nichts |
-| `ui/` | Platzhalter-Oberfläche |
-| `werkzeug/rauch.js` | Startet die echte App einmal und ruft die Brücke auf |
-| `werkzeug/cli.js` | Der Kern im Terminal: `scan`, `wache`, `autostart`, `defender` |
+| `kern/` | Scan, VirusTotal, Download-Wache, Autostart, Defender, Agent, Zentrale |
+| `main/` | Electron: Fenster, Tray, Benachrichtigungen (`main.js`), alles, was die Oberfläche aufrufen darf (`dienste.js`), Einstellungen, Brücke (`preload.js`) |
+| `ui/` | Oberfläche. `index.html` wird aus dem Canvas erzeugt, `logik.js` füllt sie mit echten Daten, `falter.js` ist die kleine Laufzeit dafür |
+| `canvas/` | Der Prototyp aus dem Canvas, unverändert |
+| `zentrale/` | Datenbank der Zentrale (Supabase) |
+| `werkzeug/` | Canvas übernehmen, Rauchtest, Terminal-Befehle, Spieldaten |
 
 ## Sicherheit
 
 - Die Oberfläche hat keinen Zugriff auf Node oder das Dateisystem, nur auf
   die festen Funktionen in `window.kranich`.
-- Der VirusTotal-Schlüssel verlässt den Hauptprozess nie. Ohne sicheren
-  Speicher des Systems wird er gar nicht gespeichert.
-- Kranich liest nur. Quarantäne und Löschen gibt es in diesem Stand nicht.
-
-## Tests
-
-```
-npm test          Kern, Einstellungen, Dienste, Brücke
-npm run rauchtest echte App starten (braucht einen Bildschirm)
-```
-
-## Installer bauen (auf Windows)
-
-```
-npm run bauen
-```
-
-Ergebnis in `ausgabe/`. Ohne gekauftes Zertifikat warnt Windows beim ersten
-Start vor einem unbekannten Herausgeber.
-
-## Gut zu wissen
-
 - An VirusTotal geht nur der Fingerabdruck einer Datei, nie die Datei.
+- Der VirusTotal-Schlüssel wird nur verschlüsselt gespeichert. Ohne sicheren
+  Speicher des Systems wird er gar nicht gespeichert.
+- Kranich verschiebt eine Datei nur in Quarantäne, wenn du es anklickst.
+  Gelöscht wird nur aus der Quarantäne und nur nach Rückfrage.
+- Kranich ändert keine Einstellungen des Defenders.
 - Der kostenlose VirusTotal-Zugang ist nur für private Nutzung erlaubt.
-- Defender-Anbindung und Autostart-Check sind auf echtem Windows noch nicht gelaufen.
+
+## Stand
+
+Auf echtem Windows und auf dem Mac ist die App noch nicht gelaufen. Geprüft
+ist sie auf Linux, mit vorgespieltem Windows-Schutz.

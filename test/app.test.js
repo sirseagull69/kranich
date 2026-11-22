@@ -127,10 +127,82 @@ test('Dienste: Download-Wache folgt den Einstellungen und meldet Dateien', async
   assert.ok(ereignisse.some((e) => e.art === 'einstellungen'));
 });
 
+test('Dienste: Quarantäne verschiebt, stellt wieder her und löscht', async () => {
+  const { dienste, heim, daten } = aufbau();
+  const datei = path.join(heim, 'Downloads', 'Rechnung.pdf.exe');
+  fs.writeFileSync(datei, 'inhalt');
+
+  assert.equal((await dienste.quarantaeneVerschieben('relativ.exe', 'x')).ok, false);
+  assert.equal((await dienste.quarantaeneVerschieben(path.join(heim, 'Downloads'), 'x')).ok, false, 'Ordner gehen nicht');
+  assert.equal((await dienste.quarantaeneVerschieben(path.join(heim, 'fehlt.exe'), 'x')).ok, false);
+
+  const rein = await dienste.quarantaeneVerschieben(datei, 'Doppelte Dateiendung');
+  assert.equal(rein.ok, true);
+  assert.equal(fs.existsSync(datei), false, 'am alten Ort ist sie weg');
+  const liste = dienste.quarantaene();
+  assert.equal(liste.length, 1);
+  assert.equal(liste[0].ursprung, datei);
+  const drin = fs.readdirSync(path.join(daten, 'quarantaene')).filter((n) => n.endsWith('.kranich'));
+  assert.equal(drin.length, 1, 'liegt mit Endung .kranich im Datenordner');
+
+  // Am alten Ort liegt inzwischen etwas anderes: nicht überschreiben
+  fs.writeFileSync(datei, 'andere');
+  assert.equal((await dienste.quarantaeneWiederherstellen(liste[0].id)).ok, false);
+  assert.equal(fs.readFileSync(datei, 'utf8'), 'andere');
+  fs.unlinkSync(datei);
+  assert.equal((await dienste.quarantaeneWiederherstellen(liste[0].id)).ok, true);
+  assert.equal(fs.readFileSync(datei, 'utf8'), 'inhalt');
+  assert.equal(dienste.quarantaene().length, 0);
+
+  const nochmal = await dienste.quarantaeneVerschieben(datei, 'x');
+  assert.equal((await dienste.quarantaeneLoeschen(nochmal.eintrag.id)).ok, true);
+  assert.equal(dienste.quarantaene().length, 0);
+  assert.equal(fs.readdirSync(path.join(daten, 'quarantaene')).filter((n) => n.endsWith('.kranich')).length, 0);
+  assert.equal((await dienste.quarantaeneLoeschen('gibtsnicht')).ok, false);
+  assert.deepEqual(dienste.verlauf().map((e) => e.art), ['quar', 'quar', 'quar', 'quar']);
+});
+
+test('Dienste: neue Funde und neue Autostart-Einträge landen einmal im Verlauf, Ignorieren bleibt', async () => {
+  const funde = [];
+  const defender = { lage: async () => ({ status: { echtzeit: true }, funde: [...funde], ampel: { stufe: 'ok', gruende: [] }, fehler: [] }) };
+  let eintraege = [{ herkunft: 'autostart', name: 'Steam', befehl: 'steam.exe', ort: 'Run', benutzer: '' }];
+  const daten = tmp(); const heim = tmp();
+  const einstellungen = erstelleEinstellungen({ datei: path.join(daten, 'e.json'), ...krypto });
+  const neu = () => erstelleDienste({ kern, einstellungen, plattform: 'win32', heimOrdner: heim, datenOrdner: daten, defender, leseAutostart: async () => ({ eintraege, fehler: [] }), rechnerName: 'TESTPC' });
+  let dienste = neu();
+
+  funde.push({ id: 'alt', threatId: '1', name: 'Alt', pfade: ['C:\\a.exe'], zustand: 'in_quarantaene', offen: false, zeit: '2026-11-01T00:00:00Z' });
+  await dienste.lage();
+  assert.equal(dienste.verlauf().length, 0, 'was beim ersten Blick schon da ist, gilt als bekannt');
+  funde.push({ id: 'neu', threatId: '2', name: 'Trojan', pfade: ['C:\\Users\\x\\b.exe'], zustand: 'erkannt', offen: true, zeit: '2026-11-22T00:00:00Z' });
+  const lage = await dienste.lage();
+  await dienste.lage();
+  assert.deepEqual(dienste.verlauf().map((e) => e.text), ['„b.exe“ wartet auf deine Entscheidung.']);
+  assert.equal(lage.funde[1].kennung, 'neu');
+
+  assert.equal(dienste.fundIgnorieren('neu').ok, true);
+  dienste = neu(); // Neustart
+  const danach = await dienste.lage();
+  assert.equal(danach.funde.find((f) => f.kennung === 'neu').ignoriert, true);
+  assert.equal(dienste.verlauf().length, 1, 'nach Neustart nicht doppelt');
+
+  await dienste.autostart();
+  eintraege = [...eintraege, { herkunft: 'aufgabe', name: 'UpdaterSvc', befehl: 'x.exe', ort: '\\', benutzer: '' }];
+  const a = await dienste.autostart();
+  await dienste.autostart();
+  assert.equal(a.eintraege.filter((e) => e.neu).length, 1);
+  assert.equal(dienste.verlauf().filter((e) => e.art === 'warn').length, 1);
+  assert.equal((await dienste.autostartAlsBekannt(a.eintraege.find((e) => e.neu).schluessel)).ok, true);
+  assert.equal((await dienste.autostart()).eintraege.filter((e) => e.neu).length, 0);
+  assert.equal(dienste.info().name, 'TESTPC');
+  dienste.einstellungenSetzen({ geraeteName: '  Mein PC  ' });
+  assert.equal(dienste.info().name, 'Mein PC');
+});
+
 test('Bruecke: Oberflaeche darf genau die freigegebenen Dienste aufrufen', () => {
   const preload = fs.readFileSync(path.join(__dirname, '..', 'main', 'preload.js'), 'utf8');
   const namen = [...preload.match(/const NAMEN = \[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
-  const nurFenster = ['waehlePfad', 'zeigeImOrdner'];
+  const nurFenster = ['waehlePfad', 'zeigeImOrdner', 'oeffneSchutz'];
   assert.deepEqual(namen.filter((n) => !nurFenster.includes(n)).sort(), [...FUER_OBERFLAECHE].sort());
   const { dienste } = aufbau();
   for (const name of FUER_OBERFLAECHE) assert.equal(typeof dienste[name], 'function', name);

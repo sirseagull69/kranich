@@ -30,7 +30,13 @@ function start() {
   });
 
   let defender = null;
+  let leseAutostart = null;
   if (process.platform === 'win32') defender = new kern.Defender();
+  // Nur fuer die Entwicklung: spielt einen Windows-Schutz vor, damit sich die
+  // Oberflaeche auch ohne Windows ansehen laesst. In der installierten App aus.
+  if (!app.isPackaged && process.env.KRANICH_SPIELDATEN) {
+    ({ defender, leseAutostart } = require('../werkzeug/spieldaten')(process.env.KRANICH_SPIELDATEN));
+  }
 
   const dienste = erstelleDienste({
     kern,
@@ -39,6 +45,9 @@ function start() {
     plattform: process.platform,
     heimOrdner: os.homedir(),
     datenOrdner,
+    leseAutostart,
+    rechnerName: os.hostname(),
+    version: app.getVersion(),
     melde: (ereignis) => {
       fenster?.webContents.send('kranich:ereignis', ereignis);
       benachrichtige(ereignis, einstellungen.lese().benachrichtigungen);
@@ -57,9 +66,19 @@ function start() {
     });
   }
   ipcMain.handle('kranich:waehlePfad', async (_e, art) => {
+    if (art === 'frage') {
+      const wahl = await dialog.showMessageBox(fenster, {
+        type: 'question', title: 'Kranich', message: 'Was soll Kranich prüfen?',
+        buttons: ['Eine Datei', 'Einen Ordner', 'Abbrechen'], defaultId: 0, cancelId: 2, noLink: true,
+      });
+      if (wahl.response === 2) return null;
+      art = wahl.response === 1 ? 'ordner' : 'datei';
+    }
     const antwort = await dialog.showOpenDialog(fenster, { properties: [art === 'ordner' ? 'openDirectory' : 'openFile'] });
     return antwort.canceled ? null : antwort.filePaths[0];
   });
+  // Oeffnet die Windows-Sicherheit auf der Seite fuer den Virenschutz.
+  ipcMain.handle('kranich:oeffneSchutz', () => (process.platform === 'win32' ? shell.openExternal('windowsdefender://threat') : undefined));
   ipcMain.handle('kranich:zeigeImOrdner', (_e, pfad) => (typeof pfad === 'string' ? shell.showItemInFolder(pfad) : undefined));
 
   uebernimmSystemstart(einstellungen.lese());
