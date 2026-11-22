@@ -47,6 +47,7 @@ function start() {
     datenOrdner,
     leseAutostart,
     rechnerName: os.hostname(),
+    schreibtisch: app.getPath('desktop'),
     version: app.getVersion(),
     melde: (ereignis) => {
       fenster?.webContents.send('kranich:ereignis', ereignis);
@@ -146,9 +147,32 @@ function baueTray(dienste) {
         ? { label: 'Download-Wache pausieren', click: () => { dienste.einstellungenSetzen({ wacheAn: false }); tray.setContextMenu(menue()); } }
         : { label: 'Download-Wache fortsetzen', click: () => { dienste.einstellungenSetzen({ wacheAn: true }); tray.setContextMenu(menue()); } },
       { type: 'separator' },
+      { label: 'Probealarm', click: () => probealarm(dienste) },
+      { label: 'Testpaket prüfen', click: () => testpaket(dienste) },
+      { type: 'separator' },
       { label: 'Beenden', click: () => { wirklichBeenden = true; app.quit(); } },
     ]);
   tray.setContextMenu(menue());
+}
+
+// Beide Tests aus dem Tray-Menue zeigen ihr Ergebnis in einem Fenster.
+async function probealarm(dienste) {
+  const e = await dienste.probealarm().catch((fehler) => ({ ok: false, grund: fehler.message }));
+  const text = !e.ok ? `Das hat nicht geklappt: ${e.grund}`
+    : (e.durch === 'kranich' ? 'Kranich hat die Testdatei erkannt. Die Engine funktioniert.'
+      : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.');
+  dialog.showMessageBox({ type: e.ok ? 'info' : 'warning', title: 'Kranich · Probealarm', message: text, buttons: ['Gut'] });
+}
+async function testpaket(dienste) {
+  const e = await dienste.testpaket().catch((fehler) => ({ ok: false, grund: fehler.message }));
+  if (!e.ok) return dialog.showMessageBox({ type: 'warning', title: 'Kranich · Testpaket', message: `Das hat nicht geklappt: ${e.grund}`, buttons: ['Gut'] });
+  const zeilen = e.zeilen.map((z) => `${z.bestanden ? '✓' : '✗'}  ${z.datei}: ${z.urteil.replace('_', ' ')}${z.bestanden ? '' : ` (erwartet: ${z.erwartet})`}`);
+  zeigeFenster();
+  return dialog.showMessageBox({
+    type: e.bestanden === e.gesamt ? 'info' : 'warning', title: 'Kranich · Testpaket',
+    message: `${e.bestanden} von ${e.gesamt} Dateien wie erwartet`,
+    detail: `${zeilen.join('\n')}\n\nDie Dateien liegen in:\n${e.ordner}\nSie sind harmlos und können gelöscht werden.`, buttons: ['Gut'],
+  });
 }
 
 function uebernimmSystemstart(einstellungen) {

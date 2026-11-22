@@ -10,4 +10,7 @@ module.exports = {
   ...require('./defender-windows'),
   ...require('./agent'),
   ...require('./zentrale'),
+  ...require('./engine/engine'),
+  ...require('./engine/liste'),
+  ...require('./engine/lockvoegel'),
 };

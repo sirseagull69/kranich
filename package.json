@@ -1,7 +1,7 @@
 {
   "name": "kranich",
   "productName": "Kranich",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Kranich, der Geräte-Wächter aus der origami-Familie",
   "author": "Nils Pohler",
   "main": "main/main.js",
@@ -13,6 +13,9 @@
     "rauchtest": "electron werkzeug/rauch.js",
     "oberflaeche": "python3 werkzeug/canvas-uebernehmen.py",
     "bauen": "electron-builder --publish never"
+  },
+  "dependencies": {
+    "libyara-wasm": "^1.2.1"
   },
   "devDependencies": {
     "electron": "^33.0.0",

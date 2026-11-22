@@ -22,7 +22,8 @@ mit Rechtsklick und „Öffnen“ starten.
 | --- | --- | --- |
 | Schutz des Systems lesen, Funde zeigen | ja | noch nicht |
 | Schnellscan und Vollscan starten | ja | noch nicht |
-| Datei oder Ordner prüfen (Dateiname, VirusTotal) | ja | ja |
+| Datei oder Ordner prüfen (eigene Engine, Dateiname, VirusTotal freiwillig) | ja | ja |
+| Probealarm und Testpaket | ja | ja |
 | Download-Wache | ja | ja |
 | Autostart-Check | ja | noch nicht |
 | Quarantäne (wegsperren, wiederherstellen, löschen) | ja | ja |
@@ -49,11 +50,22 @@ Einen neuen Installer für alle baut GitHub, sobald sich die Versionsnummer in `
 | Ordner | Inhalt |
 | --- | --- |
 | `kern/` | Scan, VirusTotal, Download-Wache, Autostart, Defender, Agent, Zentrale |
+| `kern/engine/` | Kranichs eigene Engine: Regeln (`regeln.yar`), Erkennungsliste, Lockvögel zum Testen |
 | `main/` | Electron: Fenster, Tray, Benachrichtigungen (`main.js`), alles, was die Oberfläche aufrufen darf (`dienste.js`), Einstellungen, Brücke (`preload.js`) |
 | `ui/` | Oberfläche. `index.html` wird aus dem Canvas erzeugt, `logik.js` füllt sie mit echten Daten, `falter.js` ist die kleine Laufzeit dafür |
 | `canvas/` | Der Prototyp aus dem Canvas, unverändert |
 | `zentrale/` | Datenbank der Zentrale (Supabase) |
 | `werkzeug/` | Canvas übernehmen, Rauchtest, Terminal-Befehle, Spieldaten |
+
+## Testen
+
+Im Tray-Menü (Rechtsklick auf das Kranich-Symbol):
+
+- **Probealarm** legt die harmlose Testdatei an, die jeder Virenscanner
+  melden muss, und sagt, wer sie erkannt hat.
+- **Testpaket prüfen** legt auf dem Schreibtisch den Ordner
+  `Kranich-Testpaket` mit 16 harmlosen Dateien an: 9 Lockvögel, die auffallen
+  müssen, und 7 Kontrolldateien, bei denen Kranich ruhig bleiben muss.
 
 ## Sicherheit
 

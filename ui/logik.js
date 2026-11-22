@@ -15,6 +15,7 @@ const SYMBOL = {
   pc: 'M3 5h18v11H3zM8 20h8M12 16v4', laptop: 'M5 6h14v9H5zM2.5 18.5h19', phone: 'M7 3h10v18H7zM11 18h2', tablet: 'M5 3h14v18H5zM11 18h2',
   link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1',
   scan: 'M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16', dash: 'M6 12h12',
+  flask: 'M9 3h6M10 3v6l-5 10a1.5 1.5 0 0 0 1.4 2h11.2a1.5 1.5 0 0 0 1.4-2l-5-10V3M7.5 15h9',
 };
 
 const ICH = 'ich'; // Kennung dieses Geraets in der Oberflaeche
@@ -40,14 +41,14 @@ class Component extends DCLogic {
       screen: 'overview', dev: ICH, tab: 'funde', scan: 'idle', prog: 0, scanFile: '', filter: 'alle',
       rowSt: {}, rowOpen: {}, fundSt: {}, fundOpen: {}, quarDying: {}, qHopN: 0, stampN: 0, peekN: 0,
       moreOpen: false, drag: false, howto: false, hType: 'alle', setTab: 'allgemein', renaming: null,
-      dialog: null, toast: '', toastN: 0, n: 0,
+      dialog: null, toast: '', toastN: 0, n: 0, probe: '', probeText: '',
     };
   }
   S() { return Object.assign(this.DEF(), this.state || {}); }
 
   // ------------------------------------------------------------------ Daten
   componentDidMount() {
-    this.d = { info: null, lage: null, autostart: null, wache: null, einst: null, verlauf: [], quar: [], schutzScan: null, scanErg: null, geprueft: null };
+    this.d = { info: null, lage: null, autostart: null, wache: null, einst: null, verlauf: [], quar: [], schutzScan: null, scanErg: null, geprueft: null, engine: null };
     this.api = window.kranich;
     this.ladeAlles();
     this.api.beiEreignis((e) => this.beiEreignis(e));
@@ -60,6 +61,7 @@ class Component extends DCLogic {
       info: () => this.api.info(), lage: () => this.api.lage(), autostart: () => this.api.autostart(), wache: () => this.api.wacheStatus(),
       einst: () => this.api.einstellungenLesen(), verlauf: () => this.api.verlauf(), quar: () => this.api.quarantaene(),
       schutzScan: () => this.api.schutzScanStatus().then((s) => s.laeuft),
+      engine: () => this.api.engineStatus(),
     };
     await Promise.all(was.map(async (name) => {
       try {
@@ -71,7 +73,7 @@ class Component extends DCLogic {
     }));
     this.frisch();
   }
-  ladeAlles() { return this.lade('info', 'einst', 'lage', 'autostart', 'wache', 'verlauf', 'quar', 'schutzScan'); }
+  ladeAlles() { return this.lade('info', 'einst', 'lage', 'autostart', 'wache', 'verlauf', 'quar', 'schutzScan', 'engine'); }
   beiEreignis(e) {
     if (e.art === 'scan-fortschritt') {
       this.setState({ prog: Math.round((e.nummer - 1) / Math.max(1, e.gesamt) * 100), scanFile: e.datei });
@@ -80,6 +82,10 @@ class Component extends DCLogic {
     } else if (e.art === 'verlauf') {
       this.d.verlauf = [e.eintrag, ...this.d.verlauf];
       this.frisch();
+    } else if (e.art === 'testpaket') {
+      // Das Testpaket aus dem Tray-Menue zeigt sein Ergebnis im Reiter "Scan".
+      this.d.scanErg = e.ergebnis.scan;
+      this.setState({ screen: 'device', dev: ICH, tab: 'scan', scan: 'done', prog: 100, rowSt: {}, rowOpen: {}, moreOpen: false });
     } else if (e.art === 'einstellungen') {
       this.d.einst = e.einstellungen;
       this.lade('wache', 'info');
@@ -135,11 +141,26 @@ class Component extends DCLogic {
     this.say({ stampN: this.S().stampN + 1 }, n ? (n === 1 ? 'Scan fertig. 1 neuer Fund.' : `Scan fertig. ${n} neue Funde.`) : 'Scan fertig. Nichts gefunden.');
   }
 
+  async probealarm() {
+    if (this.S().probe === 'run') return;
+    this.setState({ probe: 'run' });
+    let e;
+    try {
+      e = await this.api.probealarm();
+    } catch (fehler) {
+      e = { ok: false, grund: fehler.message };
+    }
+    if (!e.ok) return this.say({ probe: '' }, `Probealarm hat nicht geklappt: ${e.grund}`);
+    const text = e.durch === 'kranich' ? 'Kranich hat die Testdatei erkannt und gleich wieder entfernt.' : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.';
+    this.say({ probe: 'ok', probeText: text }, 'Probealarm erkannt.');
+  }
+
   // ------------------------------------------------------------ Quarantaene
-  async inQuarantaene(art, id, pfad, grund, name) {
+  async inQuarantaene(art, id, pfad, grund, name, sha256) {
     const feld = art === 'zeile' ? 'rowSt' : 'fundSt';
     const antwort = await this.api.quarantaeneVerschieben(pfad, grund);
     if (!antwort.ok) return this.say({}, `${name} konnte nicht weggesperrt werden: ${antwort.grund}`);
+    this.lade('engine');
     this.setState({ [feld]: Object.assign({}, this.S()[feld], { [id]: 'qing' }) });
     this.spaeter(art === 'zeile' ? 600 : 0, async () => {
       await this.lade('quar');
@@ -156,7 +177,7 @@ class Component extends DCLogic {
   }
   async stelleWiederHer(id, name) {
     const antwort = await this.api.quarantaeneWiederherstellen(id);
-    await this.lade('quar');
+    await this.lade('quar', 'engine');
     this.say({}, antwort.ok ? `${name} wurde wiederhergestellt.` : antwort.grund);
   }
 
@@ -175,7 +196,8 @@ class Component extends DCLogic {
     };
     const chip = (k, text) => Object.assign({ text }, K[k]);
     const VT = { ok: 'sauber', warn: 'verdächtig', bad: 'schädlich', unk: 'unbekannt', none: 'nicht geprüft' };
-    const URTEIL = { sauber: 'ok', verdaechtig: 'warn', schaedlich: 'bad', unbekannt: 'unk', nicht_geprueft: 'none' };
+    const URTEIL = { sauber: 'ok', unauffaellig: 'ok', verdaechtig: 'warn', schaedlich: 'bad', unbekannt: 'unk', nicht_geprueft: 'none' };
+    const WORT = { sauber: 'sauber', unauffaellig: 'unauffällig', verdaechtig: 'verdächtig', schaedlich: 'schädlich', unbekannt: 'unbekannt', nicht_geprueft: 'nicht geprüft' };
     const pill = (on) => on ? 'background: #4a2f9a; color: #ffffff; border-color: #4a2f9a' : 'background: #fffdf8; color: #1d2742; border-color: #1d2742';
     const tabDyn = (on) => on ? 'background: #1d2742; color: #ffffff; font-weight: 800' : 'background: transparent; color: #1d2742; font-weight: 500';
     const picks = (liste, cur, key) => liste.map((f) => Object.assign({}, f, { on: f.id === cur, dyn: pill(f.id === cur), pick: set({ [key]: f.id }) }));
@@ -305,6 +327,7 @@ class Component extends DCLogic {
     const kenntNicht = (e) => e.hinweise.some((h) => h.includes('VirusTotal kennt diese Datei nicht'));
     const auffaellig = (e) => e.urteil === 'schaedlich' || e.urteil === 'verdaechtig' || (e.urteil === 'unbekannt' && kenntNicht(e));
     const quelle = (e) => {
+      if (e.regel) return `Kranich-Engine · Regel: ${e.regel}`;
       if (e.treffer) return `VirusTotal · ${e.treffer.boesartig} von ${e.treffer.gesamt} Scannern`;
       const tarn = e.hinweise.find((h) => /Dateiendung|Leerzeichen|Versteckte/.test(h));
       if (tarn) return `Dateiname · ${tarn.replace(/^Doppelte/, 'doppelte')}`;
@@ -314,11 +337,17 @@ class Component extends DCLogic {
     const scanRows = rawRows.map((e, i) => {
       const hier = s.rowSt[e.pfad]; const offen = !!s.rowOpen[e.pfad];
       return {
-        id: e.pfad, name: e.name, path: ordner(e.pfad), v: chip(URTEIL[e.urteil], VT[URTEIL[e.urteil]]), src: quelle(e),
-        info: e.hinweise.join('. ') || 'Keine weiteren Hinweise.', hash: e.sha256 || 'nicht berechnet',
-        canAct: !hier, acted: hier === 'i', open: offen,
+        id: e.pfad, name: e.name, path: ordner(e.pfad), v: chip(URTEIL[e.urteil], WORT[e.urteil]), src: quelle(e),
+        why: (e.gruende && e.gruende.length ? e.gruende : ['Keine weiteren Hinweise']).slice(0, 4).map((t, n) => ({ id: n, t })), hash: e.sha256 || 'nicht berechnet',
+        canAct: !hier, acted: hier === 'i' || hier === 'fa', actedText: hier === 'fa' ? 'Fehlalarm' : 'Ignoriert', open: offen,
+        fa: async () => {
+          const antwort = e.sha256 ? await this.api.eintragMerken('fehlalarm', e.sha256, e.name) : { ok: false };
+          if (!antwort.ok) return this.say({}, 'Das ließ sich nicht merken.');
+          this.lade('engine');
+          this.say({ rowSt: Object.assign({}, this.S().rowSt, { [e.pfad]: 'fa' }) }, `${e.name} ist als Fehlalarm gemerkt. Kranich meldet die Datei nicht mehr.`);
+        },
         anim: hier === 'qing' ? 'kToQuar .6s ease-in forwards' : `kRowIn .25s ${i * 120}ms both`,
-        q: () => this.inQuarantaene('zeile', e.pfad, e.pfad, quelle(e), e.name),
+        q: () => this.inQuarantaene('zeile', e.pfad, e.pfad, quelle(e), e.name, e.sha256),
         i: set({ rowSt: Object.assign({}, s.rowSt, { [e.pfad]: 'i' }) }),
         d: set({ rowOpen: Object.assign({}, s.rowOpen, { [e.pfad]: !offen }) }),
       };
@@ -326,19 +355,19 @@ class Component extends DCLogic {
     const attn = rawRows.filter((e) => !s.rowSt[e.pfad]).length;
     const scanSum = attn === 0 ? 'Nichts Auffälliges gefunden.' : (attn === 1 ? '1 Datei braucht deine Aufmerksamkeit.' : `${attn} Dateien brauchen deine Aufmerksamkeit.`);
     const ruhig = alleZeilen.filter((e) => !auffaellig(e));
-    const sauber = ruhig.filter((e) => e.urteil === 'sauber').length;
-    const moreRows = ruhig.slice(0, 5).map((e, i) => ({ id: i, name: e.name, v: e.urteil === 'sauber' ? chip('ok', VT.ok) : chip('none', VT.none) }));
+    const sauber = ruhig.filter((e) => e.urteil === 'sauber' || e.urteil === 'unauffaellig').length;
+    const moreRows = ruhig.slice(0, 5).map((e, i) => ({ id: i, name: e.name, v: chip(URTEIL[e.urteil] === 'ok' ? 'ok' : 'none', WORT[e.urteil] || VT.none) }));
     const moreTitel = ruhig.length === 0 ? 'Keine weiteren Dateien' : (ruhig.length === 1 ? '1 weitere Datei ohne Befund' : `${ruhig.length} weitere Dateien ohne Befund`);
     const vtHinweis = erg && erg.vtLimit ? 'VirusTotal-Tageslimit erreicht, morgen wieder möglich. Bis dahin prüft Kranich nur mit den eigenen Regeln.'
-      : (!einst.vtHinterlegt ? 'Es ist kein VirusTotal-Schlüssel hinterlegt. Kranich prüft im Moment nur die Dateinamen. Den Schlüssel trägst du in den Einstellungen ein.' : '');
+      : '';
 
     // --- Downloads ------------------------------------------------------------
     const wache = d.wache || { an: false, ordner: '', dateien: [] };
     const watch = schalter(wache.an, einstellen({ wacheAn: !wache.an }));
     const dlRows = wache.dateien.map((e, i) => {
       const k = URTEIL[e.urteil] || 'unk';
-      const hint = k === 'bad' || k === 'warn' ? (e.hinweise[0] || '') : '';
-      return { id: e.pfad + i, name: e.name, src: e.treffer ? `${e.treffer.boesartig} von ${e.treffer.gesamt} Scannern` : '–', v: chip(k, VT[k]), time: wann(e.zeit, true), flag: !!hint, hint,
+      const hint = k === 'bad' || k === 'warn' ? ((e.gruende && e.gruende[0]) || e.hinweise[0] || '') : '';
+      return { id: e.pfad + i, name: e.name, src: e.regel ? 'Kranich-Engine' : (e.treffer ? 'VirusTotal' : '–'), v: chip(k, WORT[e.urteil] || VT[k]), time: wann(e.zeit, true), flag: !!hint, hint,
         dyn: hint ? (k === 'bad' ? 'background: #fdf0ee' : 'background: #fff8dc') : 'background: transparent' };
     });
 
@@ -385,11 +414,11 @@ class Component extends DCLogic {
 
     // --- Rahmen ---------------------------------------------------------------
     const navAct = (on) => on ? 'width: 100%; background: #fffdf8; color: #4a2f9a; font-weight: 800; box-shadow: -2px 2px 6px rgba(30,40,70,.08); transform: translateX(-5px)' : 'width: 86%; background: #e9e1cf; color: #1d2742; font-weight: 500; transform: translateX(0)';
-    const nav = [{ id: 'overview', label: 'Übersicht', ico: I.home }, { id: 'history', label: 'Verlauf', ico: I.clock }, { id: 'quarantine', label: 'Quarantäne', ico: I.box }, { id: 'settings', label: 'Einstellungen', ico: I.gear }].map((n) => {
+    const nav = [{ id: 'overview', label: 'Übersicht', ico: I.home }, { id: 'history', label: 'Verlauf', ico: I.clock }, { id: 'quarantine', label: 'Quarantäne', ico: I.box }, { id: 'lab', label: 'Labor', ico: I.flask }, { id: 'settings', label: 'Einstellungen', ico: I.gear }].map((n) => {
       const on = s.screen === n.id || (n.id === 'overview' && s.screen === 'device'); const cnt = n.id === 'quarantine' ? quar.length : 0;
       return Object.assign({}, n, { dyn: navAct(on), go: set({ screen: n.id }), hasCount: cnt > 0, count: String(cnt), hop: s.qHopN ? (s.qHopN % 2 ? 'kBadgeA .4s 1' : 'kBadgeB .4s 1') : 'none' });
     });
-    const setTabs = [{ id: 'allgemein', label: 'Allgemein' }, { id: 'vt', label: 'VirusTotal' }, { id: 'benach', label: 'Benachrichtigungen' }, { id: 'geraete', label: 'Geräte' }, { id: 'origami', label: 'origami' }]
+    const setTabs = [{ id: 'allgemein', label: 'Allgemein' }, { id: 'engine', label: 'Engine' }, { id: 'vt', label: 'VirusTotal' }, { id: 'benach', label: 'Benachrichtigungen' }, { id: 'geraete', label: 'Geräte' }, { id: 'origami', label: 'origami' }]
       .map((t) => Object.assign({}, t, { on: t.id === s.setTab, dyn: tabDyn(t.id === s.setTab), pick: set({ setTab: t.id }) }));
     const B = einst.benachrichtigungen || {};
     const merke = (feld) => schalter(!!B[feld], einstellen({ benachrichtigungen: { [feld]: !B[feld] } }));
@@ -397,10 +426,32 @@ class Component extends DCLogic {
     const ohneOrigami = 'Die Verbindung zu origami kommt in einer späteren Version.';
     const aus = schalter(false, bald(ohneOrigami));
 
+    // --- Engine und Labor --------------------------------------------------------
+    const eg = d.engine || { regeln: 0, labor: 0, schaedlich: 0, fehlalarm: 0, stand: null, eigene: [] };
+    const zahl = (n) => n.toLocaleString('de-DE');
+    const ohneLabor = 'Das Labor liefert noch keine Liste zum Abholen. Im Moment arbeitet die Engine mit Kranichs eigenen Regeln und deinen Einträgen.';
+    const eng = {
+      run: false, err: false, btn: true, pct: '0%', go: bald(ohneLabor), chip: chip('ok', 'eigene Regeln'),
+      stand: eg.stand ? wann(eg.stand) : 'mit dieser Version', regeln: eg.regeln === 1 ? '1 Regel' : `${zahl(eg.regeln)} Regeln`,
+      abdruecke: eg.labor + eg.schaedlich === 1 ? '1 Fingerabdruck' : `${zahl(eg.labor + eg.schaedlich)} Fingerabdrücke`,
+    };
+    const geplant = chip('none', 'geplant');
+    const labSrc = [
+      { id: 'eigen', name: 'Kranichs eigene Regeln', last: 'mit dieser Version', count: eng.regeln, st: chip('ok', 'aktiv') },
+      { id: 'du', name: 'Deine Einträge', last: eg.eigene[0] ? wann(eg.eigene[0].zeit) : '–', count: `${zahl(eg.schaedlich + eg.fehlalarm)} Einträge`, st: chip('ok', 'aktiv') },
+      { id: 'offen', name: 'Offene Regelsammlungen', last: '–', count: 'noch nicht angebunden', st: geplant },
+      { id: 'abdruck', name: 'Fingerabdrücke bekannter Schädlinge', last: '–', count: 'noch nicht angebunden', st: geplant },
+    ];
+    const OK2 = { schaedlich: chip('bad', 'schädlich'), fehlalarm: chip('none', 'Fehlalarm') };
+    const own = eg.eigene.map((o) => ({
+      id: o.sha256, file: o.name || o.sha256.slice(0, 16) + '…', kind: OK2[o.art], date: wann(o.zeit),
+      remove: async () => { await this.api.eintragVergessen(o.sha256); await this.lade('engine'); this.say({}, `${o.name || 'Der Eintrag'} ist aus den eigenen Einträgen entfernt.`); },
+    }));
+
     return {
       nav, ori: { text: 'origami nicht verbunden', fg: '#4a4f5e', ico: I.off }, goOri: set({ screen: 'settings', setTab: 'origami' }), goHome: set({ screen: 'overview' }), goHist: set({ screen: 'history' }),
       toastOn: !!s.toast, toast: s.toast, toastX: set({ toast: '' }), toastAnim: (s.toastN % 2 ? 'kToastA' : 'kToastB') + ' 4.3s ease-out both',
-      scOverview: s.screen === 'overview', scDevice: s.screen === 'device', scHistory: s.screen === 'history', scQuar: s.screen === 'quarantine', scSettings: s.screen === 'settings',
+      scOverview: s.screen === 'overview', scDevice: s.screen === 'device', scHistory: s.screen === 'history', scQuar: s.screen === 'quarantine', scLab: s.screen === 'lab', scSettings: s.screen === 'settings',
       lageFund: r === 2, lageWarn: r === 1, lageOk: r === 0, heroTitel, heroText, k, stamp,
       heroBtn: r >= 1, heroGo: set({ screen: 'device', dev: ICH, tab: r === 2 ? 'funde' : (neueAuto && !protOff ? 'auto' : 'funde'), howto: false }),
       devs, last5: EV.slice(0, 5), cur,
@@ -417,7 +468,7 @@ class Component extends DCLogic {
       fundeLeerText: win ? 'Der Schutz hat auf diesem Gerät nichts gefunden.' : 'Auf diesem System kann Kranich die Funde des Systems noch nicht auslesen.',
       vtErr: !!vtHinweis, vtHinweis, scanRows, scanSum, scanNever: !erg && !run, scanHas: !!erg,
       moreOpen: s.moreOpen, moreFlip: set({ moreOpen: !s.moreOpen }), moreRot: s.moreOpen ? 'rotate(90deg)' : 'rotate(-90deg)', moreRows,
-      moreTitel, moreSub: `${sauber} sauber, ${ruhig.length - sauber} nicht geprüft`, moreRest: ruhig.length > 5 ? `und ${ruhig.length - 5} weitere` : '',
+      moreTitel, moreSub: `${sauber} unauffällig, ${ruhig.length - sauber} nicht geprüft`, moreRest: ruhig.length > 5 ? `und ${ruhig.length - 5} weitere` : '',
       dzOver: (e) => { e.preventDefault(); if (!this.S().drag) this.setState({ drag: true }); }, dzLeave: set({ drag: false }),
       dzDrop: (e) => {
         e.preventDefault();
@@ -435,7 +486,11 @@ class Component extends DCLogic {
       hDevs: picks([{ id: 'alle', label: 'Alle Geräte' }, { id: ICH, label: name }], 'alle', 'hDev'),
       hTypes: picks([{ id: 'alle', label: 'Alle' }, { id: 'fund', label: 'Fund' }, { id: 'warn', label: 'Warnung' }, { id: 'scan', label: 'Scan' }, { id: 'quar', label: 'Quarantäne' }], s.hType, 'hType'),
       hist, histEmpty: hist.length === 0,
-      setTabs, sA: s.setTab === 'allgemein', sV: s.setTab === 'vt', sB: s.setTab === 'benach', sG: s.setTab === 'geraete', sO: s.setTab === 'origami',
+      eng, swAuto: schalter(false, bald(ohneLabor)), autoText: 'Kommt mit dem Labor. Im Moment gibt es noch keine Liste zum Abholen.',
+      probeGo: () => this.probealarm(), probeRun: s.probe === 'run', probeOk: s.probe === 'ok', probeText: s.probeText,
+      own, ownEmpty: own.length === 0, labSrc,
+      lab: { offen: '0', eigen: zahl(eg.regeln), abdruecke: zahl(eg.labor + eg.schaedlich), aenderung: 'Das Labor startet mit der nächsten Version. Bis dahin wächst die Liste durch deine eigenen Einträge.' },
+      setTabs, sA: s.setTab === 'allgemein', sE: s.setTab === 'engine', sV: s.setTab === 'vt', sB: s.setTab === 'benach', sG: s.setTab === 'geraete', sO: s.setTab === 'origami',
       swBoot: schalter(!!einst.mitSystemStarten, einstellen({ mitSystemStarten: !einst.mitSystemStarten })),
       swTray: schalter(!!einst.imTrayWeiterlaufen, einstellen({ imTrayWeiterlaufen: !einst.imTrayWeiterlaufen })),
       swNF: merke('fund'), swNW: merke('warnung'), swNS: merke('scanFertig'), swNQ: merke('quarantaene'), swO1: aus, swO2: aus, swO3: aus,

@@ -142,6 +142,7 @@ test('Dienste: Quarantäne verschiebt, stellt wieder her und löscht', async () 
   const liste = dienste.quarantaene();
   assert.equal(liste.length, 1);
   assert.equal(liste[0].ursprung, datei);
+  assert.deepEqual(dienste.engineStatus().eigene.map((e) => [e.art, e.name]), [['schaedlich', 'Rechnung.pdf.exe']]);
   const drin = fs.readdirSync(path.join(daten, 'quarantaene')).filter((n) => n.endsWith('.kranich'));
   assert.equal(drin.length, 1, 'liegt mit Endung .kranich im Datenordner');
 
@@ -153,6 +154,7 @@ test('Dienste: Quarantäne verschiebt, stellt wieder her und löscht', async () 
   assert.equal((await dienste.quarantaeneWiederherstellen(liste[0].id)).ok, true);
   assert.equal(fs.readFileSync(datei, 'utf8'), 'inhalt');
   assert.equal(dienste.quarantaene().length, 0);
+  assert.equal(dienste.engineStatus().eigene.length, 0, 'zurückgeholt heißt: nicht mehr als schädlich gemerkt');
 
   const nochmal = await dienste.quarantaeneVerschieben(datei, 'x');
   assert.equal((await dienste.quarantaeneLoeschen(nochmal.eintrag.id)).ok, true);
@@ -197,6 +199,24 @@ test('Dienste: neue Funde und neue Autostart-Einträge landen einmal im Verlauf,
   assert.equal(dienste.info().name, 'TESTPC');
   dienste.einstellungenSetzen({ geraeteName: '  Mein PC  ' });
   assert.equal(dienste.info().name, 'Mein PC');
+});
+
+test('Dienste: Probealarm und Testpaket laufen durch', async () => {
+  const { dienste, heim } = aufbau();
+  assert.deepEqual(await dienste.probealarm(), { ok: true, durch: 'kranich' });
+  const t = await dienste.testpaket();
+  assert.equal(t.bestanden, t.gesamt, JSON.stringify(t.zeilen.filter((z) => !z.bestanden)));
+  assert.ok(t.gesamt >= 15);
+  assert.ok(fs.existsSync(path.join(heim, 'Kranich-Testpaket', 'Rechnung.pdf.exe')));
+  assert.equal(dienste.engineStatus().eigene.length, 0, 'der Lockvogel bleibt nicht in den eigenen Einträgen');
+  assert.equal(dienste.engineStatus().regeln, 5);
+
+  const sha = 'd'.repeat(64);
+  assert.equal(dienste.eintragMerken('fehlalarm', sha, 'x.exe').ok, true);
+  assert.equal(dienste.eintragMerken('quatsch', sha, 'x.exe').ok, false);
+  assert.equal(dienste.engineStatus().eigene[0].art, 'fehlalarm');
+  dienste.eintragVergessen(sha);
+  assert.equal(dienste.engineStatus().eigene.length, 0);
 });
 
 test('Bruecke: Oberflaeche darf genau die freigegebenen Dienste aufrufen', () => {

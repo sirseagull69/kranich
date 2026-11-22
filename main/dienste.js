@@ -6,7 +6,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdner, melde = () => {}, defender = null, fetch, rechnerName = 'Dieser Rechner', version = '0', leseAutostart = null }) {
+function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdner, melde = () => {}, defender = null, fetch, rechnerName = 'Dieser Rechner', version = '0', leseAutostart = null, schreibtisch = null }) {
   const autostartDatei = path.join(datenOrdner, 'autostart-bekannt.json');
   const verlaufDatei = path.join(datenOrdner, 'verlauf.json');
   const ignoriertDatei = path.join(datenOrdner, 'ignoriert.json');
@@ -41,8 +41,13 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
   let wache = null;
   const downloads = []; // die letzten 50 Dateien der Download-Wache
   let laufenderScan = null;
+  const probeWarteMs = plattform === 'win32' ? 2500 : 50; // dem Schutz von Windows kurz Zeit lassen
   let schutzScanLaeuft = null;
   const autostartGemeldet = new Set();
+
+  // Kranichs eigene Engine mit der Erkennungsliste.
+  const liste = new kern.Erkennungsliste(path.join(datenOrdner, 'erkennungsliste'));
+  const engine = new kern.Engine({ liste });
 
   const neuerVt = () => new kern.VirusTotal({ schluessel: einstellungen.vtSchluessel(), fetch });
   let vt = neuerVt();
@@ -102,6 +107,7 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       try {
         const ergebnis = await kern.scanne(pfad, {
           vt,
+          engine,
           signal: laufenderScan.signal,
           beiFortschritt: (f) => melde({ art: 'scan-fortschritt', ...f }),
         });
@@ -172,6 +178,72 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       return { ok: true };
     },
 
+    // --- Engine und Labor -------------------------------------------------
+    engineStatus: () => ({ regeln: engine.regelZahl, ...liste.zahlen(), eigene: liste.eigene() }),
+    eintragMerken(art, sha256, name) {
+      if (art !== 'schaedlich' && art !== 'fehlalarm') return { ok: false };
+      return { ok: liste.merke(art, sha256, name) };
+    },
+    eintragVergessen(sha256) {
+      return { ok: liste.vergiss(sha256) };
+    },
+    // Probealarm: legt die harmlose Testdatei an und schaut, wer sie erkennt.
+    async probealarm() {
+      const ordner = path.join(datenOrdner, 'probealarm');
+      const datei = path.join(ordner, 'kranich-probealarm.txt');
+      fs.mkdirSync(ordner, { recursive: true });
+      try {
+        fs.writeFileSync(datei, kern.eicarText());
+      } catch {
+        notiere('scan', 'Probealarm: Der Schutz des Systems hat die Testdatei sofort abgefangen.');
+        return { ok: true, durch: 'schutz' };
+      }
+      await new Promise((r) => setTimeout(r, probeWarteMs));
+      if (!fs.existsSync(datei)) {
+        notiere('scan', 'Probealarm: Der Schutz des Systems hat die Testdatei entfernt.');
+        return { ok: true, durch: 'schutz' };
+      }
+      const ergebnis = await kern.pruefeDatei(datei, { engine });
+      if (ergebnis.urteil !== 'schaedlich') {
+        // Nicht lesbar heisst hier: der Schutz des Systems haelt die Datei fest.
+        const gesperrt = ergebnis.hinweise.some((h) => h.startsWith('Nicht lesbar'));
+        await fs.promises.rm(datei, { force: true }).catch(() => {});
+        if (gesperrt) return { ok: true, durch: 'schutz' };
+        notiere('warn', 'Probealarm: Kranich hat die Testdatei nicht erkannt.');
+        return { ok: false, grund: 'Kranich hat die Testdatei nicht erkannt' };
+      }
+      await fs.promises.rm(datei, { force: true }).catch(() => {});
+      notiere('fund', 'Probealarm: Kranich hat die Testdatei erkannt.');
+      return { ok: true, durch: 'kranich' };
+    },
+    // Testpaket: legt die Lockvoegel an, prueft sie und sagt je Datei, ob
+    // das Ergebnis stimmt.
+    async testpaket() {
+      const ordner = path.join(schreibtisch || heimOrdner, 'Kranich-Testpaket');
+      const voegel = kern.legeLockvoegelAn(ordner);
+      for (const v of voegel) if (v.inListe) liste.merke('schaedlich', v.sha256, 'Kranich-Lockvogel');
+      await new Promise((r) => setTimeout(r, probeWarteMs));
+      let scan;
+      try {
+        scan = await kern.scanne(ordner, { engine });
+      } finally {
+        for (const v of voegel) if (v.inListe) liste.vergiss(v.sha256);
+      }
+      const nach = new Map(scan.ergebnisse.map((e) => [e.name, e]));
+      const zeilen = voegel.map((v) => {
+        const e = nach.get(v.datei);
+        const lesbar = e && !e.hinweise.some((h) => h.startsWith('Nicht lesbar'));
+        // Fehlt die Datei oder ist sie gesperrt, war der Schutz des Systems schneller.
+        if (!lesbar) return { datei: v.datei, erwartet: v.erwartet, urteil: 'vom Schutz abgefangen', bestanden: v.erwartet !== 'ruhig', warum: v.warum };
+        return { datei: v.datei, erwartet: v.erwartet, urteil: e.urteil, bestanden: kern.wieErwartet(v.erwartet, e.urteil), warum: v.warum };
+      });
+      const gut = zeilen.filter((z) => z.bestanden).length;
+      notiere(gut === zeilen.length ? 'scan' : 'warn', `Testpaket: ${gut} von ${zeilen.length} wie erwartet.`);
+      const ergebnis = { ok: true, ordner, zeilen, bestanden: gut, gesamt: zeilen.length, scan: { ok: true, ...scan, vtLimit: false } };
+      melde({ art: 'testpaket', ergebnis });
+      return ergebnis;
+    },
+
     // --- Quarantaene ------------------------------------------------------
     // Kranichs eigene Quarantaene: die Datei wird in den Datenordner von
     // Kranich verschoben und bekommt eine Endung, mit der sie nicht starten
@@ -186,6 +258,7 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
         return { ok: false, grund: 'Die Datei gibt es nicht mehr' };
       }
       if (!info.isFile()) return { ok: false, grund: 'Nur einzelne Dateien können in Quarantäne' };
+      const abdruck = await kern.sha256(pfad).catch(() => null);
       const id = `q${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`;
       const ziel = path.join(quarOrdner, `${id}.kranich`);
       fs.mkdirSync(quarOrdner, { recursive: true });
@@ -194,14 +267,16 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       } catch (fehler) {
         return { ok: false, grund: `Die Datei ließ sich nicht verschieben (${fehler.code ?? fehler.message})` };
       }
-      const eintrag = { id, name: path.basename(pfad), ursprung: pfad, grund: String(grund ?? '').slice(0, 200), zeit: new Date().toISOString() };
+      const eintrag = { id, name: path.basename(pfad), ursprung: pfad, grund: String(grund ?? '').slice(0, 200), zeit: new Date().toISOString(), sha256: abdruck };
+      // Was du wegsperrst, merkt sich die Erkennungsliste als schaedlich.
+      if (abdruck) liste.merke('schaedlich', abdruck, eintrag.name);
       schreibeJson(quarDatei, [eintrag, ...leseJson(quarDatei, [])]);
       notiere('quar', `„${eintrag.name}“ in Quarantäne verschoben.`);
       return { ok: true, eintrag };
     },
     async quarantaeneWiederherstellen(id) {
-      const liste = leseJson(quarDatei, []);
-      const eintrag = liste.find((e) => e.id === id);
+      const eintraege = leseJson(quarDatei, []);
+      const eintrag = eintraege.find((e) => e.id === id);
       if (!eintrag) return { ok: false, grund: 'Diesen Eintrag gibt es nicht mehr' };
       if (fs.existsSync(eintrag.ursprung)) return { ok: false, grund: 'Am alten Ort liegt inzwischen eine andere Datei mit diesem Namen' };
       try {
@@ -210,16 +285,18 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       } catch (fehler) {
         return { ok: false, grund: `Wiederherstellen hat nicht geklappt (${fehler.code ?? fehler.message})` };
       }
-      schreibeJson(quarDatei, liste.filter((e) => e.id !== id));
+      schreibeJson(quarDatei, eintraege.filter((e) => e.id !== id));
+      // Wer eine Datei zurueckholt, haelt sie fuer in Ordnung.
+      if (eintrag.sha256) liste.vergiss(eintrag.sha256);
       notiere('quar', `„${eintrag.name}“ wiederhergestellt.`);
       return { ok: true };
     },
     async quarantaeneLoeschen(id) {
-      const liste = leseJson(quarDatei, []);
-      const eintrag = liste.find((e) => e.id === id);
+      const eintraege = leseJson(quarDatei, []);
+      const eintrag = eintraege.find((e) => e.id === id);
       if (!eintrag) return { ok: false, grund: 'Diesen Eintrag gibt es nicht mehr' };
       await fs.promises.rm(path.join(quarOrdner, `${eintrag.id}.kranich`), { force: true });
-      schreibeJson(quarDatei, liste.filter((e) => e.id !== id));
+      schreibeJson(quarDatei, eintraege.filter((e) => e.id !== id));
       notiere('quar', `„${eintrag.name}“ endgültig gelöscht.`);
       return { ok: true };
     },
@@ -231,7 +308,7 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       if (!fs.existsSync(ordner)) return { ok: false, grund: `Den Ordner ${ordner} gibt es nicht` };
       wache = new kern.DownloadWache(ordner);
       wache.on('datei', async (pfad) => {
-        const ergebnis = await kern.pruefeDatei(pfad, { vt });
+        const ergebnis = await kern.pruefeDatei(pfad, { vt, engine });
         const eintrag = { ...ergebnis, zeit: new Date().toISOString() };
         downloads.unshift(eintrag);
         downloads.length = Math.min(downloads.length, 50);
@@ -304,6 +381,7 @@ const FUER_OBERFLAECHE = [
   'vtSchluesselSetzen', 'vtSchluesselEntfernen',
   'info', 'verlauf', 'fundIgnorieren', 'schutzScanStatus',
   'quarantaene', 'quarantaeneVerschieben', 'quarantaeneWiederherstellen', 'quarantaeneLoeschen',
+  'engineStatus', 'eintragMerken', 'eintragVergessen', 'probealarm', 'testpaket',
 ];
 
 module.exports = { erstelleDienste, FUER_OBERFLAECHE };

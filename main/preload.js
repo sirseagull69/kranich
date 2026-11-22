@@ -10,6 +10,7 @@ const NAMEN = [
   'vtSchluesselSetzen', 'vtSchluesselEntfernen',
   'info', 'verlauf', 'fundIgnorieren', 'schutzScanStatus',
   'quarantaene', 'quarantaeneVerschieben', 'quarantaeneWiederherstellen', 'quarantaeneLoeschen',
+  'engineStatus', 'eintragMerken', 'eintragVergessen', 'probealarm', 'testpaket',
   'waehlePfad', 'zeigeImOrdner', 'oeffneSchutz',
 ];
 

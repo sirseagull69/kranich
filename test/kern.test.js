@@ -156,7 +156,7 @@ test('Scan: Ordner, nur riskante Typen werden bei VirusTotal gefragt', async () 
   assert.equal(nach['tool.exe'].urteil, 'sauber');
   assert.equal(aufrufe.length, 3, 'bild.jpg wird nicht abgefragt');
   assert.deepEqual(schritte, [1, 2, 3, 4]);
-  assert.deepEqual(zusammenfassung, { sauber: 1, verdaechtig: 1, schaedlich: 1, unbekannt: 0, nicht_geprueft: 1 });
+  assert.deepEqual(zusammenfassung, { sauber: 1, unauffaellig: 0, verdaechtig: 1, schaedlich: 1, unbekannt: 0, nicht_geprueft: 1 });
 
   const alle = await scanne(ordner, { vt, alleAbfragen: true });
   assert.equal(alle.ergebnisse.find((e) => e.name === 'bild.jpg').urteil, 'unbekannt');

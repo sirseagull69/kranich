@@ -44,6 +44,17 @@ app.whenReady().then(() => setTimeout(async () => {
     aus.zurueck = await klick('Wiederherstellen'); await warte(900);
     aus.dateiWiederDa = fs.existsSync(path.join(probe, 'Rechnung.pdf.exe'));
     await klick('Verlauf'); await warte(500); await bild('11-verlauf-voll');
+
+    // Engine: Probealarm, Testpaket, Labor.
+    await klick('Einstellungen'); await warte(300);
+    aus.engineReiter = await klick('Engine'); await warte(400);
+    aus.probe = await klick('Probealarm starten'); await warte(1500); await bild('12-engine');
+    const paket = await js('window.kranich.testpaket().then((t) => ({ bestanden: t.bestanden, gesamt: t.gesamt, falsch: t.zeilen.filter((z) => !z.bestanden) }))');
+    aus.testpaket = paket;
+    await warte(900); await bild('13-testpaket');
+    await klick('Details'); await warte(400); await bild('14-details');
+    aus.fehlalarm = await klick('Das war ein Fehlalarm'); await warte(600);
+    aus.labor = await klick('Labor'); await warte(500); await bild('15-labor');
   } catch (e) { aus.fehler.push(e.message); }
   console.log('RAUCH ' + JSON.stringify(aus));
   app.exit(aus.fehler.length ? 1 : 0);

@@ -38,6 +38,15 @@ ERSETZE = [
     ('und 209 weitere', '{{ moreRest }}'),
     ('VirusTotal-Tageslimit erreicht, morgen wieder möglich. Bis dahin prüft Kranich nur mit den eigenen Regeln.', '{{ vtHinweis }}'),
     ('Der Schutz hat auf diesem Gerät nichts gefunden.', '{{ fundeLeerText }}'),
+    # Engine und Labor
+    ('>4.812 Regeln<', '>{{ eng.regeln }}<'),
+    ('>1,2 Mio. Fingerabdrücke<', '>{{ eng.abdruecke }}<'),
+    ('>4.790<', '>{{ lab.offen }}<'),
+    ('>22<', '>{{ lab.eigen }}<'),
+    ('>1,2 Mio.<', '>{{ lab.abdruecke }}<'),
+    ('>Heute 06:00 · 312 neue Fingerabdrücke, 4 neue Regeln<', '>{{ lab.aenderung }}<'),
+    ('Kranich holt die Erkennungsliste jeden Morgen um 06:00 Uhr.', '{{ autoText }}'),
+    ('Kranich hat die Testdatei erkannt und sofort weggesperrt.', '{{ probeText }}'),
     # Autostart: Kranich kennt den Hersteller nicht, aber Programm und Ort
     ('>Hersteller<', '>Programm<'),
     ('>Seit wann<', '>Ort<'),
@@ -47,6 +56,12 @@ for alt, neu in ERSETZE:
     if n != 1:
         sys.exit(f'Der Canvas hat sich geändert: „{alt[:60]}“ kommt {n}-mal vor, erwartet war 1.')
     vorlage = vorlage.replace(alt, neu)
+
+# Zwei Beispielzeilen unter "Letzte Änderungen" fallen ganz weg.
+for zeile in ('Gestern 06:00 · 287 neue Fingerabdrücke, 1 neue Regel', '20.11. 06:00 · 401 neue Fingerabdrücke, 2 neue Regeln'):
+    ende = vorlage.index(zeile) + len(zeile) + len('</li>')
+    anfang = vorlage.rindex('<li', 0, ende)
+    vorlage = vorlage[:anfang] + vorlage[ende:]
 
 # "Vollscan" bekommt einen eigenen Knopf-Befehl (im Prototyp teilen sich
 # Schnellscan und Vollscan einen).
