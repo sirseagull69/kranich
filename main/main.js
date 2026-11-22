@@ -8,6 +8,8 @@ const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, safeStora
 const kern = require('../kern');
 const { erstelleEinstellungen } = require('./einstellungen');
 const { erstelleDienste, FUER_OBERFLAECHE } = require('./dienste');
+const { erstelleVerbund, VERBUND_FUER_OBERFLAECHE } = require('./verbund');
+const zugang = require('../zentrale/zugang.json');
 
 let fenster = null;
 let tray = null;
@@ -55,6 +57,24 @@ function start() {
       if (ereignis.art === 'einstellungen') uebernimmSystemstart(ereignis.einstellungen);
     },
   });
+
+  // Verbindung zur Zentrale: Agent (dieses Geraet meldet) und Host (Konto).
+  const verbund = erstelleVerbund({
+    kern, einstellungen, zugang, defender, leseAutostart,
+    plattform: process.platform, datenOrdner, version: app.getVersion(),
+    melde: (ereignis) => fenster?.webContents.send('kranich:ereignis', ereignis),
+  });
+  for (const name of VERBUND_FUER_OBERFLAECHE) {
+    ipcMain.handle(`kranich:${name}`, async (_ereignis, ...werte) => {
+      try {
+        return await verbund[name](...werte);
+      } catch (fehler) {
+        return { ok: false, grund: fehler.message };
+      }
+    });
+  }
+  verbund.starte();
+  app.on('before-quit', () => verbund.beende());
 
   // Die Oberflaeche darf genau die Dienste aus der Liste aufrufen.
   for (const name of FUER_OBERFLAECHE) {

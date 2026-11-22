@@ -7,6 +7,7 @@ const path = require('node:path');
 const kern = require('../kern');
 const { erstelleEinstellungen } = require('../main/einstellungen');
 const { erstelleDienste, FUER_OBERFLAECHE } = require('../main/dienste');
+const { VERBUND_FUER_OBERFLAECHE } = require('../main/verbund');
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'kranich-app-'));
 const SCHLUESSEL = 'a'.repeat(64);
@@ -223,7 +224,7 @@ test('Bruecke: Oberflaeche darf genau die freigegebenen Dienste aufrufen', () =>
   const preload = fs.readFileSync(path.join(__dirname, '..', 'main', 'preload.js'), 'utf8');
   const namen = [...preload.match(/const NAMEN = \[([^\]]+)\]/)[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
   const nurFenster = ['waehlePfad', 'zeigeImOrdner', 'oeffneSchutz'];
-  assert.deepEqual(namen.filter((n) => !nurFenster.includes(n)).sort(), [...FUER_OBERFLAECHE].sort());
+  assert.deepEqual(namen.filter((n) => !nurFenster.includes(n)).sort(), [...FUER_OBERFLAECHE, ...VERBUND_FUER_OBERFLAECHE].sort());
   const { dienste } = aufbau();
   for (const name of FUER_OBERFLAECHE) assert.equal(typeof dienste[name], 'function', name);
   assert.ok(!FUER_OBERFLAECHE.includes('beende') && !FUER_OBERFLAECHE.includes('starte'));

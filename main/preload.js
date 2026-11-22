@@ -11,6 +11,10 @@ const NAMEN = [
   'info', 'verlauf', 'fundIgnorieren', 'schutzScanStatus',
   'quarantaene', 'quarantaeneVerschieben', 'quarantaeneWiederherstellen', 'quarantaeneLoeschen',
   'engineStatus', 'eintragMerken', 'eintragVergessen', 'probealarm', 'testpaket',
+  'agentStatus', 'agentKoppeln', 'agentEntkoppeln', 'agentJetzt',
+  'kontoStatus', 'kontoAnmelden', 'kontoAnlegen', 'kontoAbmelden',
+  'hostGeraete', 'hostFunde', 'hostEreignisse', 'hostAuftraege', 'hostKopplung', 'hostAuftrag', 'hostUmbenennen', 'hostEntfernen',
+  'eigenesSystem',
   'waehlePfad', 'zeigeImOrdner', 'oeffneSchutz',
 ];
 

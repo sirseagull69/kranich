@@ -18,10 +18,12 @@ const STANDARD = {
 function erstelleEinstellungen({ datei, verschluessle, entschluessle }) {
   let stand = { ...STANDARD, benachrichtigungen: { ...STANDARD.benachrichtigungen } };
   let vtGeheim = null;
+  let geheimnisse = {}; // Name -> verschluesselter Wert (Dauerticket, Geraete-Schluessel)
   try {
     const roh = JSON.parse(fs.readFileSync(datei, 'utf8'));
     stand = uebernimm(stand, roh);
     if (typeof roh.vtGeheim === 'string') vtGeheim = roh.vtGeheim;
+    if (roh.geheimnisse && typeof roh.geheimnisse === 'object') geheimnisse = roh.geheimnisse;
   } catch {
     // erste Benutzung oder Datei beschaedigt: Standardwerte
   }
@@ -46,7 +48,7 @@ function erstelleEinstellungen({ datei, verschluessle, entschluessle }) {
   function sichere() {
     fs.mkdirSync(path.dirname(datei), { recursive: true });
     const vorlaeufig = `${datei}.neu`;
-    fs.writeFileSync(vorlaeufig, JSON.stringify({ ...stand, vtGeheim }, null, 2));
+    fs.writeFileSync(vorlaeufig, JSON.stringify({ ...stand, vtGeheim, geheimnisse }, null, 2));
     fs.renameSync(vorlaeufig, datei);
   }
 
@@ -71,6 +73,26 @@ function erstelleEinstellungen({ datei, verschluessle, entschluessle }) {
       vtGeheim = null;
       sichere();
       return { ok: true };
+    },
+    // Weitere Geheimnisse (Dauerticket des Kontos, Geraete-Schluessel). Nur
+    // verschluesselt, nur fuer den Hauptprozess. null loescht.
+    setzeGeheim(name, text) {
+      if (text === null || text === undefined) delete geheimnisse[name];
+      else {
+        const geheim = verschluessle(String(text));
+        if (!geheim) return false;
+        geheimnisse[name] = geheim;
+      }
+      sichere();
+      return true;
+    },
+    geheim(name) {
+      if (!geheimnisse[name]) return null;
+      try {
+        return entschluessle(geheimnisse[name]) || null;
+      } catch {
+        return null;
+      }
     },
     // Nur fuer den Hauptprozess.
     vtSchluessel() {

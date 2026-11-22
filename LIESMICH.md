@@ -51,6 +51,8 @@ Einen neuen Installer für alle baut GitHub, sobald sich die Versionsnummer in `
 | --- | --- |
 | `kern/` | Scan, VirusTotal, Download-Wache, Autostart, Defender, Agent, Zentrale |
 | `kern/engine/` | Kranichs eigene Engine: Regeln (`regeln.yar`), Erkennungsliste, Lockvögel zum Testen |
+| `kern/konto.js`, `kern/host.js` | Konto an der Zentrale und der Blick des Hosts auf alle Geräte |
+| `main/verbund.js` | Dieses Gerät koppeln und melden (Agent), anmelden und Geräte beauftragen (Host) |
 | `main/` | Electron: Fenster, Tray, Benachrichtigungen (`main.js`), alles, was die Oberfläche aufrufen darf (`dienste.js`), Einstellungen, Brücke (`preload.js`) |
 | `ui/` | Oberfläche. `index.html` wird aus dem Canvas erzeugt, `logik.js` füllt sie mit echten Daten, `falter.js` ist die kleine Laufzeit dafür |
 | `canvas/` | Der Prototyp aus dem Canvas, unverändert |
