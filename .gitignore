@@ -1,5 +1,5 @@
 node_modules/
 ausgabe/
-rauch.png
+rauch/
 *.log
 .env

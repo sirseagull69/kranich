@@ -1,0 +1,16 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-22T21:30:00Z"},"title":"Kranich – Entwurfsmaschine","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1440,"h":900,"title":"1 · Start"},
+"Werkbank-Entwurf.dc.html":{"x":1520,"y":0,"w":1440,"h":900,"title":"2 · Werkbank – Entwurf"},
+"Varianten.dc.html":{"x":3040,"y":0,"w":1440,"h":900,"title":"3 · Varianten"},
+"Werkbank-Bild.dc.html":{"x":0,"y":1020,"w":1440,"h":900,"title":"4 · Werkbank – Bild"},
+"Exportieren.dc.html":{"x":1520,"y":1020,"w":1440,"h":900,"title":"5 · Exportieren"},
+"Zustand-Denkt.dc.html":{"x":0,"y":2380,"w":1440,"h":900,"title":"6a · Kranich denkt"},
+"Zustand-Fertig.dc.html":{"x":1520,"y":2380,"w":1440,"h":900,"title":"6b · Fertig"},
+"Zustand-Fehler.dc.html":{"x":3040,"y":2380,"w":1440,"h":900,"title":"6c · Fehler"},
+"Zustand-Leer.dc.html":{"x":4560,"y":2380,"w":1440,"h":900,"title":"6d · Leer"}},
+"order":["Main.dc.html","Werkbank-Entwurf.dc.html","Varianten.dc.html","Werkbank-Bild.dc.html","Exportieren.dc.html","Zustand-Denkt.dc.html","Zustand-Fertig.dc.html","Zustand-Fehler.dc.html","Zustand-Leer.dc.html"],
+"notes":{
+"titel":{"x":0,"y":-300,"text":"Kranich – Oberflächen entwerfen und Bilder bearbeiten","kind":"title1","maxW":4480},
+"zustaende":{"x":0,"y":2120,"text":"Zustände","kind":"title1","maxW":6000}},
+"designSystems":[]}

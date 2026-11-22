@@ -1,0 +1,227 @@
+/* Kranich – Stil aus dem Canvas "Kranich – Entwurfsmaschine" */
+@import url('schrift/schrift.css');
+
+:root{
+  --papier:#f6f1e7; --flaeche:#fffdf8; --tinte:#1d2742; --leise:#5b6170; --linie:#d9d0bc; --lasche:#e9e1cf;
+  --pflaume:#7c5cd6; --facette:#4a2f9a; --hell:#d6caf9; --knopf:#6243c4; --zart:#f1edfd;
+  --gruen-bg:#e0f3e4; --gruen:#17663a; --rot-bg:#fbe4e0; --rot:#a3321f; --gelb-bg:#fbf0d4; --gelb:#7a5410;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden}
+body{background-color:var(--papier);background-image:radial-gradient(rgba(74,47,154,.16) 1px,transparent 1.2px);background-size:16px 16px;color:var(--tinte);font-family:'Source Serif 4',Georgia,serif;font-size:14px;line-height:1.45}
+a{color:var(--facette)}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+:focus-visible{outline:2px solid var(--pflaume);outline-offset:2px}
+[hidden]{display:none!important}
+.h{font-family:'Bricolage Grotesque','Segoe UI',sans-serif}
+.hand{font-family:'Caveat',cursive;color:var(--facette);line-height:1.1}
+.lbl{font-family:'Bricolage Grotesque','Segoe UI',sans-serif;font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--leise)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:0 14px;border:1px solid var(--linie);border-radius:3px;background:var(--flaeche);color:var(--tinte);font:700 14px 'Bricolage Grotesque','Segoe UI',sans-serif;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:#c8bda4}
+.btn-s{min-height:34px;padding:0 10px;font-size:13px}
+.btn-p{background:var(--knopf);border-color:var(--knopf);color:#fff;clip-path:polygon(0 0,calc(100% - 11px) 0,100% 11px,100% 100%,0 100%)}
+.btn-p:hover:not(:disabled){background:var(--facette);border-color:var(--facette)}
+.btn-q{background:transparent;border-color:transparent}
+.btn-q:hover:not(:disabled){background:rgba(74,47,154,.07);border-color:transparent}
+.card{background:#fff;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,0 100%)}
+.cardw{filter:drop-shadow(0 1px 1px rgba(30,40,70,.22))}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font:700 12px 'Bricolage Grotesque','Segoe UI',sans-serif;white-space:nowrap}
+.chip-gruen{background:var(--gruen-bg);color:var(--gruen)} .chip-zart{background:var(--zart);color:var(--facette)} .chip-grau{background:#f1ede2;color:#4a4f5e}
+.chip-rot{background:var(--rot-bg);color:var(--rot)} .chip-gelb{background:var(--gelb-bg);color:var(--gelb)}
+.paper{background:var(--flaeche);box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10)}
+.fold{height:0;border:0;border-top:2px dashed var(--linie);margin:0}
+.eselsohr{position:absolute;right:0;bottom:0;display:block;pointer-events:none}
+@keyframes dot{0%,100%{opacity:.25}50%{opacity:1}}
+@keyframes ant{to{stroke-dashoffset:-22}}
+@keyframes falten{0%{transform:perspective(600px) rotateY(0)}50%{transform:perspective(600px) rotateY(-180deg)}100%{transform:perspective(600px) rotateY(-360deg)}}
+input,textarea,select{font:inherit;color:inherit}
+.feld{min-height:38px;padding:0 10px;border:1px solid var(--linie);border-radius:3px;background:#fff}
+textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
+
+.ansicht{position:absolute;inset:0;display:flex;flex-direction:column}
+
+/* ---------- Kopf ---------- */
+.kopf{height:60px;flex:none;padding:0 16px;display:flex;align-items:center;gap:14px}
+.marke{display:flex;align-items:center;gap:8px}
+.marke span{font-weight:800;font-size:19px;letter-spacing:-.02em}
+.trenner{width:1px;height:26px;background:var(--linie)}
+.titel{display:flex;align-items:baseline;gap:6px;min-width:0}
+.titel b{font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px;cursor:text}
+.titel input{font:700 15px 'Bricolage Grotesque',sans-serif;border:1px solid var(--linie);padding:2px 6px;background:#fff;width:220px}
+.titel span{color:var(--leise);white-space:nowrap}
+.modus{display:flex;gap:2px;padding:3px;background:var(--lasche);border-radius:3px}
+.modus button{min-height:34px;padding:0 18px;border:0;border-radius:2px;font-size:14px;font-weight:500;background:transparent;color:var(--tinte);font-family:'Bricolage Grotesque',sans-serif}
+.modus button[aria-pressed="true"]{font-weight:800;background:var(--flaeche);color:var(--facette);box-shadow:0 1px 2px rgba(30,40,70,.15)}
+.platz{flex:1}
+.reihe{display:flex;align-items:center;gap:8px}
+
+/* ---------- Start ---------- */
+#start{padding:0 20px 20px}
+#start .kopf{height:64px;padding:0}
+.avatar{width:36px;height:36px;background:var(--tinte);color:var(--hell);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;border-radius:2px}
+.laschen{display:flex;gap:4px;padding-left:24px}
+.laschen button{min-height:34px;align-self:flex-end;padding:0 20px;border:0;border-radius:10px 10px 0 0;font-size:14px;background:var(--lasche);font-weight:500;color:var(--tinte);font-family:'Bricolage Grotesque',sans-serif}
+.laschen button[aria-selected="true"]{min-height:40px;background:var(--flaeche);color:var(--facette);font-weight:800;box-shadow:0 -2px 6px rgba(30,40,70,.06)}
+.startblatt{position:relative;flex:1;min-height:0;padding:28px 34px 26px;display:flex;flex-direction:column;gap:22px}
+.startoben{flex:1;min-height:0;display:flex;gap:34px}
+.neu{flex:1.45;display:flex;flex-direction:column;gap:14px;min-width:0}
+.neu h1,.zuletzt h2{margin:0;font-weight:800;letter-spacing:-.02em}
+.neu h1{font-size:34px}
+.karten3{display:flex;gap:16px}
+.startkarte{flex:1;border:0;padding:0;background:transparent;text-align:left;font:inherit;color:inherit}
+.startkarte .card{height:300px;padding:18px;display:flex;flex-direction:column;gap:12px;transition:transform .15s}
+.startkarte:hover .card{transform:translateY(-3px)}
+.startkarte .bildfeld{height:150px;background:var(--zart);display:flex;align-items:center;justify-content:center}
+.startkarte .ktitel{display:flex;align-items:center;gap:8px;color:var(--facette)}
+.startkarte .ktitel span{font-weight:800;font-size:18px;color:var(--tinte)}
+.startkarte .ktext{color:var(--leise);font-size:13.5px}
+.hinweis{display:flex;align-items:center;gap:10px;color:var(--leise)}
+.zuletzt{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.zuletzt h2{font-size:22px}
+.projektliste{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;padding:2px 4px 4px 2px}
+.projektkarte{position:relative;border:0;padding:0;background:transparent;text-align:left;font:inherit;color:inherit}
+.projektkarte .card{padding:10px;display:flex;flex-direction:column;gap:8px}
+.projektkarte .vorschau{height:110px;background:var(--papier) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--leise)}
+.projektkarte .pname{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.projektkarte .pinfo{display:flex;align-items:center;gap:6px;color:var(--leise);font-size:12.5px}
+.projektkarte .weg{position:absolute;top:6px;left:6px;opacity:0;background:#fff}
+.projektkarte:hover .weg{opacity:1}
+.leerhinweis{grid-column:1/-1;color:var(--leise);padding:20px 0}
+.falteingabe{display:flex;align-items:center;gap:10px;border:1px solid var(--linie);background:#fff;padding:8px 8px 8px 16px}
+.falteingabe input{flex:1;border:0;outline:0;background:transparent;font-size:17px;min-height:40px}
+
+/* ---------- Werkbank ---------- */
+.werkbank{flex:1;min-height:0;display:flex;padding:0 16px 16px 0}
+.seitenleiste{width:216px;flex:none;padding:6px 0 0 16px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.seitenlaschen{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.seitenlaschen button{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:0;border-radius:12px 0 0 12px;text-align:left;font-size:14px;width:88%;background:var(--lasche);color:var(--tinte);font-weight:500;font-family:'Bricolage Grotesque',sans-serif}
+.seitenlaschen button[aria-current="true"]{width:100%;background:var(--flaeche);color:var(--facette);font-weight:800;box-shadow:-2px 2px 6px rgba(30,40,70,.08)}
+.seitenlaschen button span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.ebenen{display:flex;flex-direction:column;gap:1px;padding-right:12px}
+.ebenen button{display:flex;align-items:center;gap:8px;min-height:32px;padding:0 8px;border:0;border-radius:2px;text-align:left;font:inherit;font-size:13px;width:100%;background:transparent;color:var(--tinte)}
+.ebenen button:hover{background:rgba(74,47,154,.06)}
+.ebenen button[aria-current="true"]{background:var(--zart);color:var(--facette);font-weight:600;outline:1px solid var(--hell)}
+.ebenen button span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.leise{color:var(--leise)}
+
+.leinwand{position:relative;flex:1;min-width:0;background-color:var(--flaeche);background-image:linear-gradient(rgba(74,47,154,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(74,47,154,.05) 1px,transparent 1px);background-size:24px 24px;overflow:hidden}
+.leinwand.schach{background-image:linear-gradient(45deg,#f1ede2 25%,transparent 25%,transparent 75%,#f1ede2 75%),linear-gradient(45deg,#f1ede2 25%,transparent 25%,transparent 75%,#f1ede2 75%);background-size:20px 20px;background-position:0 0,10px 10px}
+.blattlage{position:absolute;left:0;top:0;transform-origin:0 0}
+.blattname{position:absolute;white-space:nowrap;z-index:2}
+.blattlage iframe{display:block;border:0;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10)}
+.auswahlrahmen{position:absolute;pointer-events:none;outline:2px solid var(--pflaume);outline-offset:3px}
+.auswahlrahmen .masz{position:absolute;left:50%;top:calc(100% + 10px);transform:translateX(-50%);background:var(--pflaume);color:#fff;font-size:11px;font-weight:700;padding:1px 6px;border-radius:2px;white-space:nowrap}
+.auswahlrahmen i{position:absolute;width:8px;height:8px;background:#fff;border:2px solid var(--pflaume)}
+.huelle{position:absolute;pointer-events:none;outline:1px dashed var(--pflaume);outline-offset:1px}
+.schnellmenue{position:absolute;display:flex;align-items:center;gap:2px;padding:4px;border:1px solid var(--linie);white-space:nowrap;z-index:5}
+.schnellmenue .strich{width:1px;height:22px;background:var(--linie);margin:0 2px}
+.ansichtleiste{position:absolute;left:16px;bottom:14px;display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--linie);padding:3px;z-index:4}
+.ansichtleiste b{font-size:13px;min-width:46px;text-align:center}
+.mitte{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:3}
+.leerkarte{position:relative;width:520px;padding:34px 38px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+.leerkarte h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.vorschlaege{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.zustandskarte{position:relative;width:440px;padding:24px 26px;display:flex;flex-direction:column;gap:12px}
+.zustandskarte h2{margin:0;font-size:20px;font-weight:800}
+.schritte{display:flex;flex-direction:column;gap:8px}
+.schritt{display:flex;align-items:center;gap:10px}
+.schritt .punkt{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--linie);display:flex;align-items:center;justify-content:center}
+.schritt.fertig .punkt{background:var(--pflaume);border-color:var(--pflaume);color:#fff}
+.schritt.laeuft .punkt{border-color:var(--pflaume);border-top-color:transparent;animation:drehen 0.9s linear infinite}
+.schritt.offen{color:var(--leise)}
+@keyframes drehen{to{transform:rotate(360deg)}}
+.faltblatt{width:120px;height:84px;background:var(--zart);animation:falten 2.2s ease-in-out infinite;clip-path:polygon(0 0,calc(100% - 16px) 0,100% 16px,100% 100%,0 100%)}
+.hinweisband{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:min(580px,86%);display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;z-index:6}
+.hinweisband.fehler{border-left:4px solid var(--rot)}
+.punkte{display:inline-flex;gap:6px;align-items:center}
+.punkte i{width:7px;height:7px;background:var(--pflaume);transform:rotate(45deg);animation:dot 1.2s infinite}
+.punkte i:nth-child(2){animation-delay:.2s}.punkte i:nth-child(3){animation-delay:.4s}
+
+/* Kranich-Leiste */
+.kranichleiste{width:372px;flex:none;display:flex;flex-direction:column;margin-left:16px;min-height:0}
+.leistenlaschen{display:flex}
+.leistenlaschen button{padding:8px 18px 6px;border:0;background:var(--lasche);font:500 13px 'Bricolage Grotesque',sans-serif;border-radius:10px 10px 0 0;align-self:flex-end;color:var(--tinte);margin-right:4px}
+.leistenlaschen button[aria-selected="true"]{background:var(--flaeche);font-weight:800;color:var(--facette);padding-top:9px}
+.leistenblatt{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;padding:16px 16px 14px;gap:12px}
+.figurkopf{display:flex;align-items:flex-end;gap:12px}
+.figurkopf .txt{display:flex;flex-direction:column;gap:4px;padding-bottom:8px;align-items:flex-start}
+.verlauf{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:14px;padding-right:2px}
+.blase-ich{align-self:flex-end;max-width:82%;background:var(--tinte);color:#fff;padding:9px 14px;font-size:14px;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,0 100%);white-space:pre-wrap;word-break:break-word}
+.blase-kr{display:flex;gap:10px;align-items:flex-start}
+.blase-kr .ava{width:34px;height:34px;flex:none;background:var(--zart);border-radius:2px;display:flex;align-items:center;justify-content:center}
+.blase-kr .inhalt{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.blase-kr .chips{display:flex;flex-wrap:wrap;gap:6px}
+.blase-kr.fehler .titelz{font-weight:700;color:var(--rot)}
+.wunschfeld{border:1px solid var(--linie);background:#fff;padding:10px 10px 8px 12px;display:flex;flex-direction:column;gap:8px}
+.wunschfeld textarea{border:0;outline:0;resize:none;background:transparent;font-size:14.5px;padding:0}
+.anhang{display:flex;align-items:center;gap:8px}
+.anhang img{width:44px;height:44px;object-fit:cover;border:1px solid var(--linie)}
+.leer-verlauf{margin:auto 0;text-align:center;color:var(--leise);display:flex;flex-direction:column;gap:6px;align-items:center}
+
+/* Bild-Werkbank */
+.werkzeuge{width:112px;flex:none;padding:4px 0 0 16px;display:flex;flex-direction:column;align-items:flex-end;gap:5px;overflow:auto}
+.werkzeuge button{width:76px;min-height:58px;border:0;border-radius:12px 0 0 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:500 12px 'Bricolage Grotesque',sans-serif;background:var(--lasche);color:var(--tinte)}
+.werkzeuge button[aria-pressed="true"]{width:84px;font-weight:800;background:var(--flaeche);color:var(--facette);box-shadow:-2px 2px 6px rgba(30,40,70,.08)}
+.farbknopf{width:28px;height:28px;border:2px solid #fff;outline:1px solid var(--linie);border-radius:50%;padding:0}
+#bildflaeche{position:absolute;inset:0;display:block;touch-action:none}
+.bildinfo{position:absolute;left:16px;top:12px;z-index:4}
+.werkzeugoptionen{position:absolute;left:50%;top:12px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid var(--linie);z-index:4;white-space:nowrap}
+.werkzeugoptionen input[type=range]{width:110px;accent-color:var(--pflaume)}
+.schrittband{position:absolute;left:16px;right:16px;bottom:60px;display:flex;gap:8px;overflow-x:auto;z-index:4;padding:2px}
+.schrittband button{flex:none;border:1px solid var(--linie);background:#fff;padding:6px 10px;text-align:left;font:inherit;font-size:12.5px;display:flex;flex-direction:column;gap:1px;min-width:96px}
+.schrittband button[aria-current="true"]{border-color:var(--pflaume);background:var(--zart)}
+.schrittband button.zukunft{opacity:.5}
+.rechtsbild{width:372px;flex:none;margin-left:16px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.reglerkarte{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.regler{display:grid;grid-template-columns:86px 1fr 40px;align-items:center;gap:8px;font-size:13px}
+.regler input{accent-color:var(--pflaume);width:100%}
+.regler b{text-align:right;font-size:12.5px}
+.ebenenbild{display:flex;flex-direction:column;gap:2px;max-height:150px;overflow:auto}
+.ebenenbild .zeile{display:flex;align-items:center;gap:8px;padding:4px 6px;border-radius:2px}
+.ebenenbild .zeile[aria-current="true"]{background:var(--zart);outline:1px solid var(--hell)}
+.ebenenbild .zeile img{width:32px;height:24px;object-fit:contain;background:#f1ede2}
+.ebenenbild .zeile button.n{flex:1;text-align:left;border:0;background:transparent;font:inherit;font-size:13px;padding:4px 0}
+.rechtsbild .kranichleiste{width:auto;margin:0;flex:1}
+.texteingabe{position:absolute;z-index:7;display:flex;gap:6px;padding:6px;border:1px solid var(--linie)}
+
+/* Varianten */
+.variantenblatt{position:relative;flex:1;min-height:0;margin:0 16px 16px;padding:22px 30px;display:flex;flex-direction:column;gap:14px}
+.variantenkopf{display:flex;align-items:center;gap:16px}
+.variantenkopf h1{margin:0;font-weight:800;font-size:30px;letter-spacing:-.02em}
+.variantenreihe{flex:1;min-height:0;display:flex;gap:20px}
+.variante{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px}
+.variante .card{flex:1;min-height:0;padding:14px;display:flex;flex-direction:column;gap:10px}
+.variante .rahmen{flex:1;min-height:0;position:relative;overflow:hidden;background:var(--papier)}
+.variante .rahmen iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;pointer-events:none;background:#fff}
+.variante.gewaehlt .card{outline:3px solid var(--pflaume)}
+.variante .vfuss{display:flex;align-items:center;gap:8px}
+.variantenfuss{display:flex;align-items:center;gap:12px}
+
+/* Dialoge */
+.schleier{position:fixed;inset:0;background:rgba(29,39,66,.35);display:flex;align-items:center;justify-content:center;z-index:20}
+.dialog{position:relative;width:min(1120px,94vw);max-height:92vh;display:flex;flex-direction:column;gap:16px;padding:24px 28px;overflow:auto}
+.dialog.schmal{width:min(640px,94vw)}
+.dialogkopf{display:flex;align-items:center;gap:14px}
+.dialogkopf h2{margin:0;font-size:26px;font-weight:800;letter-spacing:-.02em}
+.exportkoerper{display:flex;gap:26px;min-height:0}
+.exportvorschau{flex:1.2;min-width:0;display:flex;flex-direction:column;gap:8px}
+.exportvorschau .rahmen{position:relative;height:360px;overflow:hidden;background:var(--papier)}
+.exportvorschau iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;pointer-events:none;background:#fff}
+.exportvorschau img{width:100%;height:100%;object-fit:contain}
+.exportoptionen{flex:1;display:flex;flex-direction:column;gap:14px}
+.formate{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.format{border:1px solid var(--linie);background:#fff;padding:10px 12px;text-align:left;font:inherit;display:flex;flex-direction:column;gap:2px}
+.format b{font-family:'Bricolage Grotesque',sans-serif}
+.format span{color:var(--leise);font-size:12.5px}
+.format[aria-pressed="true"]{border-color:var(--pflaume);background:var(--zart);outline:1px solid var(--pflaume)}
+.segment{display:flex;gap:2px;padding:3px;background:var(--lasche);border-radius:3px;align-self:flex-start}
+.segment button{min-height:32px;padding:0 14px;border:0;border-radius:2px;background:transparent;font:500 13px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.segment button[aria-pressed="true"]{background:var(--flaeche);font-weight:800;color:var(--facette);box-shadow:0 1px 2px rgba(30,40,70,.15)}
+.ziel{border:1px solid var(--linie);background:#fff;padding:10px 12px;display:flex;flex-direction:column;gap:6px;cursor:pointer}
+.ziel[aria-checked="true"]{border-color:var(--pflaume);background:var(--zart)}
+.ziel .zk{display:flex;align-items:center;gap:8px}
+.dialogfuss{display:flex;align-items:center;gap:10px;justify-content:flex-end;padding-right:44px}
+.einstellzeile{display:flex;flex-direction:column;gap:6px}
+.einstellzeile label{font-weight:600}
+.meldung{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:640px}

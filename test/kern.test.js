@@ -4,241 +4,173 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const crypto = require('node:crypto');
+const { EventEmitter } = require('node:events');
 
-const {
-  sha256, pruefeName, VirusTotal, scanne, urteile, DownloadWache, ausJson, vergleiche, leseAutostart,
-} = require('../kern');
+const A = require('../kern/auftraege');
+const { Projekte } = require('../kern/projekte');
+const { Einstellungen } = require('../kern/einstellungen');
+const { htmlFuerApp, svgAusHtml, dateiname } = require('../kern/export');
+const hirn = require('../kern/hirn');
+const { lookText } = require('../kern/familie');
 
-function tmp() {
-  return fs.mkdtempSync(path.join(os.tmpdir(), 'kranich-'));
-}
+const HTML = '<!doctype html><html><head><style>body{margin:0}</style></head><body><h1 data-k="k1" data-name="Titel">Hallo</h1></body></html>';
 
-function antwort(status, stats) {
-  return {
-    status,
-    ok: status >= 200 && status < 300,
-    json: async () => ({ data: { attributes: { last_analysis_stats: stats, meaningful_name: 'x' } } }),
+test('leseEntwurf holt Notiz und HTML aus einem Codeblock', () => {
+  const r = A.leseEntwurf(`NOTIZ: Ich habe die Knöpfe größer gemacht.\n\n\`\`\`html\n${HTML}\n\`\`\``);
+  assert.equal(r.notiz, 'Ich habe die Knöpfe größer gemacht.');
+  assert.match(r.html, /^<!doctype html>/i);
+  assert.match(r.html, /<h1 data-k="k1"/);
+});
+
+test('leseEntwurf findet HTML auch ohne Codeblock und ergänzt doctype', () => {
+  const r = A.leseEntwurf('Hier: <html><body><p>x</p></body></html> fertig');
+  assert.match(r.html, /^<!doctype html>\n<html>/);
+});
+
+test('leseEntwurf wirft ohne Entwurf', () => {
+  assert.throws(() => A.leseEntwurf('Ich kann das leider nicht.'), /kein Entwurf/);
+});
+
+test('Aufträge enthalten Wunsch, Fläche, Auswahl und Look', () => {
+  const sys = A.systemEntwurf({ lookHinweise: 'Immer Grün für Erledigt' });
+  assert.match(sys, /data-name/);
+  assert.match(sys, /Immer Grün für Erledigt/);
+  assert.match(sys, /#7c5cd6/);
+  const a = A.auftragAendern({ html: HTML, wunsch: 'größer', auswahl: { k: 'k1', name: 'Titel' }, breite: 800, hoehe: 600 });
+  assert.match(a, /data-k="k1"/);
+  assert.match(a, /800 × 600/);
+  assert.match(A.auftragNeu({ wunsch: 'Login', app: 'Erledigt' }), /Erledigt/);
+  assert.match(A.auftragVariante({ html: '', wunsch: 'x', richtung: A.RICHTUNGEN[1], breite: 1, hoehe: 1 }), /Mutig/);
+  assert.equal(A.RICHTUNGEN.length, 3);
+});
+
+test('pruefePlan lässt nur erlaubte Schritte mit gültigen Werten durch', () => {
+  const s = A.pruefePlan([
+    { art: 'freistellen' },
+    { art: 'quadrat', groesse: 1080 },
+    { art: 'anpassen', hell: 250, waerme: -8 },
+    { art: 'loesche_festplatte' },
+    { art: 'drehen', grad: 45 },
+    { art: 'zuschneiden', x: 10, y: 10, b: 0, h: 50 },
+    { art: 'text', inhalt: 'Sale', x: 5, y: 5, groesse: 80, farbe: '#FFFFFF' },
+    { art: 'hintergrund', farbe: 'rot' },
+    { art: 'anpassen' },
+  ]);
+  assert.deepEqual(s, [
+    { art: 'freistellen' },
+    { art: 'quadrat', groesse: 1080 },
+    { art: 'anpassen', hell: 100, waerme: -8 },
+    { art: 'text', inhalt: 'Sale', x: 5, y: 5, groesse: 80, farbe: '#ffffff' },
+  ]);
+});
+
+test('lesePlan liest JSON auch im Codeblock und wirft ohne Schritte', () => {
+  const r = A.lesePlan('```json\n{"notiz":"Mach ich.","schritte":[{"art":"freistellen"},{"art":"quadrat","groesse":1080}]}\n```');
+  assert.equal(r.notiz, 'Mach ich.');
+  assert.equal(r.schritte.length, 2);
+  assert.throws(() => A.lesePlan('{"notiz":"x","schritte":[{"art":"boese"}]}'), /keinen machbaren/);
+  assert.equal(A.beschreibeSchritt({ art: 'anpassen', hell: 12, waerme: -8 }), 'Helligkeit +12, Wärme -8');
+});
+
+test('Projekte anlegen, speichern, auflisten, Dateien, löschen', () => {
+  const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'kr-test-'));
+  const p = new Projekte(ordner);
+  const a = p.anlegen({ art: 'entwurf' });
+  const b = p.anlegen({ art: 'bild', name: 'Tasse' });
+  assert.equal(a.seiten.length, 1);
+  assert.ok(b.bild);
+  a.name = 'To-do-App';
+  p.speichern(a);
+  const liste = p.liste();
+  assert.equal(liste.length, 2);
+  assert.ok(liste.find((x) => x.name === 'To-do-App'));
+  p.schreibeDatei(b.id, 'ebene-abc.png', Buffer.from([1, 2, 3]));
+  assert.deepEqual([...p.leseDatei(b.id, 'ebene-abc.png')], [1, 2, 3]);
+  assert.throws(() => p.schreibeDatei(b.id, '../boese.png', Buffer.from([])), /Ungültiger Dateiname/);
+  assert.throws(() => p.laden('../../etc'), /Ungültige Projekt-Nummer/);
+  p.loeschen(a.id);
+  assert.equal(p.liste().length, 1);
+});
+
+test('Einstellungen geben den Schlüssel nie heraus und behalten ihn bei leerer Eingabe', () => {
+  const datei = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kr-e-')), 'e.json');
+  const e = new Einstellungen(datei);
+  e.setze({ apiSchluessel: 'sk-geheim', weg: 'api', unbekannt: 1, appOrdner: { erledigt: 'C:/x' } });
+  const o = e.setze({ apiSchluessel: '' });
+  assert.equal(o.apiSchluessel, undefined);
+  assert.equal(o.apiSchluesselGesetzt, true);
+  assert.equal(new Einstellungen(datei).alle().apiSchluessel, 'sk-geheim');
+  assert.equal(o.appOrdner.erledigt, 'C:/x');
+  assert.equal(o.appOrdner.origami, '');
+  assert.equal(o.unbekannt, undefined);
+});
+
+test('Export entfernt interne Marken, baut SVG und sichere Dateinamen', () => {
+  assert.doesNotMatch(htmlFuerApp(HTML), /data-k|data-name/);
+  assert.match(htmlFuerApp(HTML, { namenBehalten: true }), /data-name/);
+  const svg = svgAusHtml(HTML, 800, 600);
+  assert.match(svg, /<foreignObject/);
+  assert.match(svg, /width="800"/);
+  assert.doesNotMatch(svg, /data-k/);
+  assert.equal(dateiname('To-do-App Startseite / Größe'), 'to-do-app-startseite-grosse');
+  assert.equal(dateiname(''), 'kranich');
+});
+
+test('Look der Familie nennt alle Apps', () => {
+  const t = lookText();
+  for (const n of ['Kranich', 'origami', 'Erledigt']) assert.match(t, new RegExp(n));
+});
+
+function falschesKind({ ausgabe = '', fehler = '', code = 0, enoent = false }) {
+  return (_prog, args) => {
+    const k = new EventEmitter();
+    k.stdout = new EventEmitter(); k.stderr = new EventEmitter();
+    k.args = args;
+    k.stdin = { end: (text) => { k.eingabe = text; setImmediate(() => {
+      if (enoent) { const e = new Error('nope'); e.code = 'ENOENT'; k.emit('error', e); return; }
+      if (ausgabe) k.stdout.emit('data', ausgabe);
+      if (fehler) k.stderr.emit('data', fehler);
+      k.emit('close', code);
+    }); } };
+    k.kill = () => {};
+    falschesKind.letztes = k;
+    return k;
   };
 }
 
-// VirusTotal-Attrappe: Zuordnung Hash -> Antwort, zaehlt die Aufrufe.
-function attrappe(tabelle) {
-  const aufrufe = [];
-  const fetch = async (url, optionen) => {
-    aufrufe.push({ url, optionen });
-    const hash = url.split('/').pop();
-    return tabelle[hash] ?? antwort(404);
-  };
-  return { fetch, aufrufe };
-}
-
-const ohneWarten = { warte: async () => {}, jetzt: () => 0 };
-
-test('sha256 stimmt mit dem bekannten Wert ueberein', async () => {
-  const ordner = tmp();
-  const datei = path.join(ordner, 'a.txt');
-  fs.writeFileSync(datei, 'abc');
-  assert.equal(await sha256(datei), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+test('frageClaude gibt das Ergebnis zurück und schickt den Auftrag über stdin', async () => {
+  const text = await hirn.frageClaude({ system: 'S', auftrag: 'Mach was', _spawn: falschesKind({ ausgabe: JSON.stringify({ type: 'result', is_error: false, result: 'Antwort' }) }) });
+  assert.equal(text, 'Antwort');
+  const k = falschesKind.letztes;
+  assert.equal(k.eingabe, 'Mach was');
+  assert.ok(k.args.includes('--system-prompt-file'));
+  assert.ok(k.args.includes('--no-session-persistence'));
+  assert.equal(k.args[k.args.indexOf('--tools') + 1], '');
 });
 
-test('Heuristik: Namen', () => {
-  assert.equal(pruefeName('Urlaub.jpg').stufe, 'ok');
-  assert.equal(pruefeName('bericht.final.pdf').stufe, 'ok');
-  assert.equal(pruefeName('setup.exe').stufe, 'hinweis');
-  assert.equal(pruefeName('tabelle.xlsm').stufe, 'hinweis');
-  assert.equal(pruefeName('paket.zip').stufe, 'hinweis');
-
-  const doppelt = pruefeName('Rechnung.pdf.exe');
-  assert.equal(doppelt.stufe, 'verdaechtig');
-  assert.match(doppelt.gruende[0], /Doppelte Dateiendung/);
-
-  assert.equal(pruefeName('RECHNUNG.PDF.EXE').stufe, 'verdaechtig');
-  assert.equal(pruefeName('Foto.jpg.scr').stufe, 'verdaechtig');
-  assert.equal(pruefeName('Rechnung.pdf          .exe').stufe, 'verdaechtig');
-  assert.equal(pruefeName('Rechnung\u202Efdp.exe').stufe, 'verdaechtig');
-  // Versionsnummern sind keine Tarnung
-  assert.equal(pruefeName('tool.v2.exe').stufe, 'hinweis');
+test('frageClaude mit Bild erlaubt nur Read im Bildordner', async () => {
+  const bild = path.join(os.tmpdir(), 'kr-test.png');
+  fs.writeFileSync(bild, Buffer.from([137, 80, 78, 71]));
+  await hirn.frageClaude({ system: 'S', auftrag: 'Sieh hin', bilder: [bild], _spawn: falschesKind({ ausgabe: JSON.stringify({ result: 'ok', is_error: false }) }) });
+  const k = falschesKind.letztes;
+  assert.equal(k.args[k.args.indexOf('--tools') + 1], 'Read');
+  assert.match(k.eingabe, /ANGEHÄNGTE BILDER/);
 });
 
-test('VirusTotal: bekannt, unbekannt, Zwischenspeicher, Schluessel im Kopf', async () => {
-  const { fetch, aufrufe } = attrappe({
-    aaa: antwort(200, { malicious: 12, suspicious: 1, undetected: 50, harmless: 7, timeout: 3, 'type-unsupported': 9 }),
-  });
-  const vt = new VirusTotal({ schluessel: 'geheim', fetch, ...ohneWarten });
-
-  const a = await vt.abfrage('aaa');
-  assert.deepEqual(
-    { status: a.status, boesartig: a.boesartig, verdaechtig: a.verdaechtig, gesamt: a.gesamt },
-    { status: 'bekannt', boesartig: 12, verdaechtig: 1, gesamt: 70 },
-  );
-  assert.equal(aufrufe[0].url, 'https://www.virustotal.com/api/v3/files/aaa');
-  assert.equal(aufrufe[0].optionen.headers['x-apikey'], 'geheim');
-
-  assert.equal((await vt.abfrage('bbb')).status, 'unbekannt');
-  await vt.abfrage('aaa');
-  await vt.abfrage('bbb');
-  assert.equal(aufrufe.length, 2, 'zweite Abfrage kommt aus dem Zwischenspeicher');
+test('frageClaude erkennt fehlendes Programm und fehlende Anmeldung', async () => {
+  await assert.rejects(hirn.frageClaude({ system: '', auftrag: 'x', _spawn: falschesKind({ enoent: true }) }), (e) => e.art === 'nicht-installiert');
+  await assert.rejects(hirn.frageClaude({ system: '', auftrag: 'x', _spawn: falschesKind({ ausgabe: JSON.stringify({ is_error: true, result: 'Invalid API key · Please run /login' }), code: 1 }) }), (e) => e.art === 'nicht-angemeldet');
+  await assert.rejects(hirn.frageClaude({ system: '', auftrag: 'x', _spawn: falschesKind({ fehler: 'getaddrinfo ENOTFOUND api.anthropic.com', code: 1 }) }), (e) => e.art === 'keine-verbindung');
 });
 
-test('VirusTotal: ohne Schluessel kein Aufruf, 401 und 429 werden erkannt', async () => {
-  const leer = attrappe({});
-  assert.equal((await new VirusTotal({ fetch: leer.fetch }).abfrage('x')).status, 'kein_schluessel');
-  assert.equal(leer.aufrufe.length, 0);
-
-  const falsch = attrappe({ x: antwort(401) });
-  assert.equal((await new VirusTotal({ schluessel: 'k', fetch: falsch.fetch, ...ohneWarten }).abfrage('x')).status, 'schluessel_falsch');
-
-  const voll = attrappe({ x: antwort(429) });
-  const vt = new VirusTotal({ schluessel: 'k', fetch: voll.fetch, ...ohneWarten });
-  assert.equal((await vt.abfrage('x')).status, 'limit');
-  assert.equal((await vt.abfrage('y')).status, 'limit');
-  assert.equal(voll.aufrufe.length, 1, 'nach dem Limit wird nicht weiter gefragt');
-});
-
-test('VirusTotal: Netzfehler wird als Fehler gemeldet, nicht geworfen', async () => {
-  const vt = new VirusTotal({ schluessel: 'k', fetch: async () => { throw new Error('offline'); }, ...ohneWarten });
-  const e = await vt.abfrage('x');
-  assert.equal(e.status, 'fehler');
-  assert.match(e.meldung, /offline/);
-});
-
-test('VirusTotal: haelt den Abstand zwischen Abfragen ein', async () => {
-  let uhr = 0;
-  const pausen = [];
-  const { fetch } = attrappe({});
-  const vt = new VirusTotal({
-    schluessel: 'k', fetch, proMinute: 4,
-    jetzt: () => uhr,
-    warte: async (ms) => { pausen.push(ms); uhr += ms; },
-  });
-  await Promise.all([vt.abfrage('a'), vt.abfrage('b'), vt.abfrage('c')]);
-  assert.deepEqual(pausen, [15000, 15000]);
-});
-
-test('Urteil: Schwellen und getarnter Name', () => {
-  const ok = { stufe: 'ok', gruende: [] };
-  const tarn = { stufe: 'verdaechtig', gruende: ['Doppelte Dateiendung'] };
-  const vt = (b, v = 0) => ({ status: 'bekannt', boesartig: b, verdaechtig: v, gesamt: 70 });
-  assert.equal(urteile(ok, vt(0)).urteil, 'sauber');
-  assert.equal(urteile(ok, vt(1)).urteil, 'verdaechtig');
-  assert.equal(urteile(ok, vt(0, 2)).urteil, 'verdaechtig');
-  assert.equal(urteile(ok, vt(3)).urteil, 'schaedlich');
-  assert.equal(urteile(tarn, vt(0)).urteil, 'verdaechtig');
-  assert.equal(urteile(tarn, vt(20)).urteil, 'schaedlich');
-  assert.equal(urteile(ok, { status: 'unbekannt' }).urteil, 'unbekannt');
-  assert.equal(urteile(tarn, { status: 'limit' }).urteil, 'verdaechtig');
-  assert.equal(urteile(ok, { status: 'uebersprungen' }).urteil, 'nicht_geprueft');
-});
-
-test('Scan: Ordner, nur riskante Typen werden bei VirusTotal gefragt', async () => {
-  const ordner = tmp();
-  fs.mkdirSync(path.join(ordner, 'unter'));
-  fs.writeFileSync(path.join(ordner, 'bild.jpg'), 'bild');
-  fs.writeFileSync(path.join(ordner, 'setup.exe'), 'boese');
-  fs.writeFileSync(path.join(ordner, 'unter', 'Rechnung.pdf.exe'), 'getarnt');
-  fs.writeFileSync(path.join(ordner, 'unter', 'tool.exe'), 'gut');
-  const h = (s) => crypto.createHash('sha256').update(s).digest('hex');
-
-  const { fetch, aufrufe } = attrappe({
-    [h('boese')]: antwort(200, { malicious: 30, suspicious: 0, undetected: 40, harmless: 0 }),
-    [h('gut')]: antwort(200, { malicious: 0, suspicious: 0, undetected: 60, harmless: 10 }),
-  });
-  const vt = new VirusTotal({ schluessel: 'k', fetch, ...ohneWarten });
-  const schritte = [];
-  const { ergebnisse, zusammenfassung } = await scanne(ordner, { vt, beiFortschritt: (f) => schritte.push(f.nummer) });
-
-  const nach = Object.fromEntries(ergebnisse.map((e) => [e.name, e]));
-  assert.equal(nach['bild.jpg'].urteil, 'nicht_geprueft');
-  assert.equal(nach['setup.exe'].urteil, 'schaedlich');
-  assert.deepEqual(nach['setup.exe'].treffer, { boesartig: 30, verdaechtig: 0, gesamt: 70 });
-  assert.equal(nach['Rechnung.pdf.exe'].urteil, 'verdaechtig');
-  assert.equal(nach['tool.exe'].urteil, 'sauber');
-  assert.equal(aufrufe.length, 3, 'bild.jpg wird nicht abgefragt');
-  assert.deepEqual(schritte, [1, 2, 3, 4]);
-  assert.deepEqual(zusammenfassung, { sauber: 1, unauffaellig: 0, verdaechtig: 1, schaedlich: 1, unbekannt: 0, nicht_geprueft: 1 });
-
-  const alle = await scanne(ordner, { vt, alleAbfragen: true });
-  assert.equal(alle.ergebnisse.find((e) => e.name === 'bild.jpg').urteil, 'unbekannt');
-});
-
-test('Scan: einzelne Datei wird immer abgefragt, fehlender Pfad ergibt leere Liste', async () => {
-  const ordner = tmp();
-  const datei = path.join(ordner, 'notiz.txt');
-  fs.writeFileSync(datei, 'hallo');
-  const { fetch, aufrufe } = attrappe({});
-  const vt = new VirusTotal({ schluessel: 'k', fetch, ...ohneWarten });
-  const { ergebnisse } = await scanne(datei, { vt });
-  assert.equal(aufrufe.length, 1);
-  assert.equal(ergebnisse[0].urteil, 'unbekannt');
-  assert.equal((await scanne(path.join(ordner, 'gibtsnicht'), { vt })).ergebnisse.length, 0);
-});
-
-test('Scan: Abbrechen stoppt nach der laufenden Datei', async () => {
-  const ordner = tmp();
-  for (const n of ['a.exe', 'b.exe', 'c.exe']) fs.writeFileSync(path.join(ordner, n), n);
-  const steuerung = new AbortController();
-  const { fetch } = attrappe({});
-  const vt = new VirusTotal({ schluessel: 'k', fetch, ...ohneWarten });
-  const { ergebnisse, abgebrochen } = await scanne(ordner, {
-    vt, signal: steuerung.signal,
-    beiFortschritt: ({ nummer }) => { if (nummer === 2) steuerung.abort(); },
-  });
-  assert.equal(abgebrochen, true);
-  assert.ok(ergebnisse.length < 3);
-});
-
-test('Download-Wache: meldet fertige Datei einmal, ignoriert laufende Downloads', async () => {
-  const ordner = tmp();
-  const wache = new DownloadWache(ordner, { ruheMs: 60 });
-  const gemeldet = [];
-  wache.on('datei', (p) => gemeldet.push(path.basename(p)));
-  wache.start();
-  try {
-    const teil = path.join(ordner, 'film.mp4.crdownload');
-    fs.writeFileSync(teil, 'a');
-    await new Promise((r) => setTimeout(r, 100));
-    fs.appendFileSync(teil, 'b');
-    await new Promise((r) => setTimeout(r, 100));
-    fs.renameSync(teil, path.join(ordner, 'film.mp4'));
-    fs.writeFileSync(path.join(ordner, 'Rechnung.pdf.exe'), 'x');
-    await new Promise((r) => setTimeout(r, 600));
-    assert.deepEqual(gemeldet.sort(), ['Rechnung.pdf.exe', 'film.mp4']);
-  } finally {
-    wache.stopp();
-  }
-});
-
-test('Autostart: PowerShell-Ausgabe lesen (Liste, einzelnes Objekt, leer, kaputt)', () => {
-  const liste = '[{"Name":"OneDrive","Command":"\\"C:\\\\OneDrive.exe\\" /background","Location":"HKU\\\\Run","User":"nils"},{"Name":"Übung","Command":null,"Location":null,"User":null}]';
-  const a = ausJson(liste, 'autostart');
-  assert.equal(a.length, 2);
-  assert.deepEqual(a[0], { herkunft: 'autostart', name: 'OneDrive', befehl: '"C:\\OneDrive.exe" /background', ort: 'HKU\\Run', benutzer: 'nils' });
-  assert.equal(a[1].name, 'Übung');
-  assert.equal(a[1].befehl, '');
-  assert.equal(ausJson('\uFEFF{"Name":"Eins","Command":"x.exe"}', 'dienst').length, 1);
-  assert.deepEqual(ausJson('', 'aufgabe'), []);
-  assert.deepEqual(ausJson('kein json', 'aufgabe'), []);
-});
-
-test('Autostart: liest alle drei Quellen, ein Fehler stoppt die anderen nicht', async () => {
-  const ausfuehren = async (befehl) => {
-    if (befehl.includes('Win32_StartupCommand')) return '{"Name":"A","Command":"a.exe","Location":"Run"}';
-    if (befehl.includes('Get-ScheduledTask')) throw new Error('Zugriff verweigert');
-    return '[{"Name":"D","Command":"d.exe","Location":"Dienst D"}]';
-  };
-  const { eintraege, fehler } = await leseAutostart({ ausfuehren });
-  assert.deepEqual(eintraege.map((e) => `${e.herkunft}:${e.name}`), ['autostart:A', 'dienst:D']);
-  assert.deepEqual(fehler, [{ herkunft: 'aufgabe', meldung: 'Zugriff verweigert' }]);
-});
-
-test('Autostart: Vergleich findet neu, geaendert, entfernt', () => {
-  const e = (name, befehl, herkunft = 'autostart') => ({ herkunft, name, befehl, ort: 'Run', benutzer: '' });
-  const bekannt = [e('OneDrive', 'od.exe'), e('Steam', 'steam.exe'), e('Alt', 'alt.exe')];
-  const aktuell = [e('onedrive', 'od.exe'), e('Steam', 'C:\\Temp\\x.exe'), e('Neu', 'neu.exe'), e('Steam', 'steam.exe', 'dienst')];
-  const d = vergleiche(bekannt, aktuell);
-  assert.deepEqual(d.neu.map((x) => `${x.herkunft}:${x.name}`), ['autostart:Neu', 'dienst:Steam']);
-  assert.equal(d.geaendert.length, 1);
-  assert.equal(d.geaendert[0].befehlVorher, 'steam.exe');
-  assert.deepEqual(d.entfernt.map((x) => x.name), ['Alt']);
+test('frageApi und frageLokal sprechen die richtigen Adressen an', async () => {
+  let aufruf;
+  const t = await hirn.frageApi({ system: 'S', auftrag: 'A', schluessel: 'k', _fetch: async (url, o) => { aufruf = { url, o }; return { ok: true, status: 200, json: async () => ({ content: [{ type: 'text', text: 'hi' }] }) }; } });
+  assert.equal(t, 'hi');
+  assert.match(aufruf.url, /api\.anthropic\.com\/v1\/messages/);
+  assert.equal(aufruf.o.headers['x-api-key'], 'k');
+  await assert.rejects(hirn.frageApi({ system: '', auftrag: '' }), (e) => e.art === 'nicht-angemeldet');
+  const l = await hirn.frageLokal({ system: 'S', auftrag: 'A', _fetch: async (url) => { aufruf = url; return { ok: true, json: async () => ({ message: { content: 'lokal' } }) }; } });
+  assert.equal(l, 'lokal');
+  assert.match(aufruf, /11434\/api\/chat/);
 });

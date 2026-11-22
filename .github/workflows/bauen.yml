@@ -1,4 +1,4 @@
-# Baut die Installer fuer Kranich Agent und Kranich Host (Windows und Mac)
+# Baut die Installer fuer Kranich (Windows und Mac)
 # und legt sie auf GitHub unter
 # "Releases" ab. Laeuft, sobald sich die Versionsnummer in package.json
 # aendert (oder von Hand ueber "Run workflow").
@@ -45,7 +45,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION="v$(node -p "require('./package.json').version")"
-          gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" --target "$GITHUB_SHA" --title "Kranich $VERSION" --notes "Zwei Programme: Kranich Agent kommt auf jedes Gerät, Kranich Host ist die Übersicht. Ohne gekauftes Zertifikat warnt das System beim ersten Start." || true
+          gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" --target "$GITHUB_SHA" --title "Kranich $VERSION" --notes "Kranich, die Entwurfsmaschine der origami-Familie. Ohne gekauftes Zertifikat warnt das System beim ersten Start." || true
           for versuch in 1 2 3; do
             gh release upload "$VERSION" ${{ matrix.dateien }} --clobber && break
             sleep 10

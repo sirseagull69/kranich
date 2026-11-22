@@ -1,0 +1,42 @@
+'use strict';
+// Der Kranich in drei Haltungen, genau wie im Canvas.
+(function () {
+  const SCHATTEN = '<ellipse cx="46" cy="87" rx="18" ry="2.4" fill="#1d2742" opacity="0.14"></ellipse>';
+  const BEINE = '<polygon points="40,58 43,58 41,86" fill="#6243c4"></polygon><polygon points="48,58 51,58 52,86" fill="#6243c4"></polygon><polygon points="12,50 30,46 30,58" fill="#4a2f9a"></polygon>';
+
+  const HALTUNG = {
+    ruhend: `<g>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 71,41" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 38,32" fill="#d6caf9"></polygon><polygon points="71,41 84,48 69,47" fill="#1d2742"></polygon></g>`,
+    arbeitend: `<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.6;0 0;0 -1.6;0 0" dur="6s" repeatCount="indefinite"></animateTransform>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 64,9" fill="#4a2f9a"><animate attributeName="points" values="56,56 62,58 64,9;56,56 62,58 64,9;56,56 62,58 60,11;56,56 62,58 60,11;56,56 62,58 64,9" keyTimes="0;0.4;0.5;0.85;1" dur="2.4s" repeatCount="indefinite"></animate></polygon><polygon points="30,52 56,55 34,27" fill="#d6caf9"></polygon><polygon points="64,9 79,9 63,16" fill="#1d2742"><animate attributeName="points" values="64,9 79,9 63,16;64,9 79,9 63,16;60,11 74,17 59,18;60,11 74,17 59,18;64,9 79,9 63,16" keyTimes="0;0.4;0.5;0.85;1" dur="2.4s" repeatCount="indefinite"></animate></polygon></g>`,
+    fertig: `<g>${BEINE}<polygon points="42,52 59,55 64,5" fill="#7c5cd6"></polygon><polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 70,18" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 20,8" fill="#d6caf9"></polygon><polygon points="70,18 84,20 69,25" fill="#1d2742"></polygon></g>`,
+  };
+  const NAMEN = { ruhend: 'Kranich ruhend', arbeitend: 'Kranich arbeitet', fertig: 'Kranich ist fertig' };
+
+  window.figur = function figur(haltung = 'ruhend', groesse = 34) {
+    const h = HALTUNG[haltung] ? haltung : 'ruhend';
+    return `<svg viewBox="0 0 100 100" width="${groesse}" height="${groesse}" role="img" aria-label="${NAMEN[h]}" style="display:block;flex:none">${SCHATTEN}${HALTUNG[h]}</svg>`;
+  };
+
+  window.eselsohr = function eselsohr(groesse = 54, grund = '#f6f1e7') {
+    return `<svg viewBox="0 0 100 100" width="${groesse}" height="${groesse}" aria-hidden="true" class="eselsohr"><polygon points="100,38 100,100 38,100" fill="${grund}"></polygon><polygon points="38,100 100,38 38,38" fill="#7c5cd6"></polygon><polygon points="38,100 38,38 69,69" fill="#4a2f9a"></polygon></svg>`;
+  };
+
+  // Symbole aus dem Canvas (Strichzeichnungen, 24er Raster).
+  const SYM = {
+    haken: 'M5 12.5l4.5 4.5L19 7.5', zurueck: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
+    varianten: 'M3 6h5v12H3zM10 6h5v12h-5zM17 6h4v12h-4z', export: 'M12 4v11M7 10l5 5 5-5M4 20h16',
+    seite: 'M6 3h9l4 4v14H6zM15 3v4h4', plus: 'M12 5v14M5 12h14', box: 'M4 6h16v13H4z', text: 'M5 6V4h14v2M12 4v16M9 20h6',
+    liste: 'M4 6h16M4 12h16M4 18h16', klammer: 'm21 12-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l9.2-9.2a3.7 3.7 0 0 1 5.2 5.2l-9.2 9.2a1.8 1.8 0 0 1-2.6-2.6L15.5 7',
+    senden: 'M12 19V5M5 12l7-7 7 7', ordner: 'M3 7h6l2 2h10v10H3z', zahnrad: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
+    verschieben: 'M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3',
+    zuschneiden: 'M6 2v14a2 2 0 0 0 2 2h14M2 6h14a2 2 0 0 1 2 2v14', pinsel: 'M18.4 2.6a2 2 0 0 1 2.9 2.9L11 15.8 8.2 13zM8 14c-2 0-3.5 1.5-3.5 3.5C4.5 19 3 20 2 20c1.5 1.3 3.5 2 5 2a4 4 0 0 0 4-4z',
+    radierer: 'M7 21h10M5.5 13.5l7-7a2 2 0 0 1 2.8 0l3.2 3.2a2 2 0 0 1 0 2.8L12 19H8l-2.5-2.5a2.1 2.1 0 0 1 0-3z',
+    auswahl: 'M4 4h3M10 4h4M17 4h3v3M20 10v4M20 17v3h-3M14 20h-4M7 20H4v-3M4 14v-4',
+    freistellen: 'M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z', farbe: 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1a1.5 1.5 0 0 1 1.1-2.5H16a5 5 0 0 0 5-5c0-4.4-4-8-9-8zM7.5 11.5h.01M10.5 7.5h.01M15 7.5h.01',
+    auge: 'M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', muell: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+    mikro: 'M9 3h6v11H9zM5 11a7 7 0 0 0 14 0M12 18v3', schliessen: 'M6 6l12 12M18 6L6 18', mischen: 'M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5',
+  };
+  window.sym = function sym(name, groesse = 16, breite = 2) {
+    const d = SYM[name] || SYM.box;
+    return `<svg width="${groesse}" height="${groesse}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${breite}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display:block;flex:none"><path d="${d}"></path></svg>`;
+  };
+})();

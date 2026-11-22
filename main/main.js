@@ -1,266 +1,234 @@
 'use strict';
-// Hauptprozess von Kranich. Aus diesem Quelltext entstehen zwei getrennte
-// Programme:
-//
-//   Kranich Agent  laeuft im Tray auf jedem Geraet, bewacht es und meldet
-//                  an die Zentrale. Kleines Statusfenster.
-//   Kranich Host   das grosse Fenster: anmelden, alle Geraete sehen,
-//                  Auftraege senden. Kein Tray, kein Hintergrunddienst.
-//
-// Welche Rolle laeuft, steht im Installer (package.json: kranichRolle) oder
-// fuer die Entwicklung in KRANICH_ROLLE. Die eigentliche Arbeit steckt in
-// dienste.js, verbund.js und im Kern.
+// Hauptprozess von Kranich.
 
-const path = require('node:path');
+const { app, BrowserWindow, ipcMain, dialog, shell, nativeImage } = require('electron');
+const fs = require('node:fs');
 const os = require('node:os');
-const { app, BrowserWindow, Tray, Menu, Notification, ipcMain, dialog, safeStorage, nativeImage, shell } = require('electron');
-const kern = require('../kern');
-const { erstelleEinstellungen } = require('./einstellungen');
-const { erstelleDienste, FUER_OBERFLAECHE } = require('./dienste');
-const { erstelleVerbund, VERBUND_FUER_OBERFLAECHE } = require('./verbund');
-const zugang = require('../zentrale/zugang.json');
+const path = require('node:path');
 
-const ROLLE = (!app.isPackaged && process.env.KRANICH_ROLLE) || require('../package.json').kranichRolle || 'host';
-const AGENT = ROLLE === 'agent';
-const SPIEL = !app.isPackaged && Boolean(process.env.KRANICH_SPIELZENTRALE);
-const TITEL = AGENT ? 'Kranich Agent' : 'Kranich Host';
-// Jedes Programm hat seinen eigenen Datenordner. Der Host behaelt den Ordner
-// der bisherigen App, damit Verlauf und Quarantaene erhalten bleiben.
-const ORDNER = { agent: 'Kranich Agent', host: 'Kranich' };
-if (!process.env.KRANICH_DATEN_FEST) app.setPath('userData', path.join(app.getPath('appData'), ORDNER[AGENT ? 'agent' : 'host']));
+const { Projekte } = require('../kern/projekte');
+const { Einstellungen } = require('../kern/einstellungen');
+const echtesHirn = require('../kern/hirn');
+// Für Rauchtest und Entwicklung ohne Konto: Claude vorspielen.
+const hirn = process.env.KRANICH_SPIELHIRN ? { ...echtesHirn, frage: require('../werkzeug/spielhirn').frage } : echtesHirn;
+const A = require('../kern/auftraege');
+const { htmlFuerApp, svgAusHtml, dateiname } = require('../kern/export');
 
 let fenster = null;
-let tray = null;
-let wirklichBeenden = false;
+let projekte;
+let einstellungen;
 
-// Jedes Programm laeuft nur einmal. Ein zweiter Start holt das Fenster nach vorn.
-if (!app.requestSingleInstanceLock()) {
-  app.quit();
-} else {
-  app.on('second-instance', zeigeFenster);
-  app.whenReady().then(start);
+const datenOrdner = () => process.env.KRANICH_DATEN || app.getPath('userData');
+
+function alsFehler(e) {
+  return { fehler: { art: e.art || 'antwort', nachricht: e.message || String(e), details: e.details || '' } };
+}
+
+// Jeder Handler gibt entweder ein Ergebnis oder { fehler } zurück, nie eine Ausnahme.
+function handle(kanal, fn) {
+  ipcMain.handle(kanal, async (_e, ...args) => {
+    try { return await fn(...args); } catch (e) { return alsFehler(e); }
+  });
+}
+
+function dataUrlZuPuffer(url) {
+  const m = /^data:([^;]+);base64,(.*)$/s.exec(String(url));
+  if (!m) throw new Error('Ungültiges Bild.');
+  return { typ: m[1], puffer: Buffer.from(m[2], 'base64') };
+}
+
+function tempBild(dataUrl) {
+  const { typ, puffer } = dataUrlZuPuffer(dataUrl);
+  const endung = typ.includes('jpeg') ? '.jpg' : typ.includes('webp') ? '.webp' : '.png';
+  const datei = path.join(os.tmpdir(), `kranich-bild-${Date.now()}${endung}`);
+  fs.writeFileSync(datei, puffer);
+  return datei;
+}
+
+// Rendert einen Entwurf unsichtbar und liefert ein Bild davon.
+async function fotografiere(html, breite, hoehe, faktor = 1) {
+  const datei = path.join(os.tmpdir(), `kranich-foto-${Date.now()}.html`);
+  // Eigene Schriften mitgeben, damit das Foto auch ohne Internet stimmt.
+  const schrift = `<link rel="stylesheet" href="${require('node:url').pathToFileURL(path.join(__dirname, '..', 'ui', 'schrift', 'schrift.css')).href}">`;
+  const mitSchrift = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + schrift) : schrift + html;
+  fs.writeFileSync(datei, mitSchrift, 'utf8');
+  const w = new BrowserWindow({
+    show: false, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor),
+    useContentSize: true, frame: false,
+    webPreferences: { offscreen: true, javascript: false, sandbox: true },
+  });
+  try {
+    await w.loadFile(datei);
+    w.webContents.setZoomFactor(faktor);
+    await new Promise((r) => setTimeout(r, 600));
+    const bild = await w.webContents.capturePage({ x: 0, y: 0, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor) });
+    return bild;
+  } finally {
+    w.destroy();
+    fs.rm(datei, { force: true }, () => {});
+  }
+}
+
+function zielOrdner(ziel, appName, eigenerOrdner) {
+  const e = einstellungen.alle();
+  if (ziel === 'app') {
+    const basis = e.appOrdner?.[appName];
+    if (!basis) throw new Error(`Für ${appName} ist noch kein Projektordner eingestellt (Einstellungen).`);
+    return path.join(basis, 'kranich');
+  }
+  if (ziel === 'ordner' && eigenerOrdner) return eigenerOrdner;
+  return e.exportOrdner || path.join(app.getPath('documents'), 'Kranich');
+}
+
+function schreibeExport(ordner, name, endung, inhalt) {
+  fs.mkdirSync(ordner, { recursive: true });
+  let datei = path.join(ordner, `${dateiname(name)}.${endung}`);
+  for (let i = 2; fs.existsSync(datei) && i < 100; i++) datei = path.join(ordner, `${dateiname(name)}-${i}.${endung}`);
+  fs.writeFileSync(datei, inhalt);
+  return datei;
+}
+
+function registriere() {
+  // Projekte
+  handle('projekte:liste', () => projekte.liste());
+  handle('projekte:anlegen', (opt) => projekte.anlegen(opt));
+  handle('projekte:laden', (id) => projekte.laden(id));
+  handle('projekte:speichern', (p) => ({ geaendert: projekte.speichern(p) }));
+  handle('projekte:loeschen', (id) => { projekte.loeschen(id); return true; });
+  handle('projekte:dateiSchreiben', (id, datei, dataUrl) => { projekte.schreibeDatei(id, datei, dataUrlZuPuffer(dataUrl).puffer); return true; });
+  handle('projekte:dateiLesen', (id, datei) => {
+    const p = projekte.leseDatei(id, datei);
+    return p ? `data:image/png;base64,${p.toString('base64')}` : null;
+  });
+  handle('projekte:vorschauAusHtml', async (id, html, breite, hoehe) => {
+    const bild = await fotografiere(html, breite, hoehe, 1);
+    const klein = bild.resize({ width: 480 });
+    projekte.schreibeDatei(id, 'vorschau.png', klein.toPNG());
+    return true;
+  });
+
+  // Einstellungen
+  handle('einstellungen:lesen', () => einstellungen.fuerOberflaeche());
+  handle('einstellungen:setzen', (neu) => einstellungen.setze(neu));
+  handle('hirn:testen', async () => {
+    const { text, weg } = await hirn.frage({ system: 'Antworte nur mit dem Wort OK.', auftrag: 'Bist du da?' }, einstellungen.alle());
+    return { ok: /ok/i.test(text), weg };
+  });
+
+  // Kranich – Entwürfe
+  handle('kranich:entwurf', async ({ wunsch, html, auswahl, breite, hoehe, bild, app: appName }) => {
+    const e = einstellungen.alle();
+    const system = A.systemEntwurf(e);
+    let auftrag;
+    const bilder = [];
+    if (bild) {
+      bilder.push(tempBild(bild));
+      auftrag = A.auftragAusBild({ wunsch, breite, hoehe });
+    } else if (html) {
+      auftrag = A.auftragAendern({ html, wunsch, auswahl, breite, hoehe });
+    } else {
+      auftrag = A.auftragNeu({ wunsch, breite, hoehe, app: appName });
+    }
+    try {
+      const klein = Boolean(html && auswahl && wunsch.length < 80);
+      const { text, weg } = await hirn.frage({ system, auftrag, bilder }, e, { klein });
+      return { ...A.leseEntwurf(text), weg };
+    } finally {
+      for (const b of bilder) fs.rm(b, { force: true }, () => {});
+    }
+  });
+
+  handle('kranich:varianten', async ({ html, wunsch, breite, hoehe }) => {
+    const e = einstellungen.alle();
+    const system = A.systemEntwurf(e);
+    const ergebnisse = await Promise.all(A.RICHTUNGEN.map(async (richtung) => {
+      try {
+        const { text } = await hirn.frage({ system, auftrag: A.auftragVariante({ html, wunsch, richtung, breite, hoehe }) }, e);
+        return { ...richtung, ...A.leseEntwurf(text) };
+      } catch (fehler) {
+        return { ...richtung, ...alsFehler(fehler) };
+      }
+    }));
+    if (ergebnisse.every((v) => v.fehler)) return { fehler: ergebnisse[0].fehler };
+    return { varianten: ergebnisse };
+  });
+
+  // Kranich – Bilder
+  handle('kranich:bild', async ({ wunsch, vorschau, breite, hoehe, auswahl }) => {
+    const datei = tempBild(vorschau);
+    try {
+      const { text, weg } = await hirn.frage({ system: A.systemBild(), auftrag: A.auftragBild({ wunsch, breite, hoehe, auswahl }), bilder: [datei] }, einstellungen.alle());
+      const plan = A.lesePlan(text);
+      return { ...plan, beschreibung: plan.schritte.map(A.beschreibeSchritt), weg };
+    } finally {
+      fs.rm(datei, { force: true }, () => {});
+    }
+  });
+
+  // Dateien und Export
+  handle('datei:bildWaehlen', async () => {
+    const r = await dialog.showOpenDialog(fenster, {
+      title: 'Bild wählen', properties: ['openFile'],
+      filters: [{ name: 'Bilder', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }],
+    });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const datei = r.filePaths[0];
+    const bild = nativeImage.createFromPath(datei);
+    if (bild.isEmpty()) throw new Error('Das Bild ließ sich nicht öffnen.');
+    return { name: path.basename(datei), dataUrl: bild.toDataURL() };
+  });
+  handle('datei:ordnerWaehlen', async () => {
+    const r = await dialog.showOpenDialog(fenster, { title: 'Ordner wählen', properties: ['openDirectory', 'createDirectory'] });
+    return r.canceled ? null : r.filePaths[0];
+  });
+  handle('datei:zeigen', (datei) => { shell.showItemInFolder(datei); return true; });
+  handle('export:standardOrdner', () => zielOrdner('speichern'));
+
+  handle('export:entwurf', async ({ html, breite, hoehe, format, faktor = 1, ziel, app: appName, ordner, name }) => {
+    const zielPfad = zielOrdner(ziel, appName, ordner);
+    if (format === 'html') return { datei: schreibeExport(zielPfad, name, 'html', htmlFuerApp(html)) };
+    if (format === 'svg') return { datei: schreibeExport(zielPfad, name, 'svg', svgAusHtml(html, breite, hoehe)) };
+    const bild = await fotografiere(htmlFuerApp(html, { namenBehalten: true }), breite, hoehe, faktor);
+    const inhalt = format === 'jpg' ? bild.toJPEG(90) : bild.toPNG();
+    return { datei: schreibeExport(zielPfad, name, format === 'jpg' ? 'jpg' : 'png', inhalt) };
+  });
+
+  handle('export:bild', async ({ dataUrl, format, ziel, app: appName, ordner, name, breite, hoehe }) => {
+    const zielPfad = zielOrdner(ziel, appName, ordner);
+    const { puffer } = dataUrlZuPuffer(dataUrl);
+    if (format === 'svg') {
+      const svg = `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="${breite}" height="${hoehe}" viewBox="0 0 ${breite} ${hoehe}"><image width="${breite}" height="${hoehe}" href="data:image/png;base64,${puffer.toString('base64')}"/></svg>`;
+      return { datei: schreibeExport(zielPfad, name, 'svg', svg) };
+    }
+    return { datei: schreibeExport(zielPfad, name, format === 'jpg' ? 'jpg' : 'png', puffer) };
+  });
+}
+
+function oeffneFenster() {
+  fenster = new BrowserWindow({
+    width: 1440, height: 900, minWidth: 1100, minHeight: 700,
+    title: 'Kranich', backgroundColor: '#f6f1e7',
+    icon: path.join(__dirname, '..', 'bau', 'icon.png'),
+    autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
+  // Links aus Entwürfen nie im Programm öffnen.
+  fenster.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  fenster.webContents.on('will-navigate', (e) => e.preventDefault());
+  return fenster;
 }
 
 function start() {
-  const datenOrdner = app.getPath('userData');
-  const einstellungen = erstelleEinstellungen({
-    datei: path.join(datenOrdner, 'einstellungen.json'),
-    // Ohne Schluesselspeicher wird nichts Geheimes gespeichert. Einzige
-    // Ausnahme: der Test mit vorgespielter Zentrale, dort gibt es kein echtes Geheimnis.
-    verschluessle: (text) => (safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text).toString('base64') : (SPIEL ? `spiel:${Buffer.from(text).toString('base64')}` : null)),
-    entschluessle: (geheim) => (SPIEL && geheim.startsWith('spiel:') ? Buffer.from(geheim.slice(6), 'base64').toString() : safeStorage.decryptString(Buffer.from(geheim, 'base64'))),
-  });
-
-  let defender = null;
-  let leseAutostart = null;
-  let netz = globalThis.fetch;
-  if (process.platform === 'win32') defender = new kern.Defender();
-  // Nur fuer die Entwicklung: spielt einen Windows-Schutz und eine Zentrale
-  // vor, damit sich die Oberflaeche auch ohne Windows und ohne Netz ansehen
-  // laesst. In der installierten App aus.
-  if (!app.isPackaged && process.env.KRANICH_SPIELDATEN) {
-    ({ defender, leseAutostart } = require('../werkzeug/spieldaten')(process.env.KRANICH_SPIELDATEN));
-  }
-  if (SPIEL) netz = require('../werkzeug/spielzentrale')(process.env.KRANICH_SPIELZENTRALE);
-
-  const anFenster = (ereignis) => fenster?.webContents.send('kranich:ereignis', ereignis);
-  let verbund = null;
-  const dienste = erstelleDienste({
-    kern,
-    einstellungen,
-    defender,
-    plattform: process.platform,
-    heimOrdner: os.homedir(),
-    datenOrdner,
-    leseAutostart,
-    rechnerName: os.hostname(),
-    schreibtisch: app.getPath('desktop'),
-    version: app.getVersion(),
-    melde: (ereignis) => {
-      anFenster(ereignis);
-      if (!AGENT) return; // Benachrichtigen und Melden ist Sache des Agents
-      benachrichtige(ereignis, einstellungen.lese().benachrichtigungen);
-      if (ereignis.art === 'einstellungen') { uebernimmSystemstart(ereignis.einstellungen); frischeTray(); }
-      // Nach einem Scan oder Fund gleich an die Zentrale melden.
-      if (ereignis.art === 'schutzscan-start' || ereignis.art === 'schutzscan-fertig' || ereignis.art === 'verlauf') verbund?.agentJetzt().catch(() => {});
-      if (ereignis.art === 'schutzscan-start' || ereignis.art === 'schutzscan-fertig') frischeTray();
-    },
-  });
-
-  // Verbindung zur Zentrale: der Agent meldet, der Host meldet sich mit dem Konto an.
-  verbund = erstelleVerbund({
-    kern, einstellungen, zugang, defender, leseAutostart, fetch: netz,
-    plattform: process.platform, datenOrdner, version: app.getVersion(),
-    scanLaeuft: () => Boolean(dienste.schutzScanStatus().laeuft),
-    nachbarAgentDatei: AGENT ? null : path.join(app.getPath('appData'), ORDNER.agent, 'agent.json'),
-    melde: (ereignis) => { anFenster(ereignis); if (AGENT) frischeTray(); },
-  });
-
-  // Die Oberflaeche darf genau die Dienste aus den Listen aufrufen.
-  const reiche = (namen, ziel) => {
-    for (const name of namen) {
-      ipcMain.handle(`kranich:${name}`, async (_ereignis, ...werte) => {
-        try {
-          return await ziel[name](...werte);
-        } catch (fehler) {
-          return { ok: false, grund: fehler.message };
-        }
-      });
-    }
-  };
-  reiche(FUER_OBERFLAECHE, dienste);
-  reiche(VERBUND_FUER_OBERFLAECHE, verbund);
-  ipcMain.handle('kranich:waehlePfad', async (_e, art) => {
-    if (art === 'frage') {
-      const wahl = await dialog.showMessageBox(fenster, {
-        type: 'question', title: TITEL, message: 'Was soll Kranich prüfen?',
-        buttons: ['Eine Datei', 'Einen Ordner', 'Abbrechen'], defaultId: 0, cancelId: 2, noLink: true,
-      });
-      if (wahl.response === 2) return null;
-      art = wahl.response === 1 ? 'ordner' : 'datei';
-    }
-    const antwort = await dialog.showOpenDialog(fenster, { properties: [art === 'ordner' ? 'openDirectory' : 'openFile'] });
-    return antwort.canceled ? null : antwort.filePaths[0];
-  });
-  // Oeffnet die Windows-Sicherheit auf der Seite fuer den Virenschutz.
-  ipcMain.handle('kranich:oeffneSchutz', () => (process.platform === 'win32' ? shell.openExternal('windowsdefender://threat') : undefined));
-  ipcMain.handle('kranich:zeigeImOrdner', (_e, pfad) => (typeof pfad === 'string' ? shell.showItemInFolder(pfad) : undefined));
-
-  if (AGENT) {
-    uebernimmSystemstart(einstellungen.lese());
-    baueTray(dienste, verbund);
-    verbund.starte();
-  } else if (app.isPackaged) {
-    // Der Host startet nicht mit dem System. Raeumt auch den Eintrag der
-    // frueheren App weg, die noch beides in einem war.
-    app.setLoginItemSettings({ openAtLogin: false });
-  }
-  baueFenster(einstellungen);
-  dienste.starte();
-
-  app.on('before-quit', () => {
-    wirklichBeenden = true;
-    verbund.beende();
-    dienste.beende();
-  });
+  projekte = new Projekte(path.join(datenOrdner(), 'projekte'));
+  einstellungen = new Einstellungen(path.join(datenOrdner(), 'einstellungen.json'));
+  registriere();
+  return oeffneFenster();
 }
 
-function baueFenster(einstellungen) {
-  const mass = AGENT
-    ? { width: 360, height: 480, useContentSize: true, resizable: false, maximizable: false, fullscreenable: false }
-    : { width: 1360, height: 900, minWidth: 980, minHeight: 640 };
-  fenster = new BrowserWindow({
-    ...mass,
-    backgroundColor: AGENT ? '#fffdf8' : '#f6f1e7',
-    title: TITEL,
-    show: !process.argv.includes('--versteckt'), // beim Systemstart nur ins Tray
-    autoHideMenuBar: true,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-  fenster.loadFile(path.join(__dirname, '..', 'ui', AGENT ? 'agent.html' : 'index.html'));
-  // Die Oberflaeche ist lokal. Links nach draussen oeffnet der Browser.
-  fenster.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^https:\/\//.test(url)) shell.openExternal(url);
-    return { action: 'deny' };
-  });
-  fenster.webContents.on('will-navigate', (ereignis) => ereignis.preventDefault());
-  // Beim Agent heisst Fenster zu nicht aus: er laeuft im Tray weiter.
-  fenster.on('close', (ereignis) => {
-    if (AGENT && !wirklichBeenden && einstellungen.lese().imTrayWeiterlaufen) {
-      ereignis.preventDefault();
-      fenster.hide();
-    }
-  });
-}
+module.exports = { start, fotografiere };
 
-function zeigeFenster() {
-  if (!fenster) return;
-  if (fenster.isMinimized()) fenster.restore();
-  fenster.show();
-  fenster.focus();
+if (!process.env.KRANICH_RAUCH) {
+  app.whenReady().then(start);
+  app.on('window-all-closed', () => app.quit());
 }
-
-// Das Tray-Menue des Agents. Die erste Zeile sagt, wie es dem Geraet geht.
-let frischeTray = () => {};
-function baueTray(dienste, verbund) {
-  const bild = nativeImage.createFromPath(path.join(__dirname, '..', 'bau', 'tray.png'));
-  tray = new Tray(bild);
-  tray.on('click', zeigeFenster);
-  const menue = () => {
-    const a = verbund.agentStatus();
-    const laeuft = dienste.schutzScanStatus().laeuft;
-    const name = a.name || dienste.info().name;
-    const zeile = `${name} · ${!a.gekoppelt ? 'nicht gekoppelt' : (a.verbunden === false ? 'keine Verbindung zum Host' : 'mit Host verbunden')}`;
-    tray.setToolTip(`${TITEL} · ${laeuft ? 'Scan läuft' : zeile}`);
-    return Menu.buildFromTemplate([
-      { label: laeuft ? (laeuft === 'voll' ? 'Vollscan läuft' : 'Schnellscan läuft') : 'Kranich wacht', enabled: false },
-      { label: zeile, enabled: false },
-      { type: 'separator' },
-      { label: 'Jetzt scannen', enabled: process.platform === 'win32' && !laeuft, click: () => dienste.schutzScan('schnell').catch(() => {}) },
-      dienste.wacheStatus().an
-        ? { label: 'Download-Wache pausieren', click: () => dienste.einstellungenSetzen({ wacheAn: false }) }
-        : { label: 'Download-Wache fortsetzen', click: () => dienste.einstellungenSetzen({ wacheAn: true }) },
-      { label: 'Probealarm', click: () => probealarm(dienste) },
-      { label: 'Testpaket prüfen', click: () => testpaket(dienste) },
-      { label: 'Statusfenster öffnen', click: zeigeFenster },
-      { type: 'separator' },
-      { label: 'Beenden', click: () => { wirklichBeenden = true; app.quit(); } },
-    ]);
-  };
-  frischeTray = () => { if (tray && !tray.isDestroyed()) tray.setContextMenu(menue()); };
-  frischeTray();
-}
-
-// Der Probealarm aus dem Tray-Menue zeigt sein Ergebnis in einem Fenster.
-async function probealarm(dienste) {
-  const e = await dienste.probealarm().catch((fehler) => ({ ok: false, grund: fehler.message }));
-  fenster?.webContents.send('kranich:ereignis', { art: 'verlauf-probe' });
-  const text = !e.ok ? `Das hat nicht geklappt: ${e.grund}`
-    : (e.durch === 'kranich' ? 'Kranich hat die Testdatei erkannt. Die Engine funktioniert.'
-      : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.');
-  dialog.showMessageBox({ type: e.ok ? 'info' : 'warning', title: 'Kranich · Probealarm', message: text, buttons: ['Gut'] });
-}
-
-async function testpaket(dienste) {
-  const e = await dienste.testpaket().catch((fehler) => ({ ok: false, grund: fehler.message }));
-  if (!e.ok) return dialog.showMessageBox({ type: 'warning', title: 'Kranich · Testpaket', message: `Das hat nicht geklappt: ${e.grund}`, buttons: ['Gut'] });
-  const WORT = { verdaechtig: 'verdächtig', schaedlich: 'schädlich', unauffaellig: 'unauffällig', nicht_geprueft: 'nicht geprüft', ruhig: 'unauffällig' };
-  const zeilen = e.zeilen.map((z) => `${z.bestanden ? '✓' : '✗'}  ${z.datei}: ${WORT[z.urteil] || z.urteil}${z.bestanden ? '' : ` (erwartet: ${WORT[z.erwartet] || z.erwartet})`}`);
-  return dialog.showMessageBox({
-    type: e.bestanden === e.gesamt ? 'info' : 'warning', title: 'Kranich · Testpaket',
-    message: `${e.bestanden} von ${e.gesamt} Dateien wie erwartet`,
-    detail: `${zeilen.join('\n')}\n\nDie Dateien liegen in:\n${e.ordner}\nSie sind harmlos und können gelöscht werden.`, buttons: ['Gut'],
-  });
-}
-
-function uebernimmSystemstart(einstellungen) {
-  if (!app.isPackaged) return; // nur in der installierten App
-  app.setLoginItemSettings({ openAtLogin: einstellungen.mitSystemStarten, args: ['--versteckt'] });
-}
-
-function benachrichtige(ereignis, erlaubt) {
-  if (!Notification.isSupported()) return;
-  let inhalt = null;
-  if (ereignis.art === 'download') {
-    const e = ereignis.eintrag;
-    if (e.urteil === 'schaedlich' && erlaubt.fund) inhalt = { title: 'Kranich · Fund', body: `${e.name} ist schädlich. ${e.hinweise[0] ?? ''}`.trim() };
-    if (e.urteil === 'verdaechtig' && erlaubt.warnung) inhalt = { title: 'Kranich · Warnung', body: `${e.name} sieht verdächtig aus. ${e.hinweise[0] ?? ''}`.trim() };
-  }
-  if (ereignis.art === 'schutzscan-fertig' && ereignis.ok && erlaubt.scanFertig) {
-    inhalt = { title: 'Kranich · Scan fertig', body: ereignis.neueFunde ? `${ereignis.neueFunde} neue Funde.` : 'Nichts gefunden.' };
-  }
-  if (!inhalt) return;
-  const meldung = new Notification(inhalt);
-  meldung.on('click', zeigeFenster);
-  meldung.show();
-}
-
-app.on('window-all-closed', () => {
-  // Der Agent bleibt im Tray. Der Host ist zu, wenn sein Fenster zu ist.
-  if (!AGENT) app.quit();
-});

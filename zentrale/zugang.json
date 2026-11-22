@@ -1,5 +1,0 @@
-{
-  "hinweis": "Adresse und öffentlicher Schlüssel der Kranich-Zentrale. Beides darf in der App stehen: Der Schlüssel erlaubt nur die vier Agent-Funktionen und das Anmelden. Die Tabellen sind damit nicht lesbar.",
-  "url": "https://kfisewkojhijwvqlyyca.supabase.co",
-  "apiSchluessel": "sb_publishable_SjAOzcos6mU-nLOiRNONZQ_uCKRC16B"
-}

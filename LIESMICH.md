@@ -1,87 +1,60 @@
 # Kranich
 
-Geräte-Wächter aus der origami-Familie. Der Schutz des Systems (unter Windows
-der Defender) ist der Motor. Kranich liest seinen Zustand, stößt Scans an und
-legt eine zweite Meinung, Autostart-Check, Download-Wache und eine eigene
-Quarantäne obendrauf.
+Die Entwurfsmaschine der origami-Familie: Oberflächen entwerfen und Bilder
+bearbeiten, gesteuert per Wort. Kranich kennt den Papier-Look der Familie und
+hält sich daran. origami kommt später als Copilot dazu.
+
+Der frühere Geräte-Wächter liegt unverändert im Zweig `waechter`.
 
 ## Benutzen
 
-Die fertigen Installer liegen auf GitHub unter **Releases**:
+Installer liegen auf GitHub unter **Releases** (`Kranich-<Version>-win-x64.exe`,
+Mac: `-mac-arm64.dmg` oder `-x64.dmg`). Ohne gekauftes Zertifikat warnt das
+System beim ersten Start („Weitere Informationen“ → „Trotzdem ausführen“, am Mac
+Rechtsklick → „Öffnen“).
 
-- Windows: `Kranich-<Version>-win-x64.exe` herunterladen und starten.
-- Mac: `Kranich-<Version>-mac-arm64.dmg` (Apple-Chip) oder `-x64.dmg` (Intel).
-
-Ohne gekauftes Zertifikat warnt das System beim ersten Start. Unter Windows
-„Weitere Informationen“ und „Trotzdem ausführen“ wählen. Auf dem Mac die App
-mit Rechtsklick und „Öffnen“ starten.
+**Voraussetzung:** Claude Code ist auf dem Rechner installiert und angemeldet
+(einmal im Terminal `claude` starten). Kranich ruft es im Hintergrund auf und
+läuft so über dein Claude-Konto. Alternativ in den Einstellungen einen
+API-Schlüssel eintragen. „Verbindung testen“ zeigt, ob alles klappt.
 
 ## Was geht
 
-| | Windows | Mac |
-| --- | --- | --- |
-| Schutz des Systems lesen, Funde zeigen | ja | noch nicht |
-| Schnellscan und Vollscan starten | ja | noch nicht |
-| Datei oder Ordner prüfen (eigene Engine, Dateiname, VirusTotal freiwillig) | ja | ja |
-| Probealarm und Testpaket | ja | ja |
-| Download-Wache | ja | ja |
-| Autostart-Check | ja | noch nicht |
-| Quarantäne (wegsperren, wiederherstellen, löschen) | ja | ja |
+| | |
+| --- | --- |
+| Entwurf aus einem Satz | ja, eine fertige HTML-Seite im Familien-Look |
+| Element anklicken und ändern („Größer“, „Farbe“, „Wie in origami“, freier Wunsch) | ja |
+| Drei Varianten (Ruhig, Mutig, Kompakt), nehmen oder mischen | ja |
+| Aus Screenshot oder Skizze einen Entwurf | ja |
+| Seiten, Ebenenliste, Rückgängig, Verlauf | ja |
+| Bild: Zuschneiden, Pinsel, Radierer, Auswahl, Text, Pipette, Ebenen, Regler | ja |
+| Bild per Wort („Hintergrund weg und auf 1080 × 1080“) | ja, Claude plant feste Schritte, Kranich führt sie aus |
+| Freistellen | KI-Modell (lädt beim ersten Mal aus dem Netz), sonst nach Randfarbe |
+| Export PNG, JPG, SVG, HTML; direkt in den Projektordner einer App | ja |
+| Kleine Änderungen über das Modell auf dem PC (Ollama) | ja, abschaltbar |
+| Sprechen | kommt noch |
+| origami als Copilot | kommt nach dem 26.11. |
 
-Noch nicht drin: mehrere Geräte in einer Übersicht, Android, iPhone/iPad,
-Verbindung zu origami, automatische Updates.
+Claude bekommt nur den Entwurf bzw. eine verkleinerte Vorschau des Bildes und
+darf nichts auf dem Rechner tun außer die angehängten Bilder zu lesen. Entwürfe
+laufen ohne Skripte in einem abgeschotteten Rahmen.
 
 ## Entwickeln
 
 ```
 npm install
-npm start                          die App starten
-KRANICH_SPIELDATEN=fund npm start  mit vorgespieltem Windows-Schutz (fund, warnung, ruhig)
-npm test                           alle Tests
-npm run rauchtest                  echte App starten und durchklicken
-npm run oberflaeche                ui/index.html neu aus dem Canvas bauen
-npm run bauen                      Installer für das eigene System bauen
+npm start                       # mit echtem Claude
+KRANICH_SPIELHIRN=1 npm start   # Claude vorgespielt
+npm test                        # Kern-Tests
+xvfb-run -a npx electron werkzeug/rauch.js --no-sandbox   # klickt alles durch, Bilder in rauch/
+npm run freisteller             # baut ui/vendor/freisteller.js neu
 ```
 
-Einen neuen Installer für alle baut GitHub, sobald sich die Versionsnummer in `package.json` ändert und der Stand auf `main` liegt.
+- `kern/`: Hirn (claude, API, Ollama), Aufträge und Auslesen, Projekte, Einstellungen, Export, Look der Familie
+- `main/`: Hauptprozess, Fotos von Entwürfen, Dateien
+- `ui/`: Oberfläche nach dem Canvas (`canvas/`), `entwurf.js` und `bild.js` sind die beiden Leinwände
+- Die Oberfläche ist von Hand nach dem Canvas gebaut (kein Übernahme-Skript mehr), weil die Leinwände echte Werkzeuge sind.
 
-## Aufbau
-
-| Ordner | Inhalt |
-| --- | --- |
-| `kern/` | Scan, VirusTotal, Download-Wache, Autostart, Defender, Agent, Zentrale |
-| `kern/engine/` | Kranichs eigene Engine: Regeln (`regeln.yar`), Erkennungsliste, Lockvögel zum Testen |
-| `kern/konto.js`, `kern/host.js` | Konto an der Zentrale und der Blick des Hosts auf alle Geräte |
-| `main/verbund.js` | Dieses Gerät koppeln und melden (Agent), anmelden und Geräte beauftragen (Host) |
-| `main/` | Electron: Fenster, Tray, Benachrichtigungen (`main.js`), alles, was die Oberfläche aufrufen darf (`dienste.js`), Einstellungen, Brücke (`preload.js`) |
-| `ui/` | Oberfläche. `index.html` wird aus dem Canvas erzeugt, `logik.js` füllt sie mit echten Daten, `falter.js` ist die kleine Laufzeit dafür |
-| `canvas/` | Der Prototyp aus dem Canvas, unverändert |
-| `zentrale/` | Datenbank der Zentrale (Supabase) |
-| `werkzeug/` | Canvas übernehmen, Rauchtest, Terminal-Befehle, Spieldaten |
-
-## Testen
-
-Im Tray-Menü (Rechtsklick auf das Kranich-Symbol):
-
-- **Probealarm** legt die harmlose Testdatei an, die jeder Virenscanner
-  melden muss, und sagt, wer sie erkannt hat.
-- **Testpaket prüfen** legt auf dem Schreibtisch den Ordner
-  `Kranich-Testpaket` mit 16 harmlosen Dateien an: 9 Lockvögel, die auffallen
-  müssen, und 7 Kontrolldateien, bei denen Kranich ruhig bleiben muss.
-
-## Sicherheit
-
-- Die Oberfläche hat keinen Zugriff auf Node oder das Dateisystem, nur auf
-  die festen Funktionen in `window.kranich`.
-- An VirusTotal geht nur der Fingerabdruck einer Datei, nie die Datei.
-- Der VirusTotal-Schlüssel wird nur verschlüsselt gespeichert. Ohne sicheren
-  Speicher des Systems wird er gar nicht gespeichert.
-- Kranich verschiebt eine Datei nur in Quarantäne, wenn du es anklickst.
-  Gelöscht wird nur aus der Quarantäne und nur nach Rückfrage.
-- Kranich ändert keine Einstellungen des Defenders.
-- Der kostenlose VirusTotal-Zugang ist nur für private Nutzung erlaubt.
-
-## Stand
-
-Auf echtem Windows und auf dem Mac ist die App noch nicht gelaufen. Geprüft
-ist sie auf Linux, mit vorgespieltem Windows-Schutz.
+Freistellen nutzt `@imgly/background-removal` (AGPL-3.0). Für den privaten
+Gebrauch kein Problem; bevor Kranich an andere geht, muss das geklärt oder
+ersetzt werden.
