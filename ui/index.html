@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>Kranich</title>
+<style>
+  body { margin: 0; background: #f6f1e7; color: #1d2742; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; }
+  main { max-width: 760px; margin: 40px auto; background: #fffdf8; padding: 28px 32px; box-shadow: 0 10px 24px rgba(30,40,70,.10); }
+  h1 { margin: 0 0 4px; font-size: 30px; }
+  p.klein { margin: 0 0 20px; color: #5b6170; }
+  button { min-height: 44px; padding: 0 16px; margin: 0 8px 8px 0; border: 0; border-radius: 3px; background: #6243c4; color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+  button.neben { background: transparent; color: #4a2f9a; border: 1.5px solid #4a2f9a; }
+  pre { background: #f6f1e7; padding: 14px; white-space: pre-wrap; word-break: break-word; min-height: 120px; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Kranich</h1>
+  <p class="klein">Platzhalter. Hier kommt die Oberfläche aus dem Canvas hin. Die Knöpfe rufen schon die echten Funktionen auf.</p>
+  <button id="lage">Wie ist die Lage?</button>
+  <button id="schnell">Schnellscan</button>
+  <button id="datei" class="neben">Datei prüfen</button>
+  <button id="ordner" class="neben">Ordner prüfen</button>
+  <button id="autostart" class="neben">Autostart</button>
+  <button id="wache" class="neben">Download-Wache</button>
+  <pre id="aus" aria-live="polite">Noch nichts abgefragt.</pre>
+</main>
+<script src="platzhalter.js"></script>
+</body>
+</html>

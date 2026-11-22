@@ -1,0 +1,5 @@
+node_modules/
+ausgabe/
+rauch.png
+*.log
+.env
