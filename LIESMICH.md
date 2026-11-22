@@ -42,12 +42,7 @@ npm run oberflaeche                ui/index.html neu aus dem Canvas bauen
 npm run bauen                      Installer für das eigene System bauen
 ```
 
-Einen neuen Installer für alle baut GitHub, sobald eine Version markiert wird:
-
-```
-git tag v0.2.1
-git push --tags
-```
+Einen neuen Installer für alle baut GitHub, sobald sich die Versionsnummer in `package.json` ändert und der Stand auf `main` liegt.
 
 ## Aufbau
 
