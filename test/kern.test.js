@@ -122,10 +122,11 @@ test('Look der Familie nennt alle Apps', () => {
 });
 
 function falschesKind({ ausgabe = '', fehler = '', code = 0, enoent = false }) {
-  return (_prog, args) => {
+  return (prog, args) => {
     const k = new EventEmitter();
     k.stdout = new EventEmitter(); k.stderr = new EventEmitter();
-    k.args = args;
+    // Unter Windows kommt alles als eine Befehlszeile (mit Shell), sonst als Liste.
+    k.befehl = Array.isArray(args) ? [prog, ...args].map((a) => (a === '' ? '""' : `"${a}"`)).join(' ') : prog;
     k.stdin = { end: (text) => { k.eingabe = text; setImmediate(() => {
       if (enoent) { const e = new Error('nope'); e.code = 'ENOENT'; k.emit('error', e); return; }
       if (ausgabe) k.stdout.emit('data', ausgabe);
@@ -143,9 +144,9 @@ test('frageClaude gibt das Ergebnis zurück und schickt den Auftrag über stdin'
   assert.equal(text, 'Antwort');
   const k = falschesKind.letztes;
   assert.equal(k.eingabe, 'Mach was');
-  assert.ok(k.args.includes('--system-prompt-file'));
-  assert.ok(k.args.includes('--no-session-persistence'));
-  assert.equal(k.args[k.args.indexOf('--tools') + 1], '');
+  assert.match(k.befehl, /"--system-prompt-file"/);
+  assert.match(k.befehl, /"--no-session-persistence"/);
+  assert.match(k.befehl, /"--tools" ""/);
 });
 
 test('frageClaude mit Bild erlaubt nur Read im Bildordner', async () => {
@@ -153,7 +154,7 @@ test('frageClaude mit Bild erlaubt nur Read im Bildordner', async () => {
   fs.writeFileSync(bild, Buffer.from([137, 80, 78, 71]));
   await hirn.frageClaude({ system: 'S', auftrag: 'Sieh hin', bilder: [bild], _spawn: falschesKind({ ausgabe: JSON.stringify({ result: 'ok', is_error: false }) }) });
   const k = falschesKind.letztes;
-  assert.equal(k.args[k.args.indexOf('--tools') + 1], 'Read');
+  assert.match(k.befehl, /"--tools" "Read"/);
   assert.match(k.eingabe, /ANGEHÄNGTE BILDER/);
 });
 
