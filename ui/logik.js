@@ -56,6 +56,9 @@ class Component extends DCLogic {
     this._takt = setInterval(() => this.lade('lage'), 120000);
   }
   frisch() { this.setState({ n: this.S().n + 1 }); }
+  // In den ersten drei Minuten nach der Erkennung ist der Schutz meist noch
+  // dabei, die Datei wegzusperren.
+  frischerFund(f) { const t = Date.parse(f.zeit); return Number.isFinite(t) && Date.now() - t < 180000; }
   async lade(...was) {
     const hole = {
       info: () => this.api.info(), lage: () => this.api.lage(), autostart: () => this.api.autostart(), wache: () => this.api.wacheStatus(),
@@ -66,7 +69,13 @@ class Component extends DCLogic {
     await Promise.all(was.map(async (name) => {
       try {
         this.d[name] = await hole[name]();
-        if (name === 'lage') this.d.geprueft = new Date().toISOString();
+        if (name === 'lage') {
+          this.d.geprueft = new Date().toISOString();
+          // Solange der Schutz noch an einem Fund arbeitet, alle 10 Sekunden
+          // nachfragen statt erst in zwei Minuten.
+          clearTimeout(this._bald);
+          if (this.d.lage.funde.some((f) => f.offen && !f.ignoriert && this.frischerFund(f))) this._bald = setTimeout(() => this.lade('lage'), 10000);
+        }
       } catch (fehler) {
         console.error('Kranich: konnte nicht laden:', name, fehler);
       }
@@ -82,7 +91,10 @@ class Component extends DCLogic {
     } else if (e.art === 'verlauf') {
       this.d.verlauf = [e.eintrag, ...this.d.verlauf];
       this.frisch();
+    } else if (e.art === 'verlauf-probe') {
+      this.lade('lage');
     } else if (e.art === 'testpaket') {
+      setTimeout(() => this.lade('lage'), 3000);
       // Das Testpaket aus dem Tray-Menue zeigt sein Ergebnis im Reiter "Scan".
       this.d.scanErg = e.ergebnis.scan;
       this.setState({ screen: 'device', dev: ICH, tab: 'scan', scan: 'done', prog: 100, rowSt: {}, rowOpen: {}, moreOpen: false });
@@ -153,6 +165,7 @@ class Component extends DCLogic {
     if (!e.ok) return this.say({ probe: '' }, `Probealarm hat nicht geklappt: ${e.grund}`);
     const text = e.durch === 'kranich' ? 'Kranich hat die Testdatei erkannt und gleich wieder entfernt.' : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.';
     this.say({ probe: 'ok', probeText: text }, 'Probealarm erkannt.');
+    setTimeout(() => this.lade('lage'), 3000);
   }
 
   // ------------------------------------------------------------ Quarantaene
@@ -213,18 +226,19 @@ class Component extends DCLogic {
     const einstellen = (teil) => async () => { this.d.einst = await this.api.einstellungenSetzen(teil); this.frisch(); };
 
     // --- Funde des Schutzes ---------------------------------------------------
-    const FST = { offen: chip('bad', 'Offen'), stop: chip('ok', 'Gestoppt'), quar: chip('ok', 'In Quarantäne'), weg: chip('none', 'Entfernt'), ign: chip('none', 'Ignoriert') };
+    const FST = { laeuft: chip('scan', 'Wird bearbeitet'), offen: chip('bad', 'Offen'), stop: chip('ok', 'Gestoppt'), quar: chip('ok', 'In Quarantäne'), weg: chip('none', 'Entfernt'), ign: chip('none', 'Ignoriert') };
     const ZU = { in_quarantaene: 'quar', blockiert: 'stop', bereinigt: 'stop', entfernt: 'weg', zugelassen: 'ign' };
     const FTEXT = {
       quar: 'Der Schutz hat die Datei gestoppt und weggesperrt. Du musst nichts tun.',
       stop: 'Der Schutz hat die Datei gestoppt. Du musst nichts tun.',
       weg: 'Der Schutz hat die Datei entfernt. Du musst nichts tun.',
-      offen: 'Der Schutz hat die Datei erkannt, aber noch nicht weggesperrt. Schau sie dir an und entscheide.',
+      laeuft: 'Der Schutz hat die Datei erkannt und kümmert sich gerade darum. Einen Moment.',
+      offen: 'Der Schutz hat die Datei erkannt, aber nicht weggesperrt. Schau sie dir an und entscheide.',
       ign: 'Du hast entschieden, die Datei zu behalten.',
     };
     const funde = lage.funde.map((f) => {
       const hier = s.fundSt[f.kennung];
-      const grund = f.ignoriert || hier === 'i' ? 'ign' : (hier === 'q' || hier === 'qing' ? 'quar' : (f.offen ? 'offen' : (ZU[f.zustand] || 'stop')));
+      const grund = f.ignoriert || hier === 'i' ? 'ign' : (hier === 'q' || hier === 'qing' ? 'quar' : (f.offen ? (this.frischerFund(f) ? 'laeuft' : 'offen') : (ZU[f.zustand] || 'stop')));
       const offen = !!s.fundOpen[f.kennung];
       const pfad = f.pfade[0] || '';
       const datei = dateiname(pfad) || 'Datei unbekannt';

@@ -17,6 +17,7 @@ module.exports = function spieldaten(lage) {
   const funde = lage === 'fund' ? [
     { id: '{A1}', threatId: '2147519003', name: 'Trojan:Win32/Wacatac', schwere: 'schwer', pfade: ['C:\\Users\\Nils\\Downloads\\Rechnung.pdf.exe'], zustand: 'in_quarantaene', offen: false, prozess: null, zeit: vor(20) },
     { id: '{B2}', threatId: '2147700001', name: 'PUA:Win32/Bundler', schwere: 'niedrig', pfade: ['C:\\Users\\Nils\\Downloads\\setup_treiber.msi'], zustand: 'erkannt', offen: true, prozess: null, zeit: vor(32) },
+    { id: '{C3}', threatId: '2147519003', name: 'Virus:DOS/EICAR_Test_File', schwere: 'schwer', pfade: ['C:\\Users\\Nils\\Desktop\\probealarm.txt'], zustand: 'erkannt', offen: true, prozess: null, zeit: vor(0.5) },
   ] : [];
   const { bewerte } = require('../kern');
   const defender = {

@@ -158,6 +158,7 @@ function baueTray(dienste) {
 // Beide Tests aus dem Tray-Menue zeigen ihr Ergebnis in einem Fenster.
 async function probealarm(dienste) {
   const e = await dienste.probealarm().catch((fehler) => ({ ok: false, grund: fehler.message }));
+  fenster?.webContents.send('kranich:ereignis', { art: 'verlauf-probe' });
   const text = !e.ok ? `Das hat nicht geklappt: ${e.grund}`
     : (e.durch === 'kranich' ? 'Kranich hat die Testdatei erkannt. Die Engine funktioniert.'
       : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.');
@@ -166,7 +167,8 @@ async function probealarm(dienste) {
 async function testpaket(dienste) {
   const e = await dienste.testpaket().catch((fehler) => ({ ok: false, grund: fehler.message }));
   if (!e.ok) return dialog.showMessageBox({ type: 'warning', title: 'Kranich · Testpaket', message: `Das hat nicht geklappt: ${e.grund}`, buttons: ['Gut'] });
-  const zeilen = e.zeilen.map((z) => `${z.bestanden ? '✓' : '✗'}  ${z.datei}: ${z.urteil.replace('_', ' ')}${z.bestanden ? '' : ` (erwartet: ${z.erwartet})`}`);
+  const WORT = { verdaechtig: 'verdächtig', schaedlich: 'schädlich', unauffaellig: 'unauffällig', nicht_geprueft: 'nicht geprüft', ruhig: 'unauffällig' };
+  const zeilen = e.zeilen.map((z) => `${z.bestanden ? '✓' : '✗'}  ${z.datei}: ${WORT[z.urteil] || z.urteil}${z.bestanden ? '' : ` (erwartet: ${WORT[z.erwartet] || z.erwartet})`}`);
   zeigeFenster();
   return dialog.showMessageBox({
     type: e.bestanden === e.gesamt ? 'info' : 'warning', title: 'Kranich · Testpaket',
