@@ -42,18 +42,111 @@ class Component extends DCLogic {
       rowSt: {}, rowOpen: {}, fundSt: {}, fundOpen: {}, quarDying: {}, qHopN: 0, stampN: 0, peekN: 0,
       moreOpen: false, drag: false, howto: false, hType: 'alle', setTab: 'allgemein', renaming: null,
       dialog: null, toast: '', toastN: 0, n: 0, probe: '', probeText: '',
+      auth: '?', loginErr: '', loginTitel: '', loginText: '', hDev: 'alle', add: null, addLabel: '', addCode: '',
     };
   }
   S() { return Object.assign(this.DEF(), this.state || {}); }
 
   // ------------------------------------------------------------------ Daten
   componentDidMount() {
-    this.d = { info: null, lage: null, autostart: null, wache: null, einst: null, verlauf: [], quar: [], schutzScan: null, scanErg: null, geprueft: null, engine: null };
+    this.d = { info: null, lage: null, autostart: null, wache: null, einst: null, verlauf: [], quar: [], schutzScan: null, scanErg: null, geprueft: null, engine: null,
+      konto: null, geraete: [], rfunde: {}, rauft: {}, ereignisse: [], nachbar: null, zenOk: null, sysSeit: null, sysDone: null };
     this.api = window.kranich;
     this.ladeAlles();
     this.api.beiEreignis((e) => this.beiEreignis(e));
     // Der Schutz wird alle zwei Minuten neu abgefragt.
     this._takt = setInterval(() => this.lade('lage'), 120000);
+    // Der Host fragt die Zentrale alle 20 Sekunden.
+    this.ladeKonto();
+    this._hostTakt = setInterval(() => this.ladeHost(), 20000);
+    // Solange ein Scan laeuft, zaehlt die Anzeige jede Sekunde weiter.
+    this._sek = setInterval(() => { if (this.d.schutzScan || this.d.geraete.some((g) => g.scan_laeuft)) this.frisch(); }, 1000);
+  }
+
+  // --------------------------------------------------------- Konto und Zentrale
+  async ladeKonto() {
+    let k;
+    try { k = await this.api.kontoStatus(); } catch { k = { angemeldet: false }; }
+    this.d.konto = k;
+    this.setState({ auth: k.angemeldet ? 'in' : 'out' });
+    if (k.angemeldet) this.ladeHost();
+  }
+  async anmelden(neu) {
+    const wert = (id) => { const feld = document.getElementById(id); return feld ? feld.value : ''; };
+    const mail = wert('lmail').trim(); const pw = wert('lpw');
+    if (!mail || !pw) return this.setState({ loginErr: 'pw', loginTitel: 'Da fehlt noch was', loginText: 'Trag E-Mail und Passwort ein.' });
+    const a = neu ? await this.api.kontoAnlegen(mail, pw) : await this.api.kontoAnmelden(mail, pw);
+    if (a.ok && a.bestaetigen) return this.setState({ loginErr: 'mail' });
+    if (!a.ok) {
+      if (a.netz) return this.setState({ loginErr: 'net' });
+      if (a.code === 'email_not_confirmed') return this.setState({ loginErr: 'mail' });
+      const falsch = a.code === 'invalid_credentials';
+      return this.setState({ loginErr: 'pw', loginTitel: falsch ? 'Falsches Passwort' : (neu ? 'Konto anlegen hat nicht geklappt' : 'Anmelden hat nicht geklappt'), loginText: falsch ? 'Schau nochmal nach und versuch es erneut.' : (a.grund || 'Versuch es gleich nochmal.') });
+    }
+    this.d.konto = { angemeldet: true, email: a.email };
+    this.setState({ auth: 'in', loginErr: '', screen: 'overview' });
+    this.ladeHost();
+  }
+  async abmelden() {
+    await this.api.kontoAbmelden();
+    this.d.konto = { angemeldet: false }; this.d.geraete = []; this.d.rfunde = {}; this.d.rauft = {}; this.d.ereignisse = [];
+    this.setState({ auth: 'out', loginErr: '', screen: 'overview', dev: ICH, add: null });
+  }
+  async ladeHost() {
+    if (this.S().auth !== 'in' || this._hostLaedt) return;
+    this._hostLaedt = true;
+    try {
+      const [g, e, nachbar] = await Promise.all([this.api.hostGeraete(), this.api.hostEreignisse(100), this.api.lokalerAgent()]);
+      if (g.abgemeldet) { this.d.konto = { angemeldet: false }; this.setState({ auth: 'out', loginErr: '' }); return; }
+      this.d.zenOk = !!g.ok;
+      if (g.ok) this.d.geraete = g.geraete;
+      if (e.ok) this.d.ereignisse = e.ereignisse;
+      this.d.nachbar = nachbar;
+    } catch (fehler) {
+      this.d.zenOk = false;
+    } finally {
+      this._hostLaedt = false;
+    }
+    const s = this.S();
+    if (s.screen === 'device' && s.dev !== ICH) this.ladeGeraet(s.dev); else this.frisch();
+  }
+  // Funde und Auftraege eines entfernten Geraets. Solange ein Auftrag
+  // unterwegs ist, alle fuenf Sekunden nachfragen.
+  async ladeGeraet(id) {
+    clearTimeout(this._jobBald);
+    const [f, a] = await Promise.all([this.api.hostFunde(id), this.api.hostAuftraege(id)]);
+    if (f.ok) this.d.rfunde[id] = f.funde;
+    if (a.ok) this.d.rauft[id] = a.auftraege;
+    this.frisch();
+    const s = this.S();
+    const unterwegs = a.ok && a.auftraege.some((x) => x.zustand === 'offen' || x.zustand === 'laeuft');
+    if (unterwegs && s.screen === 'device' && s.dev === id) this._jobBald = setTimeout(() => { this.ladeGeraet(id); this.ladeHost(); }, 5000);
+  }
+  zeigeGeraet(id) {
+    this.setState({ screen: 'device', dev: id, tab: 'funde', filter: 'alle', howto: false, moreOpen: false });
+    if (id !== ICH) this.ladeGeraet(id);
+  }
+  async auftrag(id, art, name) {
+    const a = await this.api.hostAuftrag(id, art);
+    if (!a.ok) return this.say({}, a.grund || 'Der Auftrag ließ sich nicht senden.');
+    this.say({}, `Auftrag an ${name} gesendet.`);
+    this.ladeGeraet(id);
+  }
+  async kopple(system, label) {
+    const a = await this.api.hostKopplung(label, system);
+    if (!a.ok) return this.say({}, a.grund || 'Der Code ließ sich nicht erstellen.');
+    this.setState({ add: 'code', addLabel: label, addCode: a.code });
+    // Bis das neue Geraet auftaucht, oefter nachsehen.
+    clearInterval(this._koppelTakt);
+    let runden = 0;
+    this._koppelTakt = setInterval(() => { runden += 1; if (runden > 120 || this.S().add !== 'code') clearInterval(this._koppelTakt); else this.ladeHost(); }, 5000);
+  }
+  async scanneAlle(win, ziele) {
+    let n = 0;
+    if (win && !this.d.schutzScan) { this.schutzScan('schnell'); n += 1; }
+    for (const z of ziele) { const a = await this.api.hostAuftrag(z.id, 'schnellscan'); if (a.ok) n += 1; }
+    this.say({}, n ? (n === 1 ? 'Schnellscan auf 1 Gerät gestartet.' : `Schnellscan auf ${n} Geräten gestartet.`) : 'Gerade lässt sich auf keinem Gerät ein Scan starten.');
+    this.ladeHost();
   }
   frisch() { this.setState({ n: this.S().n + 1 }); }
   // In den ersten drei Minuten nach der Erkennung ist der Schutz meist noch
@@ -139,7 +232,9 @@ class Component extends DCLogic {
     }
     if (this.d.schutzScan) return this.say({}, 'Es läuft schon ein Scan.');
     this.d.schutzScan = art;
-    this.say({}, art === 'voll' ? 'Vollscan läuft. Das kann über eine Stunde dauern, du kannst weiterarbeiten.' : 'Schnellscan läuft. Das dauert ein paar Minuten.');
+    this.d.sysSeit = Date.now();
+    this.d.sysDone = null;
+    this.frisch();
     let ergebnis;
     try {
       ergebnis = await this.api.schutzScan(art);
@@ -147,10 +242,13 @@ class Component extends DCLogic {
       ergebnis = { ok: false, grund: fehler.message };
     }
     this.d.schutzScan = null;
+    const sek = Math.round((Date.now() - this.d.sysSeit) / 1000);
     await this.lade('lage');
     if (!ergebnis.ok) return this.say({}, ergebnis.grund || 'Der Scan hat nicht geklappt.');
     const n = ergebnis.neueFunde.length;
-    this.say({ stampN: this.S().stampN + 1 }, n ? (n === 1 ? 'Scan fertig. 1 neuer Fund.' : `Scan fertig. ${n} neue Funde.`) : 'Scan fertig. Nichts gefunden.');
+    // Das Ergebnis bleibt als Zeile stehen, bis der naechste Scan startet.
+    this.d.sysDone = { art, sek, n };
+    this.setState({ stampN: this.S().stampN + 1 });
   }
 
   async probealarm() {
@@ -236,7 +334,7 @@ class Component extends DCLogic {
       offen: 'Der Schutz hat die Datei erkannt, aber nicht weggesperrt. Schau sie dir an und entscheide.',
       ign: 'Du hast entschieden, die Datei zu behalten.',
     };
-    const funde = lage.funde.map((f) => {
+    const fundeIch = lage.funde.map((f) => {
       const hier = s.fundSt[f.kennung];
       const grund = f.ignoriert || hier === 'i' ? 'ign' : (hier === 'q' || hier === 'qing' ? 'quar' : (f.offen ? (this.frischerFund(f) ? 'laeuft' : 'offen') : (ZU[f.zustand] || 'stop')));
       const offen = !!s.fundOpen[f.kennung];
@@ -251,7 +349,7 @@ class Component extends DCLogic {
         d: set({ fundOpen: Object.assign({}, s.fundOpen, { [f.kennung]: !offen }) }),
       };
     });
-    const offeneFunde = funde.filter((f) => f.canAct);
+    const offeneFunde = fundeIch.filter((f) => f.canAct);
     const openN = offeneFunde.length;
 
     // --- Autostart ---------------------------------------------------------
@@ -268,7 +366,7 @@ class Component extends DCLogic {
       const exe = programm(e.befehl);
       return {
         id: e.schluessel, name: e.name, origin: HERKUNFT[e.herkunft] || e.herkunft, vendor: dateiname(exe) || '–', since: kurz(ordner(exe) || e.ort || '–'),
-        isNew: e.neu, unk: /\\(appdata|temp|users\\public|programdata)\\/i.test(exe), dyn: 'opacity: 1', tLabel: 'Im Ordner zeigen',
+        isNew: e.neu, edit: true, ro: false, newEdit: e.neu, unk: /\\(appdata|temp|users\\public|programdata)\\/i.test(exe), dyn: 'opacity: 1', tLabel: 'Im Ordner zeigen',
         know: async () => { await this.api.autostartAlsBekannt(e.schluessel); await this.lade('autostart'); },
         toggle: exe ? () => this.api.zeigeImOrdner(exe) : bald('Zu diesem Eintrag ist kein Programm bekannt.'),
       };
@@ -319,7 +417,7 @@ class Component extends DCLogic {
       scan: win ? scanText : 'Datei-Scan und Download-Wache',
       me: true, offB: false, protOff, hasOpen: openN > 0, openText: openN === 1 ? '1 offener Fund' : `${openN} offene Funde`, desk: true, android: false, ind: indikatoren,
       online: 'Online', dyn: 'opacity: 1', delay: '0ms', cutDelay: '300ms', spin,
-      go: set({ screen: 'device', dev: ICH, tab: 'funde', filter: 'alle', howto: false, moreOpen: false }),
+      go: () => this.zeigeGeraet(ICH),
       ren, notRen: !ren, canRemove: false,
       type: (e) => { this._ren = e.target.value; },
       renStart: () => { this._ren = ''; this.setState({ renaming: ICH }); },
@@ -327,11 +425,137 @@ class Component extends DCLogic {
       remove: bald('Dieses Gerät kann nicht entfernt werden.'),
     };
     ich.osLine = ich.os;
-    const devs = [ich];
-    const cur = ich;
 
-    const tabsBase = [{ id: 'funde', label: openN ? `Funde ${openN}` : 'Funde' }, { id: 'scan', label: 'Scan' }, { id: 'auto', label: mac ? 'Anmeldeobjekte' : 'Autostart' }, { id: 'dl', label: 'Downloads' }];
-    const tab = ['funde', 'scan', 'auto', 'dl'].includes(s.tab) ? s.tab : 'funde';
+    // --- Geraete aus der Zentrale -------------------------------------------------
+    const vor = (iso) => {
+      const t = Date.parse(iso); if (!Number.isFinite(t)) return 'noch nie';
+      const min = Math.max(0, Math.round((Date.now() - t) / 60000));
+      if (min < 2) return 'gerade eben';
+      if (min < 60) return `vor ${min} Min.`;
+      if (min < 2880) return `vor ${Math.round(min / 60)} Std.`;
+      return `vor ${Math.round(min / 1440)} Tagen`;
+    };
+    const fmt = (n) => Math.floor(n / 60) + ':' + (n % 60 < 10 ? '0' : '') + (n % 60);
+    const SYS = {
+      windows: { os: 'Windows', ico: I.pc, kind: 'win', desk: true }, macos: { os: 'macOS', ico: I.laptop, kind: 'mac', desk: true },
+      android: { os: 'Android', ico: I.phone, kind: 'android', desk: false }, ios: { os: 'iOS', ico: I.tablet, kind: 'ios', desk: false },
+    };
+    const nachbarId = d.nachbar ? d.nachbar.geraetId : null;
+    const zeile = (d.geraete || []).find((g) => g.id === nachbarId);
+    // Laeuft auf diesem Rechner ein gekoppelter Agent, ist es dasselbe Geraet.
+    Object.assign(ich, { scanning: !!d.schutzScan, local: true, remote: false, remoteDesk: false, hasAgent: !!zeile, agent: zeile ? `Agent ${zeile.version || ''} · zuletzt gemeldet ${vor(zeile.zuletzt_gesehen)}`.replace('  ', ' ') : '', offText: '' });
+    const fern = (d.geraete || []).filter((g) => g.id !== nachbarId).map((g, i) => {
+      const y = SYS[g.system] || SYS.windows;
+      const rs = g.status || null;
+      const off = !g.zuletzt_gesehen || Date.now() - Date.parse(g.zuletzt_gesehen) > 12 * 60000;
+      const aus = !!rs && !(rs.dienst && rs.antivirus && rs.echtzeit) && !/passive|not running/i.test(rs.modus || '');
+      const n = g.offene_funde || 0;
+      const gruende = (Array.isArray(g.ampel_gruende) ? g.ampel_gruende : []).filter((t) => !/offene[rn]? Fund/.test(t));
+      const letzterR = rs ? [rs.letzterSchnellScan, rs.letzterVollScan].filter(Boolean).sort().pop() : null;
+      const scanR = g.scan_laeuft ? 'Scan läuft …' : (letzterR ? `Letzter Scan: ${wann(letzterR)}` : (y.desk ? 'Noch nie gescannt' : 'Meldet nur seinen Stand'));
+      const alterR = rs ? rs.signaturAlterTage : null;
+      const renR = s.renaming === g.id;
+      return {
+        id: g.id, name: g.name, os: y.os, osLine: y.os, kind: y.kind, ico: y.ico, prot: y.desk ? 'Voller Schutz' : 'Nur Status',
+        st: off ? chip('off', 'Offline') : (n ? chip('bad', n === 1 ? '1 Fund' : `${n} Funde`) : (aus ? chip('warn', 'Schutz aus') : (g.ampel === 'kritisch' || g.ampel === 'warnung' ? chip('warn', 'Warnung') : (g.ampel === 'ok' ? chip('ok', 'Sicher') : chip('unk', 'Wartet auf Meldung'))))),
+        scan: scanR, me: false, offB: off, protOff: aus && !off, hasOpen: n > 0, openN: n, openText: n === 1 ? '1 offener Fund' : `${n} offene Funde`, desk: y.desk, android: y.kind === 'android',
+        warn: off ? [] : gruende,
+        ind: rs ? [
+          aus ? ind('bad', I.bad, 'Schutz ist aus') : ind('ok', I.ok, 'Schutz läuft'),
+          alterR === null || alterR === undefined ? ind('neutral', I.unk, 'Erkennungsliste: unbekannt') : (alterR >= 3 ? ind(alterR >= 14 ? 'bad' : 'warn', I.warn, `Erkennungsliste: ${alterR} Tage alt`) : ind('ok', I.ok, alterR === 0 ? 'Erkennungsliste: heute' : (alterR === 1 ? 'Erkennungsliste: gestern' : `Erkennungsliste: ${alterR} Tage alt`))),
+          ind('neutral', I.clock, scanR),
+        ] : [ind('neutral', I.unk, 'Noch keine Meldung von diesem Gerät')],
+        online: off ? `zuletzt ${vor(g.zuletzt_gesehen)}` : 'Online', dyn: off ? 'opacity: .72' : 'opacity: 1', delay: `${(i + 1) * 80}ms`, cutDelay: `${300 + (i + 1) * 80}ms`, spin: 'none',
+        scanning: !!g.scan_laeuft, local: false, remote: true, remoteDesk: y.desk, hasAgent: y.kind !== 'ios',
+        agent: `Agent ${g.version || ''} · zuletzt gemeldet ${vor(g.zuletzt_gesehen)}`.replace('  ', ' '),
+        offText: `Dieses Gerät meldet sich seit ${vor(g.zuletzt_gesehen).replace(/^vor /, '')} nicht. Die Daten unten sind der letzte bekannte Stand.`.replace('seit noch nie nicht', 'noch nicht').replace('seit gerade eben nicht', 'gerade nicht'),
+        go: () => this.zeigeGeraet(g.id),
+        ren: renR, notRen: !renR, canRemove: true,
+        type: (e) => { this._ren = e.target.value; },
+        renStart: () => { this._ren = ''; this.setState({ renaming: g.id }); },
+        renDone: async () => { const v = (this._ren || '').trim(); this._ren = ''; this.setState({ renaming: null }); if (v) { const a = await this.api.hostUmbenennen(g.id, v); if (!a.ok) this.say({}, a.grund); await this.ladeHost(); } },
+        remove: async () => { const a = await this.api.hostEntfernen(g.id); await this.ladeHost(); this.say(s.dev === g.id ? { screen: 'overview', dev: ICH } : {}, a.ok ? `${g.name} ist entfernt. Der Agent dort meldet sich ab.` : a.grund); },
+      };
+    });
+    const devs = [ich].concat(fern);
+    const cur = devs.find((x) => x.id === s.dev) || ich;
+    const nameVon = (id) => (id === nachbarId ? name : ((d.geraete || []).find((g) => g.id === id) || { name: 'Entferntes Gerät' }).name);
+
+    // Funde des gezeigten Geraets. Bei einem entfernten Geraet nur zum Lesen.
+    const funde = cur.me ? fundeIch : (d.rfunde[cur.id] || []).map((f) => {
+      const grund = f.offen ? 'offen' : (ZU[f.zustand] || 'stop');
+      const offen = !!s.fundOpen[f.schluessel];
+      const pfade = Array.isArray(f.pfade) ? f.pfade : [];
+      return {
+        id: f.schluessel, threat: f.name, file: dateiname(pfade[0]) || 'Datei unbekannt', st: FST[grund], time: wann(f.erkannt || f.gemeldet),
+        text: grund === 'offen' ? 'Der Schutz hat die Datei erkannt, aber nicht weggesperrt. Entscheiden kannst du direkt an diesem Gerät.' : FTEXT[grund],
+        canAct: false, open: offen, path: pfade.join(', ') || 'unbekannt', sev: f.schwere || 'unbekannt', src: 'Schutz', spin: 'none',
+        q: () => {}, i: () => {}, d: set({ fundOpen: Object.assign({}, s.fundOpen, { [f.schluessel]: !offen }) }),
+      };
+    });
+
+    // --- Lage ueber alle Geraete ------------------------------------------------
+    const fernOffen = fern.reduce((n, g) => n + g.openN, 0);
+    const fernWarn = [];
+    for (const g of fern) { if (g.protOff) fernWarn.push(`Auf ${g.name} läuft der Schutz nicht`); else for (const t of g.warn) fernWarn.push(`${g.name}: ${t}`); }
+    const offline = fern.filter((g) => g.offB);
+    const alleOffen = openN + fernOffen;
+    const alleWarn = warnungen.concat(fernWarn);
+    const R = alleOffen ? 2 : (alleWarn.length ? 1 : 0);
+    let HT = heroTitel; let HX = heroText; let heroDev = ICH; let heroTab = r === 2 ? 'funde' : (neueAuto && !protOff ? 'auto' : 'funde');
+    if (!laedt && fern.length) {
+      const mitFund = fern.find((g) => g.openN > 0);
+      if (R === 2) {
+        HT = alleOffen === 1 ? '1 Fund' : `${alleOffen} Funde`;
+        if (!openN) { heroDev = mitFund.id; heroTab = 'funde'; HX = `Auf ${mitFund.name} ${mitFund.openN === 1 ? 'wartet 1 Fund' : `warten ${mitFund.openN} Funde`} auf deine Entscheidung.` + (alleWarn.length ? ` Außerdem: ${alleWarn[0]}.` : ''); }
+        else if (fernOffen) HX += ` Dazu ${fernOffen === 1 ? '1 Fund' : `${fernOffen} Funde`} auf anderen Geräten.`;
+      } else if (R === 1) {
+        HT = alleWarn.length === 1 ? '1 Warnung' : `${alleWarn.length} Warnungen`;
+        HX = alleWarn.join('. ') + '.';
+        if (!warnungen.length) { const g = fern.find((x) => x.protOff || x.warn.length); heroDev = g.id; heroTab = 'funde'; }
+      } else {
+        const wach = devs.length - offline.length;
+        HT = 'Alles sicher';
+        HX = `Auf ${wach === 1 ? '1 Gerät' : `${wach} Geräten`} läuft der Schutz, es gibt keine offenen Funde.` + (offline.length ? ` ${offline.map((g) => g.name).join(', ')} ${offline.length === 1 ? 'ist' : 'sind'} offline.` : '');
+      }
+    }
+
+    // --- System-Scan: Laufzeit statt Füllstand, der Schutz nennt keinen Fortschritt
+    const SCAN = { schnell: 'Schnellscan', voll: 'Vollscan', schnellscan: 'Schnellscan', vollscan: 'Vollscan', erkennungsliste: 'Erkennungsliste holen', melden: 'Melden' };
+    const laufSek = d.schutzScan && d.sysSeit ? Math.max(0, Math.round((Date.now() - d.sysSeit) / 1000)) : 0;
+    const fertigText = (x) => `${SCAN[x.art]} fertig nach ${fmt(x.sek)} · ${x.n ? (x.n === 1 ? '1 neuer Fund' : `${x.n} neue Funde`) : 'nichts gefunden'}`;
+    const hinweis = (art) => (/voll/.test(art) ? 'Kann über eine Stunde dauern. Du kannst weiterarbeiten.' : 'Dauert meist 2 bis 5 Minuten. Du kannst weiterarbeiten.');
+    const auftraege = cur.me ? [] : (d.rauft[cur.id] || []);
+    const laufend = auftraege.find((x) => x.zustand === 'laeuft');
+    let sys = { run: false, done: false, title: '', time: '', hint: '', doneText: '', found: false, go: set({ tab: 'funde' }) };
+    if (cur.me && d.schutzScan) sys = Object.assign(sys, { run: true, title: `${SCAN[d.schutzScan]} läuft`, time: `seit ${fmt(laufSek)}`, hint: hinweis(d.schutzScan) });
+    else if (cur.me && d.sysDone) sys = Object.assign(sys, { done: true, doneText: fertigText(d.sysDone), found: d.sysDone.n > 0 });
+    else if (!cur.me && cur.scanning) {
+      const seitR = laufend ? Math.max(0, Math.round((Date.now() - Date.parse(laufend.erstellt)) / 1000)) : null;
+      sys = Object.assign(sys, { run: true, title: `${laufend ? SCAN[laufend.art] : 'Scan'} läuft`, time: seitR === null ? 'am Gerät gestartet' : `seit ${fmt(seitR)}`, hint: hinweis(laufend ? laufend.art : '') });
+    }
+    const sysLines = [];
+    if (d.schutzScan) sysLines.push({ dev: name, run: true, text: `${SCAN[d.schutzScan]} läuft · seit ${fmt(laufSek)}`, found: false, go: () => this.zeigeGeraet(ICH) });
+    else if (d.sysDone) sysLines.push({ dev: name, run: false, text: fertigText(d.sysDone), found: d.sysDone.n > 0, go: () => this.zeigeGeraet(ICH) });
+    for (const g of fern) if (g.scanning && !g.offB) sysLines.push({ dev: g.name, run: true, text: 'Scan läuft', found: false, go: g.go });
+
+    // --- Auftrag an ein entferntes Geraet -----------------------------------------
+    const job = auftraege.find((x) => x.art !== 'melden' && Date.now() - Date.parse(x.erstellt) < 86400000);
+    let jobChip = chip('scan', 'Auftrag gesendet');
+    if (job) {
+      const e = job.ergebnis || {};
+      if (job.zustand === 'offen') jobChip = cur.offB ? chip('off', 'Gerät ist offline, Auftrag wartet') : chip('scan', 'Auftrag gesendet');
+      else if (job.zustand === 'laeuft') jobChip = chip('scan', 'Gerät arbeitet');
+      else if (job.zustand === 'erledigt') jobChip = chip('ok', `Fertig ${wann(job.erledigt_am)}` + (typeof e.neueFunde === 'number' ? (e.neueFunde ? ` · ${e.neueFunde === 1 ? '1 neuer Fund' : `${e.neueFunde} neue Funde`}` : ' · nichts gefunden') : ''));
+      else jobChip = chip('warn', e.grund || (job.zustand === 'abgelehnt' ? 'Vom Gerät abgelehnt' : 'Hat nicht geklappt'));
+    }
+    const unterwegs = !!job && (job.zustand === 'offen' || job.zustand === 'laeuft');
+    const sende = (art) => () => (unterwegs ? this.say({}, 'Es ist schon ein Auftrag unterwegs.') : this.auftrag(cur.id, art, cur.name));
+
+    const tabsBase = cur.me
+      ? [{ id: 'funde', label: openN ? `Funde ${openN}` : 'Funde' }, { id: 'scan', label: 'Scan' }, { id: 'auto', label: mac ? 'Anmeldeobjekte' : 'Autostart' }, { id: 'dl', label: 'Downloads' }]
+      : [{ id: 'funde', label: cur.openN ? `Funde ${cur.openN}` : 'Funde' }];
+    const tab = tabsBase.some((t) => t.id === s.tab) ? s.tab : 'funde';
     const tabs = tabsBase.map((t) => Object.assign({}, t, { on: t.id === tab, dyn: tabDyn(t.id === tab), pick: set({ tab: t.id }) }));
 
     // --- Datei-Scan ----------------------------------------------------------
@@ -401,11 +625,14 @@ class Component extends DCLogic {
 
     // --- Verlauf --------------------------------------------------------------
     const TY = { fund: chip('bad', 'Fund'), warn: chip('warn', 'Warnung'), scan: chip('scan', 'Scan'), quar: chip('quar', 'Quarantäne') };
-    const EV = (d.verlauf || []).map((e, i) => ({ id: e.zeit + i, type: e.art, time: wann(e.zeit), text: e.text, chip: TY[e.art] || TY.scan, dev: name }));
-    const hist = EV.filter((e) => s.hType === 'alle' || e.type === s.hType);
+    const FERN = { fund: 'fund', autostart: 'warn', scan: 'scan', gekoppelt: 'scan' };
+    const EV = (d.verlauf || []).map((e, i) => ({ id: e.zeit + i, t: Date.parse(e.zeit) || 0, devId: ICH, type: e.art, time: wann(e.zeit), text: e.text, chip: TY[e.art] || TY.scan, dev: name }))
+      .concat((d.ereignisse || []).filter((e) => e.geraet_id !== nachbarId).map((e) => ({ id: 'z' + e.id, t: Date.parse(e.zeit) || 0, devId: e.geraet_id, type: FERN[e.art] || 'scan', time: wann(e.zeit), text: e.inhalt, chip: TY[FERN[e.art]] || TY.scan, dev: nameVon(e.geraet_id) })))
+      .sort((a, b) => b.t - a.t);
+    const hist = EV.filter((e) => (s.hType === 'alle' || e.type === s.hType) && (s.hDev === 'alle' || e.devId === s.hDev));
 
     // --- Figur und Stempel -------------------------------------------------------
-    const pose = r === 2 ? 'fund' : (r === 1 ? 'warn' : 'ruhe');
+    const pose = R === 2 ? 'fund' : (R === 1 ? 'warn' : 'ruhe');
     const POSE = {
       ruhe: { label: 'Kranich steht ruhig', neck: 'rotate(0deg) scale(1)', wing: 'rotate(0deg) scaleY(1)', w2: 'scaleY(0.05)', w2o: '0', dur: '.5s' },
       warn: { label: 'Kranich hebt den Kopf', neck: 'rotate(-6deg) scale(1.25)', wing: 'rotate(-6deg) scaleY(1.2)', w2: 'scaleY(0.05)', w2o: '0', dur: '.3s' },
@@ -422,12 +649,12 @@ class Component extends DCLogic {
     const stampP = ((this._rN || 0) + s.stampN) % 2 ? 'kStampA' : 'kStampB';
     const um = d.geprueft ? 'heute ' + wann(d.geprueft, true) : '';
     const stamp = Object.assign(
-      r === 2 ? { fg: '#a5221b', ico: I.bad, a: 'Fund', b: um } : (r === 1 ? { fg: '#6e5200', ico: I.warn, a: 'Prüfen', b: um } : { fg: '#17663a', ico: I.ok, a: laedt ? 'Moment' : 'Geprüft', b: um }),
+      R === 2 ? { fg: '#a5221b', ico: I.bad, a: 'Fund', b: um } : (R === 1 ? { fg: '#6e5200', ico: I.warn, a: 'Prüfen', b: um } : { fg: '#17663a', ico: I.ok, a: laedt ? 'Moment' : 'Geprüft', b: um }),
       { anim: `${stampP} .45s ${this._rN > 1 || s.stampN ? '0s' : '.5s'} both` },
     );
 
     // --- Rahmen ---------------------------------------------------------------
-    const navAct = (on) => on ? 'width: 100%; background: #fffdf8; color: #4a2f9a; font-weight: 800; box-shadow: -2px 2px 6px rgba(30,40,70,.08); transform: translateX(-5px)' : 'width: 86%; background: #e9e1cf; color: #1d2742; font-weight: 500; transform: translateX(0)';
+    const navAct = (on) => on ? 'width: 100%; background: #fffdf8; color: #4a2f9a; font-weight: 800; box-shadow: -2px 2px 6px rgba(30,40,70,.08); transform: translateX(-5px)' : 'width: auto; min-width: 86%; max-width: 100%; background: #e9e1cf; color: #1d2742; font-weight: 500; transform: translateX(0)';
     const nav = [{ id: 'overview', label: 'Übersicht', ico: I.home }, { id: 'history', label: 'Verlauf', ico: I.clock }, { id: 'quarantine', label: 'Quarantäne', ico: I.box }, { id: 'lab', label: 'Labor', ico: I.flask }, { id: 'settings', label: 'Einstellungen', ico: I.gear }].map((n) => {
       const on = s.screen === n.id || (n.id === 'overview' && s.screen === 'device'); const cnt = n.id === 'quarantine' ? quar.length : 0;
       return Object.assign({}, n, { dyn: navAct(on), go: set({ screen: n.id }), hasCount: cnt > 0, count: String(cnt), hop: s.qHopN ? (s.qHopN % 2 ? 'kBadgeA .4s 1' : 'kBadgeB .4s 1') : 'none' });
@@ -436,7 +663,6 @@ class Component extends DCLogic {
       .map((t) => Object.assign({}, t, { on: t.id === s.setTab, dyn: tabDyn(t.id === s.setTab), pick: set({ setTab: t.id }) }));
     const B = einst.benachrichtigungen || {};
     const merke = (feld) => schalter(!!B[feld], einstellen({ benachrichtigungen: { [feld]: !B[feld] } }));
-    const nochNicht = 'Mehrere Geräte kommen mit der nächsten Version. Bis dahin wacht Kranich über dieses Gerät.';
     const ohneOrigami = 'Die Verbindung zu origami kommt in einer späteren Version.';
     const aus = schalter(false, bald(ohneOrigami));
 
@@ -466,20 +692,28 @@ class Component extends DCLogic {
       nav, ori: { text: 'origami nicht verbunden', fg: '#4a4f5e', ico: I.off }, goOri: set({ screen: 'settings', setTab: 'origami' }), goHome: set({ screen: 'overview' }), goHist: set({ screen: 'history' }),
       toastOn: !!s.toast, toast: s.toast, toastX: set({ toast: '' }), toastAnim: (s.toastN % 2 ? 'kToastA' : 'kToastB') + ' 4.3s ease-out both',
       scOverview: s.screen === 'overview', scDevice: s.screen === 'device', scHistory: s.screen === 'history', scQuar: s.screen === 'quarantine', scLab: s.screen === 'lab', scSettings: s.screen === 'settings',
-      lageFund: r === 2, lageWarn: r === 1, lageOk: r === 0, heroTitel, heroText, k, stamp,
-      heroBtn: r >= 1, heroGo: set({ screen: 'device', dev: ICH, tab: r === 2 ? 'funde' : (neueAuto && !protOff ? 'auto' : 'funde'), howto: false }),
+      authIn: s.auth === 'in', authOut: s.auth === 'out', kontoMail: (d.konto && d.konto.email) || '', logout: () => this.abmelden(),
+      loginPw: s.loginErr === 'pw', loginNet: s.loginErr === 'net', loginMail: s.loginErr === 'mail', loginTitel: s.loginTitel, loginText: s.loginText,
+      loginGo: () => this.anmelden(false), loginNew: () => this.anmelden(true), loginResend: () => this.anmelden(true),
+      zen: { text: d.zenOk === false ? 'Zentrale nicht erreichbar' : 'Zentrale verbunden' },
+      hasDevs: true, noDevs: false, firstDev: set({ screen: 'settings', setTab: 'geraete', add: 'type' }),
+      sysOn: sys.run || sys.done, sys, sysLines, sysQuick: () => this.schutzScan('schnell'), sysFull: () => this.schutzScan('voll'),
+      jobOn: !!job, jobChip, jobKind: job ? SCAN[job.art] : '', jobQuick: sende('schnellscan'), jobFull: sende('vollscan'),
+      dlEdit: true, dlRo: false,
+      lageFund: R === 2, lageWarn: R === 1, lageOk: R === 0, heroTitel: HT, heroText: HX, k, stamp,
+      heroBtn: R >= 1, heroGo: () => { this.zeigeGeraet(heroDev); this.setState({ tab: heroDev === ICH ? heroTab : 'funde' }); },
       devs, last5: EV.slice(0, 5), cur,
-      scanAll: () => (win ? this.schutzScan('schnell') : this.waehleUndScanne()), scanDev: () => this.waehleUndScanne(),
+      scanAll: () => (fern.length ? this.scanneAlle(win, fern.filter((g) => g.remoteDesk && !g.offB && !g.scanning)) : (win ? this.schutzScan('schnell') : this.waehleUndScanne())), scanDev: () => this.waehleUndScanne(),
       scanStop: async () => { await this.api.scanAbbrechen(); this.setState({ scan: 'idle', prog: 0 }); }, scanReset: set({ scan: 'idle', prog: 0 }),
       scanAllRun: false, scanAllDone: false, devRun: run, devDone: s.scan === 'done', devIdle: !run,
       scanPct: s.prog + '%', scanFile: s.scanFile,
-      canScanHead: win, scanHeadDyn: d.schutzScan ? 'opacity: .45; cursor: progress' : 'opacity: 1',
+      canScanHead: cur.me ? win : cur.remoteDesk, scanHeadDyn: d.schutzScan ? 'opacity: .45; cursor: progress' : 'opacity: 1',
       scanHead: () => this.schutzScan('schnell'), scanVoll: () => this.schutzScan('voll'),
       noteScan: win, noteOff: false,
       howOpen: s.howto, howFlip: async () => { if (!s.howto && win) this.api.oeffneSchutz(); this.setState({ howto: !s.howto }); }, howWin: s.howto && !mac, howMac: s.howto && mac,
-      hasTabs: true, tabs, tFunde: tab === 'funde', tScan: tab === 'scan', tAuto: tab === 'auto', tDl: tab === 'dl', tApps: false, tIos: false,
+      hasTabs: true, tabs, tFunde: tab === 'funde', tScan: cur.me && tab === 'scan', tAuto: cur.me && tab === 'auto', tDl: cur.me && tab === 'dl', tApps: false, tIos: false,
       funde, fundeEmpty: funde.length === 0,
-      fundeLeerText: win ? 'Der Schutz hat auf diesem Gerät nichts gefunden.' : 'Auf diesem System kann Kranich die Funde des Systems noch nicht auslesen.',
+      fundeLeerText: !cur.me ? 'Von diesem Gerät sind keine Funde gemeldet.' : (win ? 'Der Schutz hat auf diesem Gerät nichts gefunden.' : 'Auf diesem System kann Kranich die Funde des Systems noch nicht auslesen.'),
       vtErr: !!vtHinweis, vtHinweis, scanRows, scanSum, scanNever: !erg && !run, scanHas: !!erg,
       moreOpen: s.moreOpen, moreFlip: set({ moreOpen: !s.moreOpen }), moreRot: s.moreOpen ? 'rotate(90deg)' : 'rotate(-90deg)', moreRows,
       moreTitel, moreSub: `${sauber} unauffällig, ${ruhig.length - sauber} nicht geprüft`, moreRest: ruhig.length > 5 ? `und ${ruhig.length - 5} weitere` : '',
@@ -497,7 +731,7 @@ class Component extends DCLogic {
       folderFlip: async () => { const p = await this.api.waehlePfad('ordner'); if (p) await einstellen({ wacheOrdner: p })(); },
       quar, quarEmpty: quar.length === 0, appRows: [],
       dlgOpen: !!s.dialog, dlg, dlgNo: set({ dialog: null }), dlgYes: () => this.loescheEndgueltig(dlg.id, dlg.file),
-      hDevs: picks([{ id: 'alle', label: 'Alle Geräte' }, { id: ICH, label: name }], 'alle', 'hDev'),
+      hDevs: picks([{ id: 'alle', label: 'Alle Geräte' }].concat(devs.map((x) => ({ id: x.id, label: x.name }))), s.hDev, 'hDev'),
       hTypes: picks([{ id: 'alle', label: 'Alle' }, { id: 'fund', label: 'Fund' }, { id: 'warn', label: 'Warnung' }, { id: 'scan', label: 'Scan' }, { id: 'quar', label: 'Quarantäne' }], s.hType, 'hType'),
       hist, histEmpty: hist.length === 0,
       eng, swAuto: schalter(false, bald(ohneLabor)), autoText: 'Kommt mit dem Labor. Im Moment gibt es noch keine Liste zum Abholen.',
@@ -519,8 +753,15 @@ class Component extends DCLogic {
       vtDrop: async () => { await this.api.vtSchluesselEntfernen(); await this.lade('einst'); this.say({}, 'VirusTotal-Schlüssel entfernt.'); },
       plans: [{ id: 'aus', label: 'Nur manuell', on: true, dyn: pill(true), pick: bald('Ein eigener Zeitplan kommt später.') }],
       planText: win ? 'Der Schutz von Windows plant seine Scans selbst. Zusätzliche Scans startest du hier von Hand.' : 'Scans laufen, wenn du sie startest.',
-      addNone: true, addOpen: false, addType: false, addCode: false, addStart: bald(nochNicht), addBack: bald(nochNicht), addClose: bald(nochNicht),
-      addTypes: [], addLabel: '', addDesk: false, addAndroid: false, addIos: false,
+      addNone: !s.add, addOpen: !!s.add, addType: s.add === 'type', addCode: s.add === 'code', addStart: set({ add: 'type' }), addBack: set({ add: 'type' }),
+      addClose: () => { this.setState({ add: null }); this.ladeHost(); },
+      addTypes: [
+        { id: 'windows', label: 'Windows-PC oder Laptop', ico: I.pc, pick: () => this.kopple('windows', 'Windows-PC') },
+        { id: 'macos', label: 'Mac', ico: I.laptop, pick: () => this.kopple('macos', 'Mac') },
+        { id: 'android', label: 'Android', ico: I.phone, pick: bald('Die Android-App kommt später. Bis dahin geht Windows und Mac.') },
+        { id: 'ios', label: 'iPhone oder iPad', ico: I.tablet, pick: bald('Der Kurzbefehl für iPhone und iPad kommt später.') },
+      ],
+      addLabel: s.addLabel, addCodeText: s.addCode ? s.addCode.slice(0, 4) + ' ' + s.addCode.slice(4) : '', addDesk: true, addAndroid: false, addIos: false,
       oriOff: true, oriPair: false, oriOn: false, oriDown: false, oriConnect: bald(ohneOrigami), oriConfirm: bald(ohneOrigami), oriCancel: bald(ohneOrigami), oriRun: 'none',
     };
   }

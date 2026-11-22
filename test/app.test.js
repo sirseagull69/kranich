@@ -180,7 +180,7 @@ test('Dienste: neue Funde und neue Autostart-Einträge landen einmal im Verlauf,
   funde.push({ id: 'neu', threatId: '2', name: 'Trojan', pfade: ['C:\\Users\\x\\b.exe'], zustand: 'erkannt', offen: true, zeit: '2026-11-22T00:00:00Z' });
   const lage = await dienste.lage();
   await dienste.lage();
-  assert.deepEqual(dienste.verlauf().map((e) => e.text), ['„b.exe“ wartet auf deine Entscheidung.']);
+  assert.deepEqual(dienste.verlauf().map((e) => e.text), ['„b.exe“ erkannt.']);
   assert.equal(lage.funde[1].kennung, 'neu');
 
   assert.equal(dienste.fundIgnorieren('neu').ok, true);
@@ -228,4 +228,31 @@ test('Bruecke: Oberflaeche darf genau die freigegebenen Dienste aufrufen', () =>
   const { dienste } = aufbau();
   for (const name of FUER_OBERFLAECHE) assert.equal(typeof dienste[name], 'function', name);
   assert.ok(!FUER_OBERFLAECHE.includes('beende') && !FUER_OBERFLAECHE.includes('starte'));
+});
+
+// Jeder Platzhalter der Vorlagen aus dem Canvas muss von der Logik bedient
+// werden, sonst bleibt in der Oberflaeche eine Luecke.
+for (const [seite, logik] of [['index.html', 'logik.js'], ['agent.html', 'agent.js']]) {
+  test(`Oberfläche: ${seite} hat keinen Platzhalter ohne Wert`, () => {
+    const ui = (n) => require('node:fs').readFileSync(require('node:path').join(__dirname, '..', 'ui', n), 'utf8');
+    const vorlage = ui(seite);
+    const code = ui(logik);
+    const schleifen = new Set([...vorlage.matchAll(/ as="(\w+)"/g)].map((m) => m[1]));
+    const namen = new Set([...vorlage.matchAll(/\{\{\s*([A-Za-z_]\w*)/g)].map((m) => m[1]));
+    const fehlt = [...namen].filter((n) => !schleifen.has(n) && !['true', 'false'].includes(n) && !new RegExp(`\\b${n}\\b\\s*[:,]`).test(code));
+    assert.deepEqual(fehlt, []);
+    assert.ok(!/fonts\.googleapis|(?:src|href)="https?:/.test(vorlage), 'die Oberfläche lädt nichts aus dem Netz');
+  });
+}
+
+test('Zwei Programme: Agent und Host haben getrennte Installer mit eigener Rolle', () => {
+  const lies = (n) => JSON.parse(require('node:fs').readFileSync(require('node:path').join(__dirname, '..', n), 'utf8'));
+  const host = lies('installer-host.json');
+  const agent = lies('installer-agent.json');
+  assert.equal(host.extraMetadata.kranichRolle, 'host');
+  assert.equal(agent.extraMetadata.kranichRolle, 'agent');
+  assert.notEqual(host.appId, agent.appId);
+  assert.notEqual(host.productName, agent.productName);
+  assert.notEqual(host.artifactName, agent.artifactName);
+  assert.equal(lies('package.json').build, undefined, 'die Bau-Angaben stehen nur in den beiden Installer-Dateien');
 });

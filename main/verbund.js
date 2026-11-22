@@ -11,7 +11,7 @@ const path = require('node:path');
 
 const SYSTEM = { win32: 'windows', darwin: 'macos' };
 
-function erstelleVerbund({ kern, einstellungen, zugang, plattform, datenOrdner, defender = null, leseAutostart = null, version = '0', fetch, melde = () => {} }) {
+function erstelleVerbund({ kern, einstellungen, zugang, plattform, datenOrdner, defender = null, leseAutostart = null, version = '0', fetch, melde = () => {}, scanLaeuft = () => false, nachbarAgentDatei = null }) {
   const agentDatei = path.join(datenOrdner, 'agent.json');
   const lies = () => {
     try {
@@ -52,7 +52,7 @@ function erstelleVerbund({ kern, einstellungen, zugang, plattform, datenOrdner, 
     agent = new kern.Agent({
       geraet: { id: gekoppelt.geraetId, name: gekoppelt.name, system: gekoppelt.system },
       transport: mitschrift, defender, leseAutostart,
-      speicher: kern.dateiSpeicher(path.join(datenOrdner, 'agent-stand.json')), version,
+      speicher: kern.dateiSpeicher(path.join(datenOrdner, 'agent-stand.json')), version, scanLaeuft,
     });
     agent.start();
     return true;
@@ -115,6 +115,17 @@ function erstelleVerbund({ kern, einstellungen, zugang, plattform, datenOrdner, 
     hostAuftrag: (id, art) => host.auftragSenden(id, art),
     hostUmbenennen: (id, name) => host.geraetUmbenennen(id, name),
     hostEntfernen: (id) => host.geraetEntfernen(id),
+    // Laeuft auf diesem Rechner auch ein gekoppelter Kranich Agent? Dann
+    // kennt der Host sein eigenes Geraet in der Liste der Zentrale wieder.
+    lokalerAgent() {
+      if (!nachbarAgentDatei) return null;
+      try {
+        const g = JSON.parse(fs.readFileSync(nachbarAgentDatei, 'utf8'));
+        return typeof g?.geraetId === 'string' ? { geraetId: g.geraetId, name: g.name ?? null } : null;
+      } catch {
+        return null;
+      }
+    },
     // System dieses Geraets, wie die Zentrale es nennt.
     eigenesSystem: () => SYSTEM[plattform] ?? 'windows',
 
@@ -128,7 +139,7 @@ const VERBUND_FUER_OBERFLAECHE = [
   'agentStatus', 'agentKoppeln', 'agentEntkoppeln', 'agentJetzt',
   'kontoStatus', 'kontoAnmelden', 'kontoAnlegen', 'kontoAbmelden',
   'hostGeraete', 'hostFunde', 'hostEreignisse', 'hostAuftraege', 'hostKopplung', 'hostAuftrag', 'hostUmbenennen', 'hostEntfernen',
-  'eigenesSystem',
+  'eigenesSystem', 'lokalerAgent',
 ];
 
 module.exports = { erstelleVerbund, VERBUND_FUER_OBERFLAECHE };

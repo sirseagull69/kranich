@@ -40,7 +40,7 @@ function dateiSpeicher(datei) {
 const fundSchluessel = (f) => f.id || `${f.threatId}|${f.zeit}`;
 
 class Agent {
-  constructor({ geraet, transport, defender = null, leseAutostart = null, speicher, version = '0', jetzt = () => new Date() }) {
+  constructor({ geraet, transport, defender = null, leseAutostart = null, speicher, version = '0', jetzt = () => new Date(), scanLaeuft = () => false }) {
     if (!geraet?.id) throw new Error('Der Agent braucht eine Geräte-ID');
     this.geraet = geraet;
     this._transport = transport;
@@ -49,6 +49,7 @@ class Agent {
     this._speicher = speicher;
     this._version = version;
     this._jetzt = jetzt;
+    this._scanLaeuft = scanLaeuft; // Scan, den jemand direkt am Geraet gestartet hat
     this._stand = { gemeldeteFunde: [], autostart: null, erledigt: {}, ...(speicher.lade() ?? {}) };
     this._laeuft = false;
     this._scan = null; // laufender Scan-Auftrag
@@ -56,15 +57,34 @@ class Agent {
     this._uhr = null;
   }
 
-  start(abstandMs = 5 * 60 * 1000) {
+  // Alle fuenf Minuten die ganze Lage melden, alle 30 Sekunden nur nach
+  // Auftraegen schauen, damit ein Scan aus dem Host nicht lange wartet.
+  start(abstandMs = 5 * 60 * 1000, horchMs = 30 * 1000) {
     if (this._uhr) return;
     this.runde().catch(() => {});
     this._uhr = setInterval(() => this.runde().catch(() => {}), abstandMs);
+    if (horchMs > 0) this._ohr = setInterval(() => this.horche().catch(() => {}), horchMs);
   }
 
   stopp() {
     clearInterval(this._uhr);
+    clearInterval(this._ohr);
     this._uhr = null;
+    this._ohr = null;
+  }
+
+  // Nur Auftraege abholen. Gab es welche, gleich danach die Lage melden.
+  async horche() {
+    if (this._laeuft) return { uebersprungen: true };
+    this._laeuft = true;
+    let auftraege;
+    try {
+      auftraege = await this._bearbeiteAuftraege();
+    } finally {
+      this._laeuft = false;
+    }
+    if (auftraege.length) await this.runde();
+    return { auftraege };
   }
 
   // Wartet auf einen laufenden Scan-Auftrag (fuer Tests und sauberes Beenden).
@@ -122,7 +142,7 @@ class Agent {
       offeneFunde: (lage?.funde ?? []).filter((f) => f.offen).length,
       neueFunde,
       autostart: { neu: autostart.neu, geaendert: autostart.geaendert },
-      scanLaeuft: Boolean(this._scan),
+      scanLaeuft: Boolean(this._scan) || Boolean(this._scanLaeuft()),
       fehler,
     };
 
@@ -196,6 +216,8 @@ class Agent {
       .finally(() => {
         this._scan = null;
         this._scanAuftrag = null;
+        // Das Ergebnis soll der Host gleich sehen, nicht erst in fuenf Minuten.
+        this.runde().catch(() => {});
       });
     return { zustand: 'laeuft' };
   }

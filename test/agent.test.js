@@ -152,3 +152,31 @@ test('Agent: Runden ueberlappen nicht, ohne Geraete-ID kein Start', async () => 
   assert.equal(welt.gesendet.length, 1);
   assert.throws(() => new Agent({ geraet: {}, transport: {}, speicher: dateiSpeicher('x') }), /Geräte-ID/);
 });
+
+test('Agent horcht zwischen den Runden nur auf Auftraege und meldet erst, wenn es etwas zu tun gab', async () => {
+  const { welt, neu } = aufbau();
+  const agent = neu();
+  assert.deepEqual((await agent.horche()).auftraege, []);
+  assert.equal(welt.gesendet.length, 0, 'ohne Auftrag keine Meldung');
+
+  welt.auftraege = [{ id: 7, art: 'schnellscan' }];
+  let ende;
+  welt.scanEnde = new Promise((r) => { ende = r; });
+  await agent.horche();
+  assert.deepEqual(welt.scans, ['schnell']);
+  assert.equal(welt.gesendet.at(-1).scanLaeuft, true, 'der Host sieht sofort, dass gescannt wird');
+  welt.auftraege = []; // die Zentrale stellt einen bestaetigten Auftrag nicht noch einmal zu
+  ende();
+  await agent.fertig();
+  assert.deepEqual(welt.bestaetigt.map((b) => [b.id, b.zustand]), [[7, 'erledigt']]);
+});
+
+test('Agent meldet auch einen Scan, der direkt am Geraet gestartet wurde', async () => {
+  const { welt } = aufbau();
+  let laeuft = true;
+  const agent = new Agent({ geraet: GERAET, transport: { sende: async (m) => welt.gesendet.push(m), holeAuftraege: async () => [], bestaetige: async () => {} }, speicher: { lade: () => null, sichere: () => {} }, scanLaeuft: () => laeuft });
+  await agent.runde();
+  laeuft = false;
+  await agent.runde();
+  assert.deepEqual(welt.gesendet.map((m) => m.scanLaeuft), [true, false]);
+});

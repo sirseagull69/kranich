@@ -91,3 +91,17 @@ test('Verbund: was die Oberfläche aufrufen darf, gibt es auch', () => {
   assert.deepEqual(v.kontoStatus(), { angemeldet: false, email: null });
   assert.equal(v.eigenesSystem(), 'windows');
 });
+
+test('Verbund: der Host erkennt einen gekoppelten Agent auf demselben Rechner', () => {
+  const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'kranich-nachbar-'));
+  const datei = path.join(ordner, 'agent.json');
+  const einstellungen = erstelleEinstellungen({ datei: path.join(ordner, 'e.json'), ...krypto });
+  const v = erstelleVerbund({ kern, einstellungen, zugang: { url: URL_, apiSchluessel: 'api' }, plattform: 'win32', datenOrdner: ordner, fetch: async () => ({}), nachbarAgentDatei: datei });
+  assert.equal(v.lokalerAgent(), null, 'kein Agent installiert');
+  fs.writeFileSync(datei, 'kaputt');
+  assert.equal(v.lokalerAgent(), null, 'unlesbare Datei zaehlt nicht');
+  fs.writeFileSync(datei, JSON.stringify({ geraetId: 'g-9', name: 'Zephyrus', system: 'windows' }));
+  assert.deepEqual(v.lokalerAgent(), { geraetId: 'g-9', name: 'Zephyrus' });
+  // Der Agent selbst hat keinen Nachbarn.
+  assert.equal(erstelleVerbund({ kern, einstellungen, zugang: { url: URL_, apiSchluessel: 'api' }, plattform: 'win32', datenOrdner: ordner, fetch: async () => ({}) }).lokalerAgent(), null);
+});

@@ -43,6 +43,8 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
   let laufenderScan = null;
   const probeWarteMs = plattform === 'win32' ? 2500 : 50; // dem Schutz von Windows kurz Zeit lassen
   let schutzScanLaeuft = null;
+  let schutzScanSeit = null;
+  let letzterSchutzScan = null;
   const autostartGemeldet = new Set();
 
   // Kranichs eigene Engine mit der Erkennungsliste.
@@ -83,7 +85,8 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
         if (bekannt.has(f.kennung)) continue;
         bekannt.add(f.kennung);
         const datei = f.pfade[0] ? path.win32.basename(f.pfade[0]) : f.name;
-        notiere('fund', f.offen ? `„${datei}“ wartet auf deine Entscheidung.` : `„${datei}“ gestoppt.`);
+        // Frisch erkannt ist der Schutz meist noch am Wegsperren: neutral bleiben.
+        notiere('fund', f.offen ? `„${datei}“ erkannt.` : `„${datei}“ gestoppt.`);
       }
       gemeldeteFunde = bekannt;
       schreibeJson(path.join(datenOrdner, 'funde-gesehen.json'), [...bekannt].slice(-2000));
@@ -126,21 +129,29 @@ function erstelleDienste({ kern, einstellungen, plattform, heimOrdner, datenOrdn
       laufenderScan?.abort();
       return { ok: true };
     },
-    schutzScanStatus: () => ({ laeuft: schutzScanLaeuft }),
+    schutzScanStatus: () => ({ laeuft: schutzScanLaeuft, seit: schutzScanSeit, letzter: letzterSchutzScan }),
     async schutzScan(art) {
       if (!defender) return { ok: false, grund: 'Auf diesem System gibt es keinen Schutz, den Kranich steuern kann' };
       if (art !== 'schnell' && art !== 'voll') return { ok: false, grund: 'Unbekannte Scan-Art' };
       if (schutzScanLaeuft) return { ok: false, grund: 'Es läuft schon ein Scan' };
       schutzScanLaeuft = art;
+      schutzScanSeit = new Date().toISOString();
+      melde({ art: 'schutzscan-start', scan: art, seit: schutzScanSeit });
       let ergebnis;
       try {
         ergebnis = await defender.scan(art);
+      } catch (fehler) {
+        letzterSchutzScan = { scan: art, ok: false, grund: fehler.message, ende: new Date().toISOString() };
+        melde({ art: 'schutzscan-fertig', scan: art, ok: false, neueFunde: 0 });
+        throw fehler;
       } finally {
         schutzScanLaeuft = null;
       }
       const n = ergebnis.neueFunde.length;
+      const sekunden = Math.round((Date.now() - Date.parse(schutzScanSeit)) / 1000);
+      letzterSchutzScan = { scan: art, ok: true, neueFunde: n, sekunden, ende: new Date().toISOString() };
       notiere('scan', `${art === 'voll' ? 'Vollscan' : 'Schnellscan'} fertig, ${n ? (n === 1 ? '1 Fund' : n + ' Funde') : 'nichts gefunden'}.`);
-      melde({ art: 'schutzscan-fertig', scan: art, neueFunde: n });
+      melde({ art: 'schutzscan-fertig', scan: art, ok: true, neueFunde: n, sekunden });
       return { ok: true, ...ergebnis };
     },
 

@@ -47,6 +47,16 @@ ERSETZE = [
     ('>Heute 06:00 · 312 neue Fingerabdrücke, 4 neue Regeln<', '>{{ lab.aenderung }}<'),
     ('Kranich holt die Erkennungsliste jeden Morgen um 06:00 Uhr.', '{{ autoText }}'),
     ('Kranich hat die Testdatei erkannt und sofort weggesperrt.', '{{ probeText }}'),
+    # Konto und Zentrale
+    ('>nils@beispiel.de<', '>{{ kontoMail }}<'),
+    ('Zentrale verbunden<', '{{ zen.text }}<'),
+    ('Dieses Gerät meldet sich seit 3 Std. nicht. Die Daten unten sind der letzte bekannte Stand.', '{{ cur.offText }}'),
+    ('>Falsches Passwort<', '>{{ loginTitel }}<'),
+    ('Schau nochmal nach und versuch es erneut.', '{{ loginText }}'),
+    ('>4821 7730<', '>{{ addCodeText }}<'),
+    ('Kranich auf dem neuen Gerät installieren.', 'Den Kranich Agent auf dem neuen Gerät installieren und starten.'),
+    ('Beim ersten Start „Mit bestehendem Kranich koppeln“ wählen.', 'Im Agent auf „Jetzt koppeln“ klicken.'),
+    ('Den Code eingeben. Das Gerät erscheint danach in der Übersicht mit vollem Schutz.', 'Den Code eingeben. Das Gerät erscheint danach hier in der Übersicht.'),
     # Autostart: Kranich kennt den Hersteller nicht, aber Programm und Ort
     ('>Hersteller<', '>Programm<'),
     ('>Seit wann<', '>Ort<'),
@@ -62,15 +72,6 @@ for zeile in ('Gestern 06:00 · 287 neue Fingerabdrücke, 1 neue Regel', '20.11.
     ende = vorlage.index(zeile) + len(zeile) + len('</li>')
     anfang = vorlage.rindex('<li', 0, ende)
     vorlage = vorlage[:anfang] + vorlage[ende:]
-
-# "Vollscan" bekommt einen eigenen Knopf-Befehl (im Prototyp teilen sich
-# Schnellscan und Vollscan einen).
-stelle = vorlage.index('>Vollscan<')
-knopf = vorlage.rindex('<button', 0, stelle)
-kopf = vorlage[knopf:stelle]
-if kopf.count('{{ scanHead }}') != 1:
-    sys.exit('Der Canvas hat sich geändert: Knopf „Vollscan“ nicht gefunden.')
-vorlage = vorlage[:knopf] + kopf.replace('{{ scanHead }}', '{{ scanVoll }}') + vorlage[stelle:]
 
 SCHRIFT = '\n'.join(
     f"@font-face{{font-family:'{familie}';font-style:normal;font-weight:{gewicht};font-display:swap;"
@@ -88,7 +89,7 @@ seite = f'''<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; img-src 'self' data:">
-<title>Kranich</title>
+<title>Kranich Host</title>
 <!-- Erzeugt von werkzeug/canvas-uebernehmen.py aus canvas/App.dc.html. Nicht von Hand ändern. -->
 <style>
 {SCHRIFT}

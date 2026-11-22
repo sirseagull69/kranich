@@ -1,18 +1,22 @@
 {
   "name": "kranich",
   "productName": "Kranich",
-  "version": "0.3.1",
-  "description": "Kranich, der Geräte-Wächter aus der origami-Familie",
+  "version": "0.4.0",
+  "description": "Kranich, der Geräte-Wächter aus der origami-Familie: Kranich Agent und Kranich Host",
   "author": "Nils Pohler",
   "main": "main/main.js",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
+    "start:host": "electron .",
+    "start:agent": "KRANICH_ROLLE=agent electron .",
     "test": "node --test",
     "rauchtest": "electron werkzeug/rauch.js",
-    "oberflaeche": "python3 werkzeug/canvas-uebernehmen.py",
-    "bauen": "electron-builder --publish never"
+    "oberflaeche": "python3 werkzeug/canvas-uebernehmen.py && python3 werkzeug/agent-uebernehmen.py",
+    "bauen": "npm run bauen:agent && npm run bauen:host",
+    "bauen:agent": "electron-builder --publish never --config installer-agent.json",
+    "bauen:host": "electron-builder --publish never --config installer-host.json"
   },
   "dependencies": {
     "libyara-wasm": "^1.2.1"
@@ -20,15 +24,5 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0"
-  },
-  "build": {
-    "appId": "de.selbstgfaltet.kranich",
-    "productName": "Kranich",
-    "files": ["main/**", "kern/**", "ui/**", "bau/tray.png", "bau/icon.png", "zentrale/zugang.json"],
-    "directories": { "output": "ausgabe", "buildResources": "bau" },
-    "artifactName": "Kranich-${version}-${os}-${arch}.${ext}",
-    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "bau/icon.png" },
-    "nsis": { "oneClick": true, "perMachine": false, "shortcutName": "Kranich" },
-    "mac": { "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }], "icon": "bau/icon.png", "identity": "-", "category": "public.app-category.utilities" }
   }
 }

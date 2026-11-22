@@ -1,6 +1,15 @@
 'use strict';
-// Hauptprozess von Kranich: Fenster, Tray, Benachrichtigungen. Die
-// eigentliche Arbeit steckt in dienste.js und im Kern.
+// Hauptprozess von Kranich. Aus diesem Quelltext entstehen zwei getrennte
+// Programme:
+//
+//   Kranich Agent  laeuft im Tray auf jedem Geraet, bewacht es und meldet
+//                  an die Zentrale. Kleines Statusfenster.
+//   Kranich Host   das grosse Fenster: anmelden, alle Geraete sehen,
+//                  Auftraege senden. Kein Tray, kein Hintergrunddienst.
+//
+// Welche Rolle laeuft, steht im Installer (package.json: kranichRolle) oder
+// fuer die Entwicklung in KRANICH_ROLLE. Die eigentliche Arbeit steckt in
+// dienste.js, verbund.js und im Kern.
 
 const path = require('node:path');
 const os = require('node:os');
@@ -11,11 +20,20 @@ const { erstelleDienste, FUER_OBERFLAECHE } = require('./dienste');
 const { erstelleVerbund, VERBUND_FUER_OBERFLAECHE } = require('./verbund');
 const zugang = require('../zentrale/zugang.json');
 
+const ROLLE = (!app.isPackaged && process.env.KRANICH_ROLLE) || require('../package.json').kranichRolle || 'host';
+const AGENT = ROLLE === 'agent';
+const SPIEL = !app.isPackaged && Boolean(process.env.KRANICH_SPIELZENTRALE);
+const TITEL = AGENT ? 'Kranich Agent' : 'Kranich Host';
+// Jedes Programm hat seinen eigenen Datenordner. Der Host behaelt den Ordner
+// der bisherigen App, damit Verlauf und Quarantaene erhalten bleiben.
+const ORDNER = { agent: 'Kranich Agent', host: 'Kranich' };
+if (!process.env.KRANICH_DATEN_FEST) app.setPath('userData', path.join(app.getPath('appData'), ORDNER[AGENT ? 'agent' : 'host']));
+
 let fenster = null;
 let tray = null;
 let wirklichBeenden = false;
 
-// Kranich laeuft nur einmal. Ein zweiter Start holt das Fenster nach vorn.
+// Jedes Programm laeuft nur einmal. Ein zweiter Start holt das Fenster nach vorn.
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -27,19 +45,26 @@ function start() {
   const datenOrdner = app.getPath('userData');
   const einstellungen = erstelleEinstellungen({
     datei: path.join(datenOrdner, 'einstellungen.json'),
-    verschluessle: (text) => (safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text).toString('base64') : null),
-    entschluessle: (geheim) => safeStorage.decryptString(Buffer.from(geheim, 'base64')),
+    // Ohne Schluesselspeicher wird nichts Geheimes gespeichert. Einzige
+    // Ausnahme: der Test mit vorgespielter Zentrale, dort gibt es kein echtes Geheimnis.
+    verschluessle: (text) => (safeStorage.isEncryptionAvailable() ? safeStorage.encryptString(text).toString('base64') : (SPIEL ? `spiel:${Buffer.from(text).toString('base64')}` : null)),
+    entschluessle: (geheim) => (SPIEL && geheim.startsWith('spiel:') ? Buffer.from(geheim.slice(6), 'base64').toString() : safeStorage.decryptString(Buffer.from(geheim, 'base64'))),
   });
 
   let defender = null;
   let leseAutostart = null;
+  let netz = globalThis.fetch;
   if (process.platform === 'win32') defender = new kern.Defender();
-  // Nur fuer die Entwicklung: spielt einen Windows-Schutz vor, damit sich die
-  // Oberflaeche auch ohne Windows ansehen laesst. In der installierten App aus.
+  // Nur fuer die Entwicklung: spielt einen Windows-Schutz und eine Zentrale
+  // vor, damit sich die Oberflaeche auch ohne Windows und ohne Netz ansehen
+  // laesst. In der installierten App aus.
   if (!app.isPackaged && process.env.KRANICH_SPIELDATEN) {
     ({ defender, leseAutostart } = require('../werkzeug/spieldaten')(process.env.KRANICH_SPIELDATEN));
   }
+  if (SPIEL) netz = require('../werkzeug/spielzentrale')(process.env.KRANICH_SPIELZENTRALE);
 
+  const anFenster = (ereignis) => fenster?.webContents.send('kranich:ereignis', ereignis);
+  let verbund = null;
   const dienste = erstelleDienste({
     kern,
     einstellungen,
@@ -52,44 +77,43 @@ function start() {
     schreibtisch: app.getPath('desktop'),
     version: app.getVersion(),
     melde: (ereignis) => {
-      fenster?.webContents.send('kranich:ereignis', ereignis);
+      anFenster(ereignis);
+      if (!AGENT) return; // Benachrichtigen und Melden ist Sache des Agents
       benachrichtige(ereignis, einstellungen.lese().benachrichtigungen);
-      if (ereignis.art === 'einstellungen') uebernimmSystemstart(ereignis.einstellungen);
+      if (ereignis.art === 'einstellungen') { uebernimmSystemstart(ereignis.einstellungen); frischeTray(); }
+      // Nach einem Scan oder Fund gleich an die Zentrale melden.
+      if (ereignis.art === 'schutzscan-start' || ereignis.art === 'schutzscan-fertig' || ereignis.art === 'verlauf') verbund?.agentJetzt().catch(() => {});
+      if (ereignis.art === 'schutzscan-start' || ereignis.art === 'schutzscan-fertig') frischeTray();
     },
   });
 
-  // Verbindung zur Zentrale: Agent (dieses Geraet meldet) und Host (Konto).
-  const verbund = erstelleVerbund({
-    kern, einstellungen, zugang, defender, leseAutostart,
+  // Verbindung zur Zentrale: der Agent meldet, der Host meldet sich mit dem Konto an.
+  verbund = erstelleVerbund({
+    kern, einstellungen, zugang, defender, leseAutostart, fetch: netz,
     plattform: process.platform, datenOrdner, version: app.getVersion(),
-    melde: (ereignis) => fenster?.webContents.send('kranich:ereignis', ereignis),
+    scanLaeuft: () => Boolean(dienste.schutzScanStatus().laeuft),
+    nachbarAgentDatei: AGENT ? null : path.join(app.getPath('appData'), ORDNER.agent, 'agent.json'),
+    melde: (ereignis) => { anFenster(ereignis); if (AGENT) frischeTray(); },
   });
-  for (const name of VERBUND_FUER_OBERFLAECHE) {
-    ipcMain.handle(`kranich:${name}`, async (_ereignis, ...werte) => {
-      try {
-        return await verbund[name](...werte);
-      } catch (fehler) {
-        return { ok: false, grund: fehler.message };
-      }
-    });
-  }
-  verbund.starte();
-  app.on('before-quit', () => verbund.beende());
 
-  // Die Oberflaeche darf genau die Dienste aus der Liste aufrufen.
-  for (const name of FUER_OBERFLAECHE) {
-    ipcMain.handle(`kranich:${name}`, async (_ereignis, ...werte) => {
-      try {
-        return await dienste[name](...werte);
-      } catch (fehler) {
-        return { ok: false, grund: fehler.message };
-      }
-    });
-  }
+  // Die Oberflaeche darf genau die Dienste aus den Listen aufrufen.
+  const reiche = (namen, ziel) => {
+    for (const name of namen) {
+      ipcMain.handle(`kranich:${name}`, async (_ereignis, ...werte) => {
+        try {
+          return await ziel[name](...werte);
+        } catch (fehler) {
+          return { ok: false, grund: fehler.message };
+        }
+      });
+    }
+  };
+  reiche(FUER_OBERFLAECHE, dienste);
+  reiche(VERBUND_FUER_OBERFLAECHE, verbund);
   ipcMain.handle('kranich:waehlePfad', async (_e, art) => {
     if (art === 'frage') {
       const wahl = await dialog.showMessageBox(fenster, {
-        type: 'question', title: 'Kranich', message: 'Was soll Kranich prüfen?',
+        type: 'question', title: TITEL, message: 'Was soll Kranich prüfen?',
         buttons: ['Eine Datei', 'Einen Ordner', 'Abbrechen'], defaultId: 0, cancelId: 2, noLink: true,
       });
       if (wahl.response === 2) return null;
@@ -102,25 +126,33 @@ function start() {
   ipcMain.handle('kranich:oeffneSchutz', () => (process.platform === 'win32' ? shell.openExternal('windowsdefender://threat') : undefined));
   ipcMain.handle('kranich:zeigeImOrdner', (_e, pfad) => (typeof pfad === 'string' ? shell.showItemInFolder(pfad) : undefined));
 
-  uebernimmSystemstart(einstellungen.lese());
-  baueTray(dienste);
+  if (AGENT) {
+    uebernimmSystemstart(einstellungen.lese());
+    baueTray(dienste, verbund);
+    verbund.starte();
+  } else if (app.isPackaged) {
+    // Der Host startet nicht mit dem System. Raeumt auch den Eintrag der
+    // frueheren App weg, die noch beides in einem war.
+    app.setLoginItemSettings({ openAtLogin: false });
+  }
   baueFenster(einstellungen);
   dienste.starte();
 
   app.on('before-quit', () => {
     wirklichBeenden = true;
+    verbund.beende();
     dienste.beende();
   });
 }
 
 function baueFenster(einstellungen) {
+  const mass = AGENT
+    ? { width: 360, height: 480, useContentSize: true, resizable: false, maximizable: false, fullscreenable: false }
+    : { width: 1360, height: 900, minWidth: 980, minHeight: 640 };
   fenster = new BrowserWindow({
-    width: 1360,
-    height: 900,
-    minWidth: 980,
-    minHeight: 640,
-    backgroundColor: '#f6f1e7',
-    title: 'Kranich',
+    ...mass,
+    backgroundColor: AGENT ? '#fffdf8' : '#f6f1e7',
+    title: TITEL,
     show: !process.argv.includes('--versteckt'), // beim Systemstart nur ins Tray
     autoHideMenuBar: true,
     webPreferences: {
@@ -130,16 +162,16 @@ function baueFenster(einstellungen) {
       sandbox: true,
     },
   });
-  fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
+  fenster.loadFile(path.join(__dirname, '..', 'ui', AGENT ? 'agent.html' : 'index.html'));
   // Die Oberflaeche ist lokal. Links nach draussen oeffnet der Browser.
   fenster.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
   fenster.webContents.on('will-navigate', (ereignis) => ereignis.preventDefault());
-  // Fenster zu heisst nicht aus, wenn "Im Tray weiterlaufen" an ist.
+  // Beim Agent heisst Fenster zu nicht aus: er laeuft im Tray weiter.
   fenster.on('close', (ereignis) => {
-    if (!wirklichBeenden && einstellungen.lese().imTrayWeiterlaufen) {
+    if (AGENT && !wirklichBeenden && einstellungen.lese().imTrayWeiterlaufen) {
       ereignis.preventDefault();
       fenster.hide();
     }
@@ -153,29 +185,38 @@ function zeigeFenster() {
   fenster.focus();
 }
 
-function baueTray(dienste) {
+// Das Tray-Menue des Agents. Die erste Zeile sagt, wie es dem Geraet geht.
+let frischeTray = () => {};
+function baueTray(dienste, verbund) {
   const bild = nativeImage.createFromPath(path.join(__dirname, '..', 'bau', 'tray.png'));
   tray = new Tray(bild);
-  tray.setToolTip('Kranich');
   tray.on('click', zeigeFenster);
-  const menue = () =>
-    Menu.buildFromTemplate([
-      { label: 'Kranich öffnen', click: zeigeFenster },
+  const menue = () => {
+    const a = verbund.agentStatus();
+    const laeuft = dienste.schutzScanStatus().laeuft;
+    const name = a.name || dienste.info().name;
+    const zeile = `${name} · ${!a.gekoppelt ? 'nicht gekoppelt' : (a.verbunden === false ? 'keine Verbindung zum Host' : 'mit Host verbunden')}`;
+    tray.setToolTip(`${TITEL} · ${laeuft ? 'Scan läuft' : zeile}`);
+    return Menu.buildFromTemplate([
+      { label: laeuft ? (laeuft === 'voll' ? 'Vollscan läuft' : 'Schnellscan läuft') : 'Kranich wacht', enabled: false },
+      { label: zeile, enabled: false },
       { type: 'separator' },
-      { label: 'Jetzt scannen', enabled: process.platform === 'win32', click: () => dienste.schutzScan('schnell').catch(() => {}) },
+      { label: 'Jetzt scannen', enabled: process.platform === 'win32' && !laeuft, click: () => dienste.schutzScan('schnell').catch(() => {}) },
       dienste.wacheStatus().an
-        ? { label: 'Download-Wache pausieren', click: () => { dienste.einstellungenSetzen({ wacheAn: false }); tray.setContextMenu(menue()); } }
-        : { label: 'Download-Wache fortsetzen', click: () => { dienste.einstellungenSetzen({ wacheAn: true }); tray.setContextMenu(menue()); } },
-      { type: 'separator' },
+        ? { label: 'Download-Wache pausieren', click: () => dienste.einstellungenSetzen({ wacheAn: false }) }
+        : { label: 'Download-Wache fortsetzen', click: () => dienste.einstellungenSetzen({ wacheAn: true }) },
       { label: 'Probealarm', click: () => probealarm(dienste) },
       { label: 'Testpaket prüfen', click: () => testpaket(dienste) },
+      { label: 'Statusfenster öffnen', click: zeigeFenster },
       { type: 'separator' },
       { label: 'Beenden', click: () => { wirklichBeenden = true; app.quit(); } },
     ]);
-  tray.setContextMenu(menue());
+  };
+  frischeTray = () => { if (tray && !tray.isDestroyed()) tray.setContextMenu(menue()); };
+  frischeTray();
 }
 
-// Beide Tests aus dem Tray-Menue zeigen ihr Ergebnis in einem Fenster.
+// Der Probealarm aus dem Tray-Menue zeigt sein Ergebnis in einem Fenster.
 async function probealarm(dienste) {
   const e = await dienste.probealarm().catch((fehler) => ({ ok: false, grund: fehler.message }));
   fenster?.webContents.send('kranich:ereignis', { art: 'verlauf-probe' });
@@ -184,12 +225,12 @@ async function probealarm(dienste) {
       : 'Der Schutz des Systems war schneller und hat die Testdatei abgefangen. Auch das zeigt: Der Schutz funktioniert.');
   dialog.showMessageBox({ type: e.ok ? 'info' : 'warning', title: 'Kranich · Probealarm', message: text, buttons: ['Gut'] });
 }
+
 async function testpaket(dienste) {
   const e = await dienste.testpaket().catch((fehler) => ({ ok: false, grund: fehler.message }));
   if (!e.ok) return dialog.showMessageBox({ type: 'warning', title: 'Kranich · Testpaket', message: `Das hat nicht geklappt: ${e.grund}`, buttons: ['Gut'] });
   const WORT = { verdaechtig: 'verdächtig', schaedlich: 'schädlich', unauffaellig: 'unauffällig', nicht_geprueft: 'nicht geprüft', ruhig: 'unauffällig' };
   const zeilen = e.zeilen.map((z) => `${z.bestanden ? '✓' : '✗'}  ${z.datei}: ${WORT[z.urteil] || z.urteil}${z.bestanden ? '' : ` (erwartet: ${WORT[z.erwartet] || z.erwartet})`}`);
-  zeigeFenster();
   return dialog.showMessageBox({
     type: e.bestanden === e.gesamt ? 'info' : 'warning', title: 'Kranich · Testpaket',
     message: `${e.bestanden} von ${e.gesamt} Dateien wie erwartet`,
@@ -210,7 +251,7 @@ function benachrichtige(ereignis, erlaubt) {
     if (e.urteil === 'schaedlich' && erlaubt.fund) inhalt = { title: 'Kranich · Fund', body: `${e.name} ist schädlich. ${e.hinweise[0] ?? ''}`.trim() };
     if (e.urteil === 'verdaechtig' && erlaubt.warnung) inhalt = { title: 'Kranich · Warnung', body: `${e.name} sieht verdächtig aus. ${e.hinweise[0] ?? ''}`.trim() };
   }
-  if (ereignis.art === 'schutzscan-fertig' && erlaubt.scanFertig) {
+  if (ereignis.art === 'schutzscan-fertig' && ereignis.ok && erlaubt.scanFertig) {
     inhalt = { title: 'Kranich · Scan fertig', body: ereignis.neueFunde ? `${ereignis.neueFunde} neue Funde.` : 'Nichts gefunden.' };
   }
   if (!inhalt) return;
@@ -220,5 +261,6 @@ function benachrichtige(ereignis, erlaubt) {
 }
 
 app.on('window-all-closed', () => {
-  // Kranich bleibt im Tray. Beendet wird nur ueber das Tray-Menue.
+  // Der Agent bleibt im Tray. Der Host ist zu, wenn sein Fenster zu ist.
+  if (!AGENT) app.quit();
 });
