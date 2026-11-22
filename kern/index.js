@@ -9,4 +9,5 @@ module.exports = {
   ...require('./autostart-windows'),
   ...require('./defender-windows'),
   ...require('./agent'),
+  ...require('./zentrale'),
 };
