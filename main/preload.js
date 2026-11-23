@@ -29,7 +29,7 @@ contextBridge.exposeInMainWorld('kranich', {
     pruefen: rufe('kranich:pruefen'),
     reparieren: rufe('kranich:reparieren'),
   },
-  formate: { liste: rufe('formate:liste'), eigen: rufe('formate:eigen') },
+  formate: { liste: rufe('formate:liste'), eigen: rufe('formate:eigen'), raten: rufe('formate:raten') },
   bildPlan: rufe('kranich:bild'),
   datei: {
     bildWaehlen: rufe('datei:bildWaehlen'),

@@ -136,7 +136,7 @@ async function klopfen() {
 function klopfUhrStellen() {
   clearInterval(klopfUhr);
   const e = einstellungen.alle();
-  if (!e.pingAn) return;
+  if (!e.autoKlopfen) return;
   klopfUhr = setInterval(() => klopfen().catch(() => {}), Math.max(1, Number(e.intervallMin) || 5) * 60000);
 }
 
@@ -213,7 +213,7 @@ function registriere() {
     w.netzOffen.forEach((t, i) => { if (!da(`np-${i + 1}`)) speicher.setze('netzpunkt', `np-${i + 1}`, { text: t, erledigt: false }); });
     for (const g of w.gewolltAus) if (!da(`ga-${g}`)) speicher.setze('gewollt_aus', `ga-${g}`, { ziel: g });
     syncSpaeter();
-    setTimeout(() => klopfen().catch(() => {}), 200);
+    if (einstellungen.alle().autoKlopfen) setTimeout(() => klopfen().catch(() => {}), 200);
     return { ok: true, server: w.grund.SERVER.length, neu, wissen: grund(), eintraege: speicher.alle() };
   });
   handle('eintrag:setze', (art, id, daten) => { const r = speicher.setze(art, id, daten); syncSpaeter(); return r; });
@@ -272,7 +272,7 @@ function start() {
   registriere();
   oeffneFenster();
   klopfUhrStellen();
-  setTimeout(() => klopfen().catch(() => {}), SPIEL ? 300 : 1500);
+  if (SPIEL || einstellungen.alle().autoKlopfen) setTimeout(() => klopfen().catch(() => {}), SPIEL ? 300 : 1500);
   syncJetzt();
   syncUhr = setInterval(syncJetzt, 60000);
 }

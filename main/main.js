@@ -14,7 +14,7 @@ const Heimdienst = require('../kern/heimdienst');
 const hirn = process.env.KRANICH_SPIELHIRN ? { ...echtesHirn, frage: require('../werkzeug/spielhirn').frage } : echtesHirn;
 const A = require('../kern/auftraege');
 const { htmlFuerApp, svgAusHtml, dateiname } = require('../kern/export');
-const { FORMATE, GRUPPEN, format: formatVon, eigenesFormat } = require('../kern/formate');
+const { FORMATE, GRUPPEN, format: formatVon, eigenesFormat, formatAusWunsch } = require('../kern/formate');
 const AP = require('../kern/appplan');
 const PR = require('../kern/pruefung');
 
@@ -213,6 +213,7 @@ function registriere() {
 
   handle('formate:liste', () => ({ formate: FORMATE, gruppen: GRUPPEN }));
   handle('formate:eigen', (b, h, einheit) => eigenesFormat(b, h, einheit));
+  handle('formate:raten', (wunsch) => formatAusWunsch(String(wunsch || '').slice(0, 2000)));
 
   handle('kranich:anpassen', async ({ html, von, nach, texteAnpassen }) => {
     const e = einstellungen.alle();

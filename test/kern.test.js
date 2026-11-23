@@ -275,3 +275,16 @@ test('Selbstprüfung: Auswertung fasst zusammen, sortiert und begrenzt', () => {
   assert.match(PR.auftragReparieren({ html: HTML, probleme: b.slice(0, 2), breite: 800, hoehe: 600 }), /1\. ragt aus dem Bild/);
   assert.match(PR.messCode, /^\(function messen/);
 });
+
+test('Format aus dem Satz raten', () => {
+  const R = require('../kern/formate').formatAusWunsch;
+  assert.strictEqual(R('Instagram-Post für Selbst gfaltet: origami gibt es jetzt als App')?.id, 'post');
+  assert.strictEqual(R('Insta Story zum Release')?.id, 'story');
+  assert.strictEqual(R('App-Icon für Specht')?.id, 'icon');
+  assert.strictEqual(R('Login-Seite für eine App')?.id, 'app');
+  assert.strictEqual(R('Flyer für den Flohmarkt')?.id, 'a5');
+  assert.strictEqual(R('Plakat fürs Sommerfest')?.id, 'a3');
+  assert.strictEqual(R('Folien für meinen Vortrag')?.id, 'folie');
+  assert.strictEqual(R('Startseite für eine Fahrrad-App')?.id, 'app');
+  assert.strictEqual(R('etwas Schönes'), null);
+});

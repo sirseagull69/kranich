@@ -89,7 +89,7 @@ app.whenReady().then(async () => {
   await pruefe('Neue Störung im Tagebuch, mit Server verknüpft', "App.S.d.eintraege.some(e=>e.art==='stoerung'&&/Drucker OG/.test(e.was)&&e.server.includes('file01'))");
 
   // Anleitung + Erklären
-  await klick('.nav [data-z="anleitungen"]');
+  await klick('.seite [data-z="anleitungen"]');
   await klick('[data-a="anleitung-oeffnen"][data-id="an-betankung"]');
   await klick('[data-a="schritt-erklaeren"][data-i="1"]'); await warte(500);
   await pruefe('Schritt erklärt', "!!document.querySelector('.erklaerung')");
@@ -100,31 +100,31 @@ app.whenReady().then(async () => {
   await pruefe('Anleitung gespeichert', "/neu$/.test(document.querySelector('.titelkarte h1').textContent)");
 
   // Freigaben
-  await klick('.nav [data-z="freigaben"]');
+  await klick('.seite [data-z="freigaben"]');
   await klick('#fg-pfad'); await tippe('\\\\FILE01\\Projekte');
   await klick('#fg-recht'); await tippe('Jeder: Vollzugriff');
   await klick('[data-a="freigabe-dazu"]');
   await pruefe('Zu offene Freigabe rot', "!!document.querySelector('main.haupt .punkt.aus') && /Zu offen/.test(document.querySelector('main.haupt').textContent)");
 
   // Netz abhaken
-  await klick('.nav [data-z="netz"]');
+  await klick('.seite [data-z="netz"]');
   await klick('.abhaken input[data-id="np-1"]'); await warte(200);
   await pruefe('Netzpunkt abgehakt', "App.S.d.eintraege.find(e=>e.id==='np-1').erledigt===true");
   await foto('s5-netz');
 
   // Backup, Lizenzen
-  await klick('.nav [data-z="backup"]');
+  await klick('.seite [data-z="backup"]');
   await pruefe('Backup zeigt vollen Balken', "!!document.querySelector('.balken i.rot')");
-  await klick('.nav [data-z="lizenzen"]'); await warte(400);
+  await klick('.seite [data-z="lizenzen"]'); await warte(400);
   await pruefe('Lizenzen: nicht verbunden', "/nicht verbunden/.test(document.querySelector('main.haupt').textContent)");
 
   // Einstellungen
   await klick('[data-a="ansicht"][data-z="einstellungen"]');
-  await klick('[data-a="schalter"][data-k="pingAn"]');
-  await pruefe('Ping-Schalter aus', "document.querySelector('[data-k=pingAn]').getAttribute('aria-checked')==='false'");
+  await klick('[data-a="schalter"][data-k="autoKlopfen"]');
+  await pruefe('Auto-Klopfen an', "document.querySelector('[data-k=autoKlopfen]').getAttribute('aria-checked')==='true'");
   await foto('s6-einstellungen'); await pruefe('Knöpfe ganz sichtbar', "[...document.querySelectorAll('button')].filter(b=>b.offsetParent).every(b=>b.scrollWidth<=b.clientWidth+1)");
   // Löschen mit eigener Abfrage
-  await klick('.nav [data-z="stoerungen"]');
+  await klick('.seite [data-z="stoerungen"]');
   await klick('.tagebuch-eintrag'); await klick('[data-a="stoerung-weg"]');
   await pruefe('Eigene Abfrage beim Löschen', "!!document.querySelector('.schleier [data-ja]')");
   await klick('.schleier [data-ja]');
@@ -136,7 +136,7 @@ app.whenReady().then(async () => {
   await klick('[data-a="helfer"]');
   await pruefe('Helfer eingeklappt', "!document.querySelector('.helfer')");
   // Abklopfen per Knopf
-  await klick('.nav [data-z="uebersicht"]'); await klick('[data-a="klopfen"]'); await warte(800);
+  await klick('.seite [data-z="uebersicht"]'); await klick('[data-a="klopfen"]'); await warte(800);
   await pruefe('Nochmal abgeklopft', "!App.S.klopft");
   // Schmal
   w.setSize(1180, 800); await warte(500);

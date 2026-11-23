@@ -1037,12 +1037,14 @@
       return neuesProjekt('entwurf', { format: f, wunsch, anhang: S.anhang });
     },
     'leer-anlegen': () => neuesProjekt('entwurf', { format: S.formate.find((x) => x.id === (S.neuFormat || 'web')) }),
-    'start-falten': () => {
+    'start-falten': async () => {
       const wunsch = document.getElementById('startwunsch')?.value.trim();
       const anhang = S.anhang;
       if (!wunsch && !anhang) { document.getElementById('startwunsch')?.focus(); return; }
       S.anhang = null;
-      const format = S.startLasche === 'neu' ? S.formate.find((x) => x.id === (S.neuFormat || 'web')) : undefined;
+      let format = S.startLasche === 'neu' ? S.formate.find((x) => x.id === (S.neuFormat || 'web')) : undefined;
+      // „Kranich sucht das passende Format selbst aus“: aus dem Satz raten (Insta-Post → quadratisch)
+      if (!format && wunsch) { const g = await K.formate.raten(wunsch); if (g && !g.fehler && g.id) format = S.formate.find((x) => x.id === g.id) || g; }
       return neuesProjekt('entwurf', { wunsch, anhang, format });
     },
     'projekt-oeffnen': (el, e) => { if (e?.target?.closest('[data-aktion="projekt-weg-liste"]')) return; oeffne(el.dataset.id); },

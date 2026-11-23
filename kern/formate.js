@@ -45,4 +45,30 @@ function eigenesFormat(breite, hoehe, einheit = 'px') {
   return { id: 'eigen', name: 'Eigene Größe', gruppe: 'Eigen', breite: fb, hoehe: fh, mass: mm ? `${b} × ${h} mm` : undefined, druck: mm };
 }
 
-module.exports = { FORMATE, GRUPPEN, format, massText, eigenesFormat };
+
+// Format aus dem Satz erraten („Instagram-Post für …“ → post). Reihenfolge zählt:
+// das Speziellere zuerst (App-Icon vor App, Story vor Post).
+const HINWEISE = [
+  ['icon', /\b(app-?icon|icon)\b/i],
+  ['logo', /\blogo\b/i],
+  ['story', /\b(story|stories|reel|status)\b/i],
+  ['linkedin', /\blinked-?in\b/i],
+  ['youtube', /\b(youtube|thumbnail|vorschaubild)\b/i],
+  ['post', /\b(insta(gram)?|post|beitrag|social[- ]?media|facebook)\b/i],
+  ['visitenkarte', /\bvisitenkarte/i],
+  ['einladung', /\b(einladung|glückwunsch|grußkarte|karte zum|postkarte)/i],
+  ['a3', /\b(poster|plakat|aushang)\b/i],
+  ['a5', /\b(flyer|handzettel|prospekt)\b/i],
+  ['folie', /\b(folie|folien|präsentation|praesentation|slide|vortrag)\b/i],
+  ['webkopf', /\b(header|banner)\b/i],
+  ['tablet', /\btablet|ipad\b/i],
+  ['app', /\b(app|handy|smartphone|login|anmelde)/i],
+  ['web', /\b(webseite|website|landing ?page|startseite|homepage)\b/i],
+];
+function formatAusWunsch(wunsch) {
+  const t = String(wunsch || '');
+  for (const [id, re] of HINWEISE) if (re.test(t)) return format(id);
+  return null;
+}
+
+module.exports = { FORMATE, GRUPPEN, format, massText, eigenesFormat, formatAusWunsch };

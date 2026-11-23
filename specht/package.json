@@ -1,7 +1,7 @@
 {
   "name": "specht",
   "productName": "Specht",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Specht – der IT-Helfer. Klopft ab, merkt sich alles, ändert nichts. Familie Selbst gfaltet.",
   "author": "Nils Pohler",
   "main": "main/main.js",

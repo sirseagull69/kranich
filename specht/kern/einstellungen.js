@@ -21,7 +21,7 @@ const STANDARD = {
   appOrdner: { origami: '', kranich: '', albatros: '', schreiben: '' },
   // Specht
   intervallMin: 5,
-  pingAn: true,
+  autoKlopfen: false, // erst klopfen, wenn Nils es will (z. B. im Firmennetz)
   meldungenAn: true,
   erstStartFertig: false,
   lizenzUrl: '',

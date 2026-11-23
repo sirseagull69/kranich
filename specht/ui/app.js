@@ -22,6 +22,7 @@
     zu: '<path d="M6 6l12 12M18 6L6 18"/>',
     kopie: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
+    pfeil: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     wolke: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"/>',
   };
   const sym = (n, g = 16, f = 'currentColor') => `<svg width="${g}" height="${g}" viewBox="0 0 24 24" fill="none" stroke="${f}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n] || ''}</svg>`;
@@ -83,51 +84,87 @@
   }
 
   // ---------- Kopf, Leiste, Helfer ----------
-  function kopf() {
+  // Neues Layout (wie origami): links ein Blatt mit Nachschlagen, Mitte „Specht fragen“,
+  // Nachschlagen geht als Blatt rechts daneben auf – das Gespräch bleibt stehen.
+  function syncPille() {
     const s = S.d.sync;
     const punktArt = { synchron: 'an', laeuft: 'dreht', offline: 'gewollt', problem: 'aus', konflikt: 'aus', aus: '' }[s.art] || '';
-    return `<header class="kopf">${specht(44, S.klopft ? 'klopft' : '')}
-      <div class="name"><b>Specht</b><span>IT-Helfer · ${S.klopft ? 'klopft gerade ab …' : S.d.letzterKlopf ? `zuletzt abgeklopft ${esc(wann(S.d.letzterKlopf))}` : 'noch nicht abgeklopft'}</span></div>
-      <div class="platz"></div>
-      <button type="button" class="pille" data-a="sync-klick" title="${esc(s.detail || '')}"><span class="punkt ${punktArt}"></span>${esc(s.text)}</button>
-      <span class="pille leise">${sym('schloss', 14)} Nur lesen – Specht ändert nichts</span>
-      <button type="button" class="rundknopf" data-a="helfer" aria-label="Specht fragen ein- oder ausblenden" aria-pressed="${S.helfer}">${sym('chat', 18)}</button>
-      <button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
-    </header>`;
+    return `<button type="button" class="pille" data-a="sync-klick" title="${esc(s.detail || '')}"><span class="punkt ${punktArt}"></span>${esc(s.text)}</button>`;
   }
-  const BEREICHE = [['uebersicht', 'Übersicht'], ['server', 'Server'], ['netz', 'Netz & Switches'], ['backup', 'Backup'], ['lizenzen', 'Lizenzen'], ['freigaben', 'Freigaben'], ['anleitungen', 'Anleitungen'], ['stoerungen', 'Störungen']];
+  const klopfText = () => (S.klopft ? 'klopft gerade ab …' : S.d.letzterKlopf ? `zuletzt abgeklopft ${wann(S.d.letzterKlopf)}` : 'noch nicht abgeklopft');
+  function kopf() {
+    return `<div class="kopf">${specht(42, S.klopft ? 'klopft' : '')}<div class="name"><b>Specht</b><span>${esc(klopfText())}</span></div></div>`;
+  }
+  const BEREICHE = [['uebersicht', 'Übersicht'], ['server', 'Server'], ['netz', 'Netz & Switches'], ['backup', 'Backup'], ['lizenzen', 'Lizenzen'], ['freigaben', 'Freigaben'], ['anleitungen', 'Anleitungen'], ['stoerungen', 'Störungen'], ['einstellungen', 'Einstellungen']];
+  const NACHSCHLAGEN = BEREICHE.filter(([k]) => !['uebersicht', 'einstellungen'].includes(k));
+  const ecke = () => '<svg class="ecke" viewBox="0 0 100 100" aria-hidden="true"><polygon points="0,0 100,0 100,100" fill="#d4573f"/><polygon points="38,0 100,0 100,62" fill="#8f2a1c"/><polygon points="0,0 38,0 100,62 100,100" fill="#f8e2dc" opacity=".25"/></svg>';
   function nav() {
-    const rot = S.d.wissen.SERVER.filter((s) => zustandVon(s.id) === 'aus').length;
-    const offen = eintraege('stoerung').filter((s) => s.status === 'offen').length;
+    const rot = S.d.wissen.SERVER.filter((x) => zustandVon(x.id) === 'aus').length;
+    const offen = eintraege('stoerung').filter((x) => x.status === 'offen').length;
     const zahl = { server: rot, stoerungen: offen };
     const aktiv = { anleitung: 'anleitungen' }[S.ansicht] || S.ansicht;
-    return `<nav class="nav karte" aria-label="Bereiche"><span class="titel">Specht weiß</span>
-      ${BEREICHE.map(([k, t]) => `<button type="button" data-a="ansicht" data-z="${k}" ${aktiv === k ? 'aria-current="page"' : ''}><span class="punkt"></span>${esc(t)}${zahl[k] ? `<span class="zahl">${zahl[k]}</span>` : ''}</button>`).join('')}
-      <div class="fuss">Dieses Gerät<br><b>${esc(S.d.geraet.replace(/ \(.*\)$/, ''))}</b></div></nav>`;
+    return `<nav class="seite blatt" aria-label="Seitenleiste"><span class="streifen" aria-hidden="true"></span>
+      ${kopf()}
+      <button type="button" class="neu-knopf" data-a="chat-neu">${sym('plus', 16)} Neue Frage</button>
+      <span class="hand">Nachschlagen</span>
+      <div class="liste">${NACHSCHLAGEN.map(([k, t]) => `<button type="button" data-a="ansicht" data-z="${k}" ${aktiv === k ? 'aria-current="page"' : ''}><span class="txt">${esc(t)}</span>${zahl[k] ? `<span class="zahl">${zahl[k]}</span>` : ''}</button>`).join('')}</div>
+      <span class="hand">Abklopfen</span>
+      <div class="klopfzeile"><span class="leise">${esc(klopfText())}</span><button type="button" class="btn klein" data-a="klopfen" ${S.klopft || keinWissen() ? 'disabled' : ''}>${S.klopft ? 'Klopft …' : 'Jetzt'}</button></div>
+      <div class="fuss">${syncPille()}<div class="fusszeile"><span class="leise">${sym('schloss', 13)} Nur lesen · ${esc(S.d.geraet.replace(/ \(.*\)$/, ''))}</span><button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></div></div>
+    </nav>`;
   }
-  function helfer() {
+  // Start: noch keine Frage gestellt
+  function startseite() {
+    const server = S.d.wissen.SERVER;
+    const rot = server.filter((x) => zustandVon(x.id) === 'aus');
+    const offen = eintraege('stoerung').filter((x) => x.status === 'offen');
+    const voll = (S.d.wissen.BACKUP.ziele || []).filter((b) => b.voll >= 95);
+    const std = new Date().getHours();
+    const gruss = std < 11 ? 'Guten Morgen' : std < 17 ? 'Hallo' : 'Guten Abend';
+    const kacheln = keinWissen()
+      ? `<button type="button" class="infokachel" data-a="wissen-laden"><b>Wissen laden</b><span>Einmal die Wissens-Datei laden, dann kenne ich eure Server.</span></button>`
+      : `<button type="button" class="infokachel ${!S.d.letzterKlopf ? 'grau' : rot.length ? 'warn' : ''}" data-a="ansicht" data-z="server"><b>${server.length} Server</b><span>${S.d.letzterKlopf ? (rot.length ? `${rot.length} antworten nicht` : 'alle antworten') : 'noch nicht abgeklopft'}</span></button>
+        <button type="button" class="infokachel ${offen.length ? 'warn' : ''}" data-a="ansicht" data-z="stoerungen"><b>${offen.length ? `${offen.length} Störung${offen.length > 1 ? 'en' : ''} offen` : 'Tagebuch ruhig'}</b><span>${offen.length ? esc(offen[0].was.slice(0, 48)) : 'nichts offen'}</span></button>
+        <button type="button" class="infokachel ${voll.length ? 'warn' : ''}" data-a="ansicht" data-z="backup"><b>${voll.length ? `${voll.length} Backup-Ziel${voll.length > 1 ? 'e' : ''} voll` : 'Backup'}</b><span>${voll.length ? esc(voll[0].name) : esc(S.d.wissen.BACKUP.stand || 'Stand aus der Wissens-Datei')}</span></button>`;
+    const vorschlaege = S.d.wissen.VORSCHLAEGE?.length ? S.d.wissen.VORSCHLAEGE : ['Welche Server sind gerade still?', 'Was steht offen im Tagebuch?', 'Ein Drucker druckt nicht – was prüfe ich?', 'Wo läuft das Backup hin?'];
+    return `<div class="start">
+      <div class="start-oben"><div><span class="hand gross">${esc(gruss)} · Specht, dein IT-Helfer</span>
+        <h1>Was ist los in der <mark>IT?</mark></h1>
+        <p class="leise">Frag einfach. Ich ändere nichts – ich zeige dir, wo du schaust und was du tun kannst.</p></div>
+        <div class="start-vogel">${specht(118)}<span class="hand notiz">${keinWissen() ? 'Erst Wissen laden, dann leg ich los.' : S.d.letzterKlopf ? (rot.length ? 'Ein paar sind still. Erst mal fragen?' : 'Alles klopft zurück.') : 'Ich klopf erst, wenn du willst.'}</span></div></div>
+      <div class="infozeile">${kacheln}</div>
+      <div class="vorschlagsraster">${vorschlaege.slice(0, 4).map((t) => `<button type="button" class="vorschlagskarte" data-a="vorschlag" data-t="${esc(t)}"><b>${esc(t)}</b></button>`).join('')}</div>
+    </div>`;
+  }
+  function gespraechTitel(verlauf) { const f = verlauf.find((m) => m.wer === 'ich'); return f ? f.text.slice(0, 70) : 'Specht fragen'; }
+  function mitte() {
     const verlauf = chatVerlauf();
-    const leer = !verlauf.length;
-    return `<aside class="helfer karte" aria-label="Specht fragen">
-      <div class="kopfzeile"><b>Specht fragen</b>${verlauf.length ? '<button type="button" class="btn klein" data-a="chat-neu">Neu</button>' : ''}</div>
+    return `<main class="mitte" aria-label="Specht fragen">
+      <div class="mitte-kopf"><b>${esc(gespraechTitel(verlauf))}</b><div class="platz"></div>${verlauf.length ? '<button type="button" class="btn klein" data-a="chat-neu">Neue Frage</button>' : ''}</div>
       <div class="gespraech" aria-live="polite">
-        ${leer ? `<div class="er">Frag mich etwas über eure IT – zum Beispiel, wo etwas läuft, woran es hängt oder was bei einer Störung zu tun ist. Ich ändere nichts, ich zeige dir nur, was du tun kannst.</div>
-          <div class="vorschlaege">${(S.d.wissen.VORSCHLAEGE?.length ? S.d.wissen.VORSCHLAEGE : ['Welche Server sind gerade still?', 'Was steht offen im Tagebuch?', 'Ein Drucker druckt nicht – was prüfe ich?']).map((t) => `<button type="button" data-a="vorschlag" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>` : ''}
-        ${verlauf.map(nachricht).join('')}
-        ${S.denkt ? '<div class="er"><span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div>' : ''}
+        ${verlauf.length ? verlauf.map(nachricht).join('') : startseite()}
+        ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(30, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}
       </div>
-      <div class="frage"><label for="frage" class="leise" style="font:600 12px var(--g)">Deine Frage</label>
-        <textarea id="frage" rows="2" placeholder="Was ist los? z. B. „Der Fileserver antwortet nicht“"></textarea>
-        <div style="display:flex;justify-content:flex-end"><button type="button" class="btn haupt" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></div>
-    </aside>`;
+      <div class="eingabe blatt"><span class="streifen rechts" aria-hidden="true"></span>
+        <textarea id="frage" rows="2" placeholder="Was ist los? z. B. „Der Fileserver antwortet nicht“" aria-label="Deine Frage an Specht"></textarea>
+        <div class="eingabe-fuss"><span class="leise">Enter schickt ab · Shift+Enter neue Zeile</span><div class="platz"></div><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen ${sym('pfeil', 15)}</button></div>
+      </div>
+    </main>`;
+  }
+  function nachschlagBlatt() {
+    if (!S.ansicht || S.ansicht === 'uebersicht') return '';
+    const titel = (BEREICHE.find(([k]) => k === ({ anleitung: 'anleitungen' }[S.ansicht] || S.ansicht)) || [0, ''])[1];
+    return `<aside class="nachschlag blatt" aria-label="${esc(titel)}"><div class="nachschlag-kopf"><span class="hand">${esc(titel)}</span><div class="platz"></div><button type="button" class="rundknopf" data-a="zu" aria-label="Schließen">${sym('zu', 17)}</button></div>
+      <div class="nachschlag-inhalt">${(ANSICHTEN[S.ansicht] || (() => ''))()}</div></aside>`;
   }
   function nachricht(m) {
-    if (m.wer === 'ich') return `<div class="ich">${esc(m.text)}</div>`;
-    const st = (m.aehnlich || []).map((id) => eintraege('stoerung').find((s) => s.id === id)).filter(Boolean);
+    if (m.wer === 'ich') return `<div class="frage-zettel">${esc(m.text)}</div>`;
+    const st = (m.aehnlich || []).map((id) => eintraege('stoerung').find((x) => x.id === id)).filter(Boolean);
     const an = m.anleitung ? eintraege('anleitung').find((a) => a.id === m.anleitung) : null;
-    return `<div class="er ${m.fehler ? 'fehler' : ''}">${esc(m.text)}</div>
+    return `<div class="antwort ${m.fehler ? 'fehler' : ''}"><div class="wer-zeile">${specht(30)}<b>Specht</b></div>
+      <div class="antwort-text">${esc(m.text)}</div>
       ${(m.befehle || []).map(befehlBox).join('')}
-      ${st.length || an ? `<div class="vorschlaege">${st.map((s) => `<button type="button" data-a="stoerung-oeffnen" data-id="${esc(s.id)}">${datum(s.datum)} · ${esc(s.was.slice(0, 40))}</button>`).join('')}${an ? `<button type="button" data-a="anleitung-oeffnen" data-id="${esc(an.id)}">Anleitung: ${esc(an.titel)}</button>` : ''}</div>` : ''}`;
+      ${st.length || an ? `<div class="vorschlaege">${st.map((x) => `<button type="button" data-a="stoerung-oeffnen" data-id="${esc(x.id)}">${datum(x.datum)} · ${esc(x.was.slice(0, 40))}</button>`).join('')}${an ? `<button type="button" data-a="anleitung-oeffnen" data-id="${esc(an.id)}">Anleitung: ${esc(an.titel)}</button>` : ''}</div>` : ''}</div>`;
   }
   const befehlBox = (b) => `<div class="befehl"><div class="oben"><span>${esc(b.zweck || 'Befehl')} – du führst ihn aus</span><button type="button" data-a="kopieren" data-t="${esc(b.befehl)}">Kopieren</button></div><code>${esc(b.befehl)}</code></div>`;
   const CHAT_ID = 'chat-verlauf';
@@ -137,6 +174,9 @@
   function uebersicht() {
     const server = S.d.wissen.SERVER;
     if (keinWissen()) return `<section class="titelkarte karte"><div class="symbolkachel still">${specht(40)}</div><div class="platz"><h1>Hallo! Ich weiß noch nichts über eure IT.</h1><p>Sobald das Wissen geladen ist, klopfe ich alle Server ab.</p></div></section>${wissenLeer('Specht kommt ohne Firmendaten – die App liegt öffentlich zum Download.')}`;
+    if (!S.d.letzterKlopf && !S.klopft) {
+      return `<section class="titelkarte karte"><div class="symbolkachel still">${specht(40)}</div><div class="platz"><h1>Noch nicht abgeklopft</h1><p>Ich klopfe erst, wenn du es willst – am besten im Firmennetz oder per VPN. Automatisch geht es unter Einstellungen.</p></div><button type="button" class="btn haupt" data-a="klopfen">Jetzt abklopfen</button></section>`;
+    }
     if (!S.d.letzterKlopf) {
       return `<section class="titelkarte karte"><div class="symbolkachel still">${specht(40, 'klopft')}</div><div class="platz"><h1>Specht klopft gerade ab …</h1><p>Ich frage alle Server und Switches einmal, ob sie antworten.</p></div></section>
         <section class="feldkarte karte"><div class="serverraster">${server.map(() => '<div class="kachel platzhalter-block" style="height:52px"></div>').join('')}</div></section>`;
@@ -310,7 +350,7 @@
           : `<p class="leise" style="margin:0 0 10px">Nicht angemeldet – alles bleibt nur auf diesem Gerät.</p><button type="button" class="btn haupt" data-a="erster-start">Anmelden</button>`}
           <p class="leise" style="margin:12px 0 0;font-size:13.5px">Gespeichert werden Notizen, Tagebuch, Anleitungen, Freigaben, „gewollt aus“ und der Chat. Keine Passwörter – die bleiben in Passbolt.</p></section>
         <section class="feldkarte karte"><h2 class="k2">Was Specht abklopft</h2>
-          <div class="zeile"><span><b class="h">Ping</b> auf alle Server und Switches</span><div class="platz"></div><button type="button" class="schalter" role="switch" aria-checked="${e.pingAn}" aria-label="Ping an oder aus" data-a="schalter" data-k="pingAn"></button></div>
+          <div class="zeile"><span><b class="h">Automatisch abklopfen</b> <span class="leise">· Ping auf alle Server und Switches, nur im Firmennetz sinnvoll</span></span><div class="platz"></div><button type="button" class="schalter" role="switch" aria-checked="${!!e.autoKlopfen}" aria-label="Automatisch abklopfen an oder aus" data-a="schalter" data-k="autoKlopfen"></button></div>
           <div class="zeile"><label for="intervall">Wie oft</label><div class="platz"></div><select id="intervall" class="suchfeld" style="width:170px" data-a="intervall">${[1, 2, 5, 10, 15, 30].map((m) => `<option value="${m}" ${Number(e.intervallMin) === m ? 'selected' : ''}>alle ${m} Minuten</option>`).join('')}</select></div>
           <div class="zeile"><span>Taskleiste melden, wenn etwas neu rot wird</span><div class="platz"></div><button type="button" class="schalter" role="switch" aria-checked="${e.meldungenAn}" aria-label="Meldungen an oder aus" data-a="schalter" data-k="meldungenAn"></button></div>
           <div class="zeile"><span><b class="h">PRTG</b> <span class="leise">· kommt, sobald es einen Lese-Zugang gibt</span></span><div class="platz"></div><span class="chip grau">nicht verbunden</span></div>
@@ -434,11 +474,11 @@
     if (!S.d) return;
     const fokus = document.activeElement?.id; const sel = fokus ? [document.activeElement.selectionStart, document.activeElement.selectionEnd] : null;
     const frage = document.getElementById('frage')?.value || '';
-    const scroll = app.querySelector('main.haupt')?.scrollTop || 0;
+    const scroll = app.querySelector('.nachschlag-inhalt')?.scrollTop || 0;
     const gesp = app.querySelector('.gespraech');
-    app.innerHTML = `${kopf()}<div class="koerper ${S.helfer ? 'helfer-zwang' : 'ohne-helfer'}">${nav()}<main class="haupt ${neu ? 'ansicht-neu' : ''}" aria-label="${esc((BEREICHE.find(([k]) => k === S.ansicht) || [0, 'Bereich'])[1])}">${(ANSICHTEN[S.ansicht] || uebersicht)()}</main>${S.helfer ? helfer() : ''}</div>`;
+    app.innerHTML = `${ecke()}<div class="buehne ${S.ansicht && S.ansicht !== 'uebersicht' ? 'mit-blatt' : ''}">${nav()}${mitte()}${nachschlagBlatt()}</div>`;
     const f = document.getElementById('frage'); if (f) f.value = frage;
-    if (!neu) { const h = app.querySelector('main.haupt'); if (h) h.scrollTop = scroll; }
+    if (!neu) { const h = app.querySelector('.nachschlag-inhalt'); if (h) h.scrollTop = scroll; }
     const g = app.querySelector('.gespraech'); if (g) g.scrollTop = g.scrollHeight;
     if (fokus) { const el = document.getElementById(fokus); if (el) { el.focus({ preventScroll: true }); try { if (sel && el.setSelectionRange) el.setSelectionRange(sel[0], sel[1]); } catch { /* egal */ } } }
     S.gewechselt.clear();
@@ -461,7 +501,7 @@
     text = String(text || '').trim(); if (!text || S.denkt) return;
     const verlauf = [...chatVerlauf(), { wer: 'ich', text }];
     await setze('chat', CHAT_ID, { verlauf: verlauf.slice(-40) });
-    S.denkt = true; S.helfer = true; zeichne(false);
+    S.denkt = true; zeichne(false);
     const r = await SP.frage(text, verlauf);
     S.denkt = false;
     const antwort = r?.fehler
@@ -501,11 +541,12 @@
       const r = await SP.wissenLaden();
       if (r?.abgebrochen) return;
       if (r?.fehler) { meldung(r.fehler.nachricht, { fehler: true, dauer: 7000 }); return; }
-      S.d.wissen = r.wissen; S.d.eintraege = r.eintraege; S.klopft = true;
+      S.d.wissen = r.wissen; S.d.eintraege = r.eintraege; S.klopft = !!S.d.einstellungen?.autoKlopfen;
       zeichne(); meldung(`Wissen geladen: ${r.server} Server${r.neu ? `, ${r.neu} Einträge dazu` : ''}.`);
     },
     ansicht: (el) => { S.ansicht = el.dataset.z; S.stoerung = null; S.bearbeite = null; if (S.ansicht === 'lizenzen') S.lizenzen = null; zeichne(); },
     helfer: () => { S.helfer = !S.helfer; zeichne(false); },
+    zu: () => { S.ansicht = 'uebersicht'; S.stoerung = null; S.bearbeite = null; zeichne(false); },
     klopfen: () => klopfen(),
     'sync-klick': () => { if (S.d.konflikte?.length) konfliktZeigen(); else if (!S.d.konto) ersterStart(1); else { SP.sync(); } },
     'sync-jetzt': () => SP.sync(),
@@ -594,7 +635,7 @@
     const vorher = S.d?.sync?.art;
     if (!S.d) return; S.d.sync = s;
     const pille = app.querySelector('[data-a="sync-klick"]');
-    if (pille) pille.outerHTML = kopf().match(/<button type="button" class="pille" data-a="sync-klick"[\s\S]*?<\/button>/)[0];
+    if (pille) pille.outerHTML = syncPille();
     if (s.art === 'konflikt') { SP.start().then((d) => { S.d.konflikte = d.konflikte; S.d.eintraege = d.eintraege; konfliktZeigen(); }); }
     if (vorher === 'laeuft' && s.art === 'synchron') vogelMacht('schuettelt');
   });
