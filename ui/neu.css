@@ -296,7 +296,9 @@
 .regler input[type=range]{accent-color:var(--pflaume)}
 
 /* ---------- Dialoge ---------- */
-.schleier{background:rgba(29,39,66,.38)!important;backdrop-filter:blur(2px)}
+.schleier{background:rgba(29,39,66,.38)!important}
+/* Solange ein Dialog offen ist, Leinwand nicht mitmalen – entlastet die Grafik (sonst Bildfehler unter Windows) */
+body:has(.schleier) .welt{visibility:hidden}
 .dialog{border-radius:2px}
 .einstelldialog{width:min(1180px,95vw)!important;height:min(820px,92vh);padding:0!important;overflow:hidden!important;gap:0!important}
 .einstellraster{height:100%;display:grid;grid-template-columns:240px minmax(0,1fr)}
