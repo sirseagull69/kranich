@@ -81,7 +81,7 @@ body.zieht .ablage{background:var(--hell);border-color:var(--gruen)}
 .wz:hover:not(:disabled){background:#f1eee6}
 .wz[aria-pressed="true"]{background:var(--hell);color:var(--dunkel)}
 .farbwahl{position:relative}
-.farben{position:absolute;top:40px;left:0;z-index:20;display:flex;gap:6px;padding:8px;background:var(--blatt);border-radius:10px;box-shadow:var(--schatten)}
+.farben{position:fixed;z-index:60;animation:aufklappen .16s ease-out;display:flex;gap:6px;padding:8px;background:var(--blatt);border-radius:10px;box-shadow:var(--schatten)}
 .farben button{width:26px;height:26px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px var(--strich)}
 .formelzeile{display:flex;align-items:center;gap:0;min-height:42px;overflow:hidden}
 .formelzeile .adr{width:84px;text-align:center;font:700 14px var(--mono);color:var(--dunkel);border-right:1px dashed var(--strich);padding:10px 0}
@@ -192,4 +192,20 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font:1
 .tipp-karte{display:flex;flex-direction:column;gap:3px;margin:6px 0 2px;padding:12px 14px;border-radius:10px;background:#fdebd9;position:relative}
 .tipp-karte b{font:600 22px 'Caveat',cursive;color:#a5491b}
 .tipp-karte span{font-size:13.5px;line-height:1.4;color:#5b3a22}
-@media (max-width:1250px){.werk.mitleiste{grid-template-columns:minmax(0,1fr) 320px}.werk.mitleiste .seite{display:none}}
+@media (max-width:1250px){.werk.mitleiste{grid-template-columns:minmax(0,1fr) 320px}.werk.mitleiste .seite{display:none}.mini-reiter{display:flex}}
+
+.gitter tr.platzhalter td{padding:0;border:0;background:transparent}
+/* Vogel im Kopf und im Helfer auf einem hellen Kreis, damit der weiße Flügel zu sehen ist */
+.marke svg[role="img"],.helfer header svg[role="img"],.er>span>svg{background:radial-gradient(circle at 50% 55%,#cfe9d8 0 62%,transparent 63%);border-radius:50%}
+.marke svg[role="img"]{width:38px!important;height:38px!important}
+
+/* Eigene Abfrage */
+.abfrage{width:min(420px,92vw);padding:22px 24px 18px;animation:hoch .18s ease-out}
+.abfrage h2{font-size:19px}
+.abfrage p{margin:8px 0 0;color:var(--leise);font-size:14.5px}
+.abfrage-knoepfe{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+.btn.gefahr{background:#c0463a;border-color:#c0463a;color:#fff}
+.btn.gefahr:hover:not(:disabled){background:#a83a30}
+.mini-reiter{display:none;gap:4px;margin-right:12px}
+.mini-reiter .mr{border:0;background:transparent;padding:4px 10px;border-radius:7px;font:600 13px 'Bricolage Grotesque',sans-serif;color:var(--leise)}
+.mini-reiter .mr.an{background:var(--blatt);color:var(--tinte);box-shadow:inset 0 0 0 1px var(--strich)}

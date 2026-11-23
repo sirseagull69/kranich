@@ -33,8 +33,8 @@ Regeln:
 const ERKLAEREN = `Du bist Albatros, ein Tabellen-Helfer. Erkläre die Formel in der markierten Zelle so, dass sie jemand ohne Excel-Wissen versteht: Was rechnet sie, mit welchen Zellen, was kommt heraus. Deutsch, duzen, höchstens 4 kurze Sätze, kein Markdown.
 Antworte NUR mit JSON: { "antwort": "…" }`;
 
-function tabellenText(blatt, maxZeilen = 250) {
-  const werte = F.rechneAlles(blatt);
+function tabellenText(blatt, maxZeilen = 250, blaetter = null) {
+  const werte = F.rechneAlles(blatt, blaetter ? F.mappe(blaetter) : null);
   const nachZeile = new Map();
   for (const [a, roh] of Object.entries(blatt.zellen)) {
     const z = F.zerlege(a); if (!z || z.ze >= maxZeilen) continue;
@@ -48,9 +48,9 @@ function tabellenText(blatt, maxZeilen = 250) {
   return zeilen.length ? zeilen.join('\n') + extra : '(leer)';
 }
 
-function auftrag({ wunsch, blatt, auswahl, name }) {
+function auftrag({ wunsch, blatt, blaetter, auswahl, name }) {
   return `TABELLE „${name || 'Ohne Namen'}“, Blatt „${blatt.name}“:
-${tabellenText(blatt)}
+${tabellenText(blatt, 250, blaetter)}${blaetter && blaetter.length > 1 ? `\n\nWEITERE BLÄTTER: ${blaetter.filter((b) => b !== blatt && b.name !== blatt.name).map((b) => `„${b.name}“`).join(', ')} (Bezug so: 'Blattname'!A1)` : ''}
 
 ${auswahl ? `MARKIERT: ${auswahl}\n` : ''}WUNSCH: ${wunsch}`;
 }

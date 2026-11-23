@@ -70,7 +70,7 @@
   // ---------- Speichern und Rückgängig ----------
   let speicherUhr = null;
   function geaendert() {
-    S.werte = Fo.rechneAlles(blatt());
+    S.werte = Fo.rechneAlles(blatt(), Fo.mappe(S.t.blaetter));
     const chip = document.querySelector('.gespeichert'); if (chip) chip.textContent = 'speichert …';
     clearTimeout(speicherUhr);
     speicherUhr = setTimeout(async () => { const r = await A.tabellen.speichern(S.t); const c = document.querySelector('.gespeichert'); if (c) c.textContent = r?.fehler ? 'nicht gespeichert!' : 'gespeichert'; }, 500);
@@ -109,7 +109,7 @@
         <div class="zeile2">
           <section class="blatt liste"><div class="reihe"><h2 class="h" style="flex:1">Zuletzt geöffnet</h2><button type="button" class="btn klein weiss" data-aktion="neu">${sym('plus', 14, 2.4)} Leere Tabelle</button></div>
             ${S.liste.length ? S.liste.slice(0, 8).map((t) => `<button type="button" class="datei" data-aktion="tabelle" data-id="${esc(t.id)}"><span class="kuerzel">${esc(kuerzel(t.name))}</span><span class="txt"><b>${esc(t.name)}</b><small>${t.zeilen} Zeilen${t.blaetter > 1 ? ` · ${t.blaetter} Blätter` : ''}</small></span><span class="wann">${esc(wann(t.geaendert))}</span><span class="loesch" role="button" tabindex="-1" title="Löschen" aria-label="Löschen" data-aktion="loeschen" data-id="${esc(t.id)}">${sym('muell', 15)}</span></button>`).join('') : `<div class="leer">${vogel('ruhezustand', 48)}<span>Noch keine Tabelle. Nimm oben eine Vorlage oder schreib los.</span></div>`}</section>
-          <section class="blatt tipp"><h2 class="h">Excel-Datei mitgebracht?</h2><div class="ablage">Datei hierher ziehen<br><span class="leise" style="font-weight:400;font-size:13px">.xlsx oder .csv</span></div><button type="button" class="btn weiss" data-aktion="oeffnen">${sym('oeffnen', 16)} Datei öffnen</button></section>
+          <section class="blatt tipp"><h2 class="h">Excel-Datei mitgebracht?</h2><div class="ablage">Datei hierher ziehen<br><span class="leise" style="font-weight:400;font-size:13px">.xlsx, .xlsm oder .csv</span></div><button type="button" class="btn weiss" data-aktion="oeffnen">${sym('oeffnen', 16)} Datei öffnen</button></section>
         </div>
       </main>`;
     setTimeout(() => { if (S.ansicht === 'start' && !document.querySelector('.schleier')) A.standFoto?.('albatros-start'); }, 2500);
@@ -120,6 +120,7 @@
   // ---------- Tabelle öffnen ----------
   async function oeffne(id) {
     const t = await A.tabellen.lesen(id);
+    if (S.ansicht === 'start' && t && !t.fehler) S.liste = S.liste || [];
     if (!t || t.fehler) { meldung('Die Tabelle lässt sich nicht öffnen.'); return zeigeStart(); }
     S.t = t; S.blattNr = 0; S.anker = { sp: 0, ze: 0 }; S.ende = { sp: 0, ze: 0 }; S.zurueck = []; S.vor = []; S.bearbeiten = null;
     t.gespraech = t.gespraech || [];
@@ -129,8 +130,8 @@
 
   function zeigeTabelle() {
     S.ansicht = 'tabelle';
-    S.werte = Fo.rechneAlles(blatt());
-    app.innerHTML = `<header class="kopf"><button type="button" class="marke" data-aktion="start" title="Alle Tabellen">${sym('links', 18)}${vogel('ruhezustand-3', 30)}<b class="h">Albatros</b></button><span class="trenner"></span>
+    S.werte = Fo.rechneAlles(blatt(), Fo.mappe(S.t.blaetter));
+    app.innerHTML = `<header class="kopf"><button type="button" class="marke" data-aktion="start" title="Alle Tabellen">${sym('links', 18)}${vogel('ruhezustand-3', 36)}<b class="h">Albatros</b></button><span class="trenner"></span>
         <div class="dok"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
         <div class="platz"></div>
         <div style="position:relative"><button type="button" class="btn" data-aktion="exportmenue">${sym('export', 16)} Exportieren</button></div>
@@ -167,7 +168,14 @@
     fz.addEventListener('blur', () => { if (S.bearbeiten?.ort === 'formel') { S.bearbeiten = null; if (S.live) uebernehme(fz.value, S.live.a); } });
     zeichneTabelle();
     zeichneHelfer();
-    app.querySelector('.rasterscroll').focus();
+    const sc = app.querySelector('.rasterscroll');
+    sc.focus();
+    let scrollUhr = null;
+    sc.addEventListener('scroll', () => {
+      if (!S.fenster || S.bearbeiten) return;
+      const oben = Math.floor(sc.scrollTop / 30); const unten = oben + Math.ceil(sc.clientHeight / 30);
+      if ((S.fenster.von > 0 && oben < S.fenster.von + 10) || (S.fenster.bis < S.fenster.zeilen && unten > S.fenster.bis - 10)) { clearTimeout(scrollUhr); scrollUhr = setTimeout(() => zeichneTabelle(), 30); }
+    });
     setTimeout(() => { if (S.ansicht === 'tabelle' && !document.querySelector('.schleier')) A.standFoto?.('albatros-tabelle'); }, 3000);
   }
 
@@ -175,17 +183,22 @@
   function zeichneTabelle() {
     if (S.ansicht !== 'tabelle') return;
     const b = blatt();
-    S.werte = Fo.rechneAlles(b);
+    S.werte = Fo.rechneAlles(b, Fo.mappe(S.t.blaetter));
     const g = groesse(b);
     const spalten = Math.max(g.sp + 4, 10, S.ende.sp + 2);
     const zeilen = Math.max(g.ze + 16, 40, S.ende.ze + 4);
+    const boxV = app.querySelector('.rasterscroll');
+    const hoeheV = Math.max(400, boxV?.clientHeight || 800);
+    const von = Math.max(0, Math.floor((boxV?.scrollTop || 0) / 30) - 30);
+    const bis = Math.min(zeilen, von + Math.ceil(hoeheV / 30) + 60);
+    S.fenster = { von, bis, zeilen };
     const a = auswahl();
     const breite = (sp) => b.breiten[Fo.nrZuSpalte(sp)] || 110;
     const chips = chipSpalten(b);
     let html = `<table class="gitter"><colgroup><col style="width:46px">${Array.from({ length: spalten }, (_, sp) => `<col style="width:${breite(sp)}px">`).join('')}</colgroup><thead><tr><th class="nr"></th>`;
     for (let sp = 0; sp < spalten; sp++) html += `<th data-spalte="${sp}" class="${sp >= a.sp1 && sp <= a.sp2 ? 'sel' : ''}">${Fo.nrZuSpalte(sp)}<span class="ziehen" data-ziehen="${sp}"></span></th>`;
-    html += '</tr></thead><tbody>';
-    for (let ze = 0; ze < zeilen; ze++) {
+    html += `</tr></thead><tbody>${von > 0 ? `<tr class="platzhalter" style="height:${von * 30}px"><td colspan="${spalten + 1}"></td></tr>` : ''}`;
+    for (let ze = von; ze < bis; ze++) {
       html += `<tr><th class="nr ${ze >= a.ze1 && ze <= a.ze2 ? 'sel' : ''}" data-zeile="${ze}">${ze + 1}</th>`;
       for (let sp = 0; sp < spalten; sp++) {
         const ad = Fo.adresse(sp, ze);
@@ -204,7 +217,7 @@
       }
       html += '</tr>';
     }
-    html += '</tbody></table>';
+    html += `${bis < zeilen ? `<tr class="platzhalter" style="height:${(zeilen - bis) * 30}px"><td colspan="${spalten + 1}"></td></tr>` : ''}</tbody></table>`;
     const box = app.querySelector('.rasterscroll');
     const scroll = [box.scrollLeft, box.scrollTop];
     box.innerHTML = html;
@@ -227,7 +240,7 @@
         ${andere.length ? `<span class="sl-titel">Zuletzt geöffnet</span>${andere.map((t) => `<button type="button" class="sl-datei" data-aktion="tabelle" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}` : ''}`;
     }
     const r = app.querySelector('.blaetter'); if (!r) return;
-    r.innerHTML = '<span class="statuszeile"></span>';
+    r.innerHTML = `<span class="mini-reiter">${S.t.blaetter.map((b, i) => `<button type="button" class="mr${i === S.blattNr ? ' an' : ''}" data-aktion="blatt" data-i="${i}">${esc(b.name)}</button>`).join('')}<button type="button" class="mr" data-aktion="blatt-dazu" title="Neues Blatt">+</button></span><span class="statuszeile"></span>`;
     zeigeStatus();
   }
 
@@ -290,7 +303,9 @@
 
   function sichtbar() {
     const box = app.querySelector('.rasterscroll');
-    const td = box?.querySelector(`td[data-a="${Fo.adresse(S.ende.sp, S.ende.ze)}"]`); if (!td) return;
+    let td = box?.querySelector(`td[data-a="${Fo.adresse(S.ende.sp, S.ende.ze)}"]`);
+    if (!td && box) { box.scrollTop = Math.max(0, S.ende.ze * 30 - box.clientHeight / 2); zeichneTabelle(); td = box.querySelector(`td[data-a="${Fo.adresse(S.ende.sp, S.ende.ze)}"]`); }
+    if (!td) return;
     const r = td.getBoundingClientRect(), b = box.getBoundingClientRect();
     if (r.bottom > b.bottom) box.scrollTop += r.bottom - b.bottom + 4;
     if (r.top < b.top + 30) box.scrollTop -= b.top + 30 - r.top;
@@ -346,13 +361,13 @@
   function liveZeigen(ad, wert) {
     if (!S.live || S.live.a !== ad) { if (S.live) liveZurueck(true); S.live = { a: ad, alt: blatt().zellen[ad] }; }
     setze(ad, wert === '' ? null : wert);
-    S.werte = Fo.rechneAlles(blatt());
+    S.werte = Fo.rechneAlles(blatt(), Fo.mappe(S.t.blaetter));
     aktualisiereTexte();
   }
   function liveZurueck(still = false) {
     if (!S.live) return;
     setze(S.live.a, S.live.alt ?? null); S.live = null;
-    if (!still) { S.werte = Fo.rechneAlles(blatt()); aktualisiereTexte(); }
+    if (!still) { S.werte = Fo.rechneAlles(blatt(), Fo.mappe(S.t.blaetter)); aktualisiereTexte(); }
   }
   function aktualisiereTexte() {
     const b = blatt();
@@ -368,7 +383,7 @@
   function uebernehme(wert, ad = Fo.adresse(S.anker.sp, S.anker.ze)) {
     if (S.live && S.live.a === ad) { setze(ad, S.live.alt ?? null); S.live = null; }
     const alt = blatt().zellen[ad] ?? '';
-    if (String(wert) === String(alt)) { S.werte = Fo.rechneAlles(blatt()); aktualisiereTexte(); zeigeAuswahl(); return; }
+    if (String(wert) === String(alt)) { S.werte = Fo.rechneAlles(blatt(), Fo.mappe(S.t.blaetter)); aktualisiereTexte(); zeigeAuswahl(); return; }
     merke();
     setze(ad, wert.trim() === '' ? null : wert);
     // Euro-Zeichen getippt → als Euro zeigen
@@ -525,7 +540,7 @@
     if (S.denkt || !wunsch.trim()) return;
     S.t.gespraech.push({ wer: 'ich', text: wunsch });
     S.denkt = true; zeichneHelfer();
-    const r = await A.assistent({ wunsch, blatt: blatt(), auswahl: auswahlText(), name: S.t.name });
+    const r = await A.assistent({ wunsch, blatt: blatt(), blaetter: S.t.blaetter, auswahl: auswahlText(), name: S.t.name });
     S.denkt = false;
     if (r?.fehler) {
       S.t.gespraech.push({ wer: 'er', fehler: true, text: r.fehler.nachricht || 'Das hat nicht geklappt.' });
@@ -611,7 +626,7 @@
     tabelle: (el, ev) => { if (ev?.target?.closest('[data-aktion="loeschen"]')) return; oeffne(el.dataset.id); },
     loeschen: async (el) => {
       const t = S.liste.find((x) => x.id === el.dataset.id);
-      if (!window.confirm(`„${t?.name || 'Tabelle'}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+      if (!await frage({ titel: `„${t?.name || 'Tabelle'}“ löschen?`, text: 'Das lässt sich nicht rückgängig machen.', ja: 'Löschen', gefahr: true })) return;
       await A.tabellen.loeschen(el.dataset.id); meldung('Gelöscht.'); zeigeStart();
     },
     neu: async () => { const t = await A.tabellen.neu('Neue Tabelle'); oeffne(t.id); },
@@ -643,10 +658,11 @@
     fett: () => { const an = !blatt().fett[Fo.adresse(S.anker.sp, S.anker.ze)]; fuerAuswahl((ad) => { if (an) blatt().fett[ad] = true; else delete blatt().fett[ad]; }); },
     format: (el) => { const art = el.dataset.art; const an = blatt().formate[Fo.adresse(S.anker.sp, S.anker.ze)] !== art; fuerAuswahl((ad) => { if (an) blatt().formate[ad] = art; else delete blatt().formate[ad]; }); },
     farbmenue: (el) => {
-      const w = el.closest('.farbwahl'); const da = w.querySelector('.farben'); if (da) { da.remove(); return; }
+      const da = document.querySelector('.farben'); if (da) { da.remove(); return; }
       const m = document.createElement('div'); m.className = 'farben';
-      m.innerHTML = ['#f6d5c4', '#d4ecdc', '#f8e1a8', '#f3c9c4', '#dbe7f5', '#ece6fd', ''].map((f) => `<button type="button" data-farbe="${f}" title="${f ? 'Farbe' : 'Keine Farbe'}" style="background:${f || '#fff'}">${f ? '' : '✕'}</button>`).join('');
-      w.appendChild(m);
+      m.innerHTML = [['#f6d5c4','Orange'], ['#d4ecdc','Grün'], ['#f8e1a8','Gelb'], ['#f3c9c4','Rot'], ['#dbe7f5','Blau'], ['#ece6fd','Lila'], ['','Keine']].map(([f, n]) => `<button type="button" data-farbe="${f}" title="${n}" aria-label="${n}" style="background:${f || '#fff'}">${f ? '' : '✕'}</button>`).join('');
+      const r = el.getBoundingClientRect(); m.style.left = `${Math.round(r.left)}px`; m.style.top = `${Math.round(r.bottom + 6)}px`;
+      document.body.appendChild(m);
       m.addEventListener('click', (ev) => { const b = ev.target.closest('[data-farbe]'); if (!b) return; const f = b.dataset.farbe; fuerAuswahl((ad) => { if (f) blatt().farben[ad] = f; else delete blatt().farben[ad]; }); m.remove(); });
     },
     'zeile-dazu': () => { merke(); zeileEinfuegen(auswahl().ze2 + 1); geaendert(); zeichneTabelle(); waehle(S.anker.sp, auswahl().ze2 + 1); },
@@ -660,7 +676,7 @@
       if (!roh || !String(roh).startsWith('=')) { meldung('Klick zuerst eine Zelle mit Formel an (erkennst du an der grünen Ecke).'); return; }
       S.t.gespraech.push({ wer: 'ich', text: `Was rechnet ${ad}?` });
       S.denkt = true; zeichneHelfer();
-      const r = await A.erklaeren({ blatt: blatt(), zelle: ad });
+      const r = await A.erklaeren({ blatt: blatt(), blaetter: S.t.blaetter, zelle: ad });
       S.denkt = false;
       S.t.gespraech.push(r?.fehler ? { wer: 'er', fehler: true, text: r.fehler.nachricht } : { wer: 'er', text: r.antwort, chips: [roh] });
       geaendert(); zeichneHelfer();
@@ -682,13 +698,24 @@
     },
     blatt: (el, ev) => { if (ev?.target?.closest('[data-aktion="blatt-weg"]')) return; S.blattNr = Number(el.dataset.i); S.anker = { sp: 0, ze: 0 }; S.ende = { sp: 0, ze: 0 }; S.zurueck = []; S.vor = []; app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } zeichneTabelle(); },
     'blatt-dazu': () => { S.t.blaetter.push({ name: `Blatt ${S.t.blaetter.length + 1}`, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} }); S.blattNr = S.t.blaetter.length - 1; S.zurueck = []; app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } geaendert(); zeichneTabelle(); },
-    'blatt-weg': (el) => { const i = Number(el.dataset.i); if (S.t.blaetter.length < 2 || !window.confirm(`Blatt „${S.t.blaetter[i].name}“ löschen?`)) return; S.t.blaetter.splice(i, 1); S.blattNr = 0; S.zurueck = []; geaendert(); zeichneTabelle(); },
+    'blatt-weg': async (el) => { const i = Number(el.dataset.i); if (S.t.blaetter.length < 2 || !await frage({ titel: `Blatt „${S.t.blaetter[i].name}“ löschen?`, text: 'Alles auf diesem Blatt ist dann weg.', ja: 'Löschen', gefahr: true })) return; S.t.blaetter.splice(i, 1); S.blattNr = 0; S.zurueck = []; geaendert(); zeichneTabelle(); },
   };
+
+  // ---------- Eigene Abfrage statt Windows-Box ----------
+  const frage = ({ titel, text = '', ja = 'OK', nein = 'Abbrechen', gefahr = false }) => new Promise((fertig) => {
+    const s = document.createElement('div'); s.className = 'schleier frage-schleier';
+    s.innerHTML = `<div class="fenster abfrage" role="alertdialog" aria-modal="true" aria-label="${esc(titel)}"><h2>${esc(titel)}</h2>${text ? `<p>${esc(text)}</p>` : ''}<div class="abfrage-knoepfe"><button type="button" class="btn weiss" data-nein>${esc(nein)}</button><button type="button" class="btn${gefahr ? ' gefahr' : ''}" data-ja>${esc(ja)}</button></div></div>`;
+    const zu = (w) => { document.removeEventListener('keydown', taste, true); s.remove(); fertig(w); };
+    const taste = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); zu(false); } else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); zu(true); } };
+    s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('[data-nein]')) zu(false); else if (e.target.closest('[data-ja]')) zu(true); });
+    document.addEventListener('keydown', taste, true);
+    document.body.appendChild(s); s.querySelector('[data-ja]').focus();
+  });
 
   // ---------- Ereignisse ----------
   app.addEventListener('click', (ev) => {
     if (!ev.target.closest('.menue, [data-aktion="exportmenue"]')) document.querySelector('.menue')?.remove();
-    if (!ev.target.closest('.farbwahl')) document.querySelector('.farben')?.remove();
+    if (!ev.target.closest('.farbwahl, .farben')) document.querySelector('.farben')?.remove();
     const el = ev.target.closest('[data-aktion]');
     if (!el) return;
     const fn = aktionen[el.dataset.aktion];
@@ -772,16 +799,17 @@
   document.addEventListener('paste', (ev) => { if (S.ansicht === 'tabelle' && !S.bearbeiten && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) fuegeEin(ev); });
 
   // Datei reinziehen
-  document.addEventListener('dragover', (ev) => { ev.preventDefault(); document.body.classList.add('zieht'); });
+  document.addEventListener('dragover', (ev) => { ev.preventDefault(); if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy'; document.body.classList.add('zieht'); });
   document.addEventListener('dragleave', (ev) => { if (!ev.relatedTarget) document.body.classList.remove('zieht'); });
   document.addEventListener('drop', async (ev) => {
     ev.preventDefault(); document.body.classList.remove('zieht');
     const f = ev.dataTransfer?.files?.[0]; if (!f) return;
     const pfad = A.pfadVon(f);
-    if (!pfad || !/\.(xlsx|csv)$/i.test(f.name)) { meldung('Nur .xlsx- und .csv-Dateien gehen.'); return; }
+    if (!pfad || !/\.(xlsx|xlsm|csv)$/i.test(f.name)) { meldung('Nur Excel-Dateien (.xlsx, .xlsm) und .csv gehen.'); return; }
     const r = await A.datei.importieren(pfad);
     if (r?.fehler) { meldung(r.fehler.nachricht); return; }
-    oeffne(r.id); meldung(`„${r.name}“ geöffnet.`);
+    meldung(`„${r.name}“ wird geöffnet …`);
+    try { await oeffne(r.id); } catch (f) { meldung(`Öffnen klappt nicht: ${f.message}`, { dauer: 8000 }); }
   });
 
   // Leben in den Vogel oben links
@@ -794,7 +822,7 @@
     alt.replaceWith(neu); setTimeout(() => { if (neu.isConnected) neu.replaceWith(alt); }, 3600);
   }, 14000);
 
-  window.App = { S, aktionen, oeffne, zeigeStart, frageAlbatros, zeigeDiagramm };
+  window.App = { S, zeichneTabelle, aktionen, oeffne, zeigeStart, frageAlbatros, zeigeDiagramm };
 
   (async () => {
     S.einst = (await A.einstellungen.lesen()) || {};

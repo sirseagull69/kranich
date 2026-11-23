@@ -27,7 +27,7 @@ function handle(name, fn) {
 function oeffneArg(argv) {
   const id = argv.find((a) => a.startsWith('--oeffne='))?.slice(9);
   if (id && /^[a-z0-9-]{6,40}$/.test(id)) return { id };
-  const datei = argv.slice(1).find((a) => /\.(xlsx|csv)$/i.test(a) && fs.existsSync(a));
+  const datei = argv.slice(1).find((a) => /\.(xlsx|xlsm|csv)$/i.test(a) && fs.existsSync(a));
   return datei ? { datei } : null;
 }
 
@@ -57,7 +57,7 @@ function registriere() {
   handle('datei:importieren', async (pfad) => {
     let datei = pfad;
     if (!datei) {
-      const r = await dialog.showOpenDialog(fenster, { title: 'Tabelle öffnen', filters: [{ name: 'Tabellen', extensions: ['xlsx', 'csv'] }], properties: ['openFile'] });
+      const r = await dialog.showOpenDialog(fenster, { title: 'Tabelle öffnen', filters: [{ name: 'Tabellen', extensions: ['xlsx', 'xlsm', 'csv'] }], properties: ['openFile'] });
       if (r.canceled || !r.filePaths[0]) return { abgebrochen: true };
       datei = r.filePaths[0];
     }
@@ -70,7 +70,7 @@ function registriere() {
     const r = await dialog.showSaveDialog(fenster, { title: 'Exportieren', defaultPath: path.join(app.getPath('documents'), `${String(t.name || 'Tabelle').replace(/[\\/:*?"<>|]/g, ' ')}.${endung}`), filters: [{ name: endung.toUpperCase(), extensions: [endung] }] });
     if (r.canceled || !r.filePath) return { abgebrochen: true };
     if (art === 'xlsx') await xlsxSchreiben(t, r.filePath);
-    else if (art === 'csv') fs.writeFileSync(r.filePath, csvSchreiben(t.blaetter[blattNr] || t.blaetter[0]), 'utf8');
+    else if (art === 'csv') fs.writeFileSync(r.filePath, csvSchreiben(t.blaetter[blattNr] || t.blaetter[0], t.blaetter), 'utf8');
     else fs.writeFileSync(r.filePath, await fenster.webContents.printToPDF({ landscape: true, printBackground: true, margins: { marginType: 'default' } }));
     return { ok: true, datei: r.filePath };
   });
@@ -82,14 +82,14 @@ function registriere() {
   });
   handle('datei:zeigen', (p) => { shell.showItemInFolder(p); return true; });
 
-  handle('assistent', async ({ wunsch, blatt, auswahl, name }) => {
+  handle('assistent', async ({ wunsch, blatt, blaetter, auswahl, name }) => {
     const e = einstellungen.alle();
-    const { text, weg } = await frage({ system: A.SYSTEM, auftrag: A.auftrag({ wunsch: String(wunsch).slice(0, 4000), blatt, auswahl, name }) }, e);
+    const { text, weg } = await frage({ system: A.SYSTEM, auftrag: A.auftrag({ wunsch: String(wunsch).slice(0, 4000), blatt, blaetter, auswahl, name }) }, e);
     return { ...A.leseAntwort(text), weg };
   });
-  handle('erklaeren', async ({ blatt, zelle }) => {
+  handle('erklaeren', async ({ blatt, blaetter, zelle }) => {
     const e = einstellungen.alle();
-    const { text } = await frage({ system: A.ERKLAEREN, auftrag: A.auftrag({ wunsch: `Erkläre die Formel in ${zelle}: ${blatt.zellen[zelle]}`, blatt, auswahl: zelle }) }, e, { schnell: true });
+    const { text } = await frage({ system: A.ERKLAEREN, auftrag: A.auftrag({ wunsch: `Erkläre die Formel in ${zelle}: ${blatt.zellen[zelle]}`, blatt, blaetter, auswahl: zelle }) }, e, { schnell: true });
     return A.leseAntwort(text);
   });
 

@@ -59,7 +59,9 @@
       const c = text[i];
       if (/\s/.test(c)) { i++; continue; }
       if (c === '"') { let j = i + 1, s = ''; while (j < text.length) { if (text[j] === '"' && text[j + 1] === '"') { s += '"'; j += 2; continue; } if (text[j] === '"') break; s += text[j++]; } t.push({ a: 'text', w: s }); i = j + 1; continue; }
-      let m = /^(\d+(?:[.,]\d+)?(?:e-?\d+)?)(?![\w(])/i.exec(text.slice(i));
+      let m = /^('(?:[^']|'')+'|[A-Za-zÄÖÜäöüß_][\wÄÖÜäöüß.]*)!(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?)(?![\w(])/.exec(text.slice(i));
+      if (m) { const name = m[1].startsWith("'") ? m[1].slice(1, -1).replace(/''/g, "'") : m[1]; t.push({ a: 'bezug', w: m[2].replace(/\$/g, '').toUpperCase(), blatt: name }); i += m[0].length; continue; }
+      m = /^(\d+(?:[.,]\d+)?(?:e-?\d+)?)(?![\w(])/i.exec(text.slice(i));
       if (m && !/^[A-Za-z]/.test(c)) { t.push({ a: 'zahl', w: Number(m[1].replace(',', '.')) }); i += m[1].length; continue; }
       m = /^(\$?[A-Za-z]{1,3}\$?\d+(?::\$?[A-Za-z]{1,3}\$?\d+)?)(?![\w(])/.exec(text.slice(i));
       if (m) { t.push({ a: 'bezug', w: m[1].replace(/\$/g, '').toUpperCase() }); i += m[1].length; continue; }
@@ -90,7 +92,7 @@
       const x = nimm();
       if (!x) throw F.wert;
       if (x.a === 'zahl' || x.a === 'text' || x.a === 'bool') return { w: x.w };
-      if (x.a === 'bezug') return { ref: x.w };
+      if (x.a === 'bezug') return { ref: x.w, blatt: x.blatt };
       if (x.a === 'op' && x.w === '(') { const e = vergleich(); if (!ist(')')) throw F.wert; nimm(); return e; }
       if (x.a === 'fn') {
         const args = [];
@@ -163,7 +165,7 @@
 
   // ---------- Blatt rechnen ----------
   // blatt = { zellen: { A1: 'Text' | '12,5' | '=SUMME(A1:A3)' } }
-  function rechner(blatt) {
+  function rechner(blatt, mappe = null) {
     const cache = new Map(); const laeuft = new Set();
     function wert(a) {
       if (cache.has(a)) return cache.get(a);
@@ -192,7 +194,11 @@
     const zahl = (v) => { if (v instanceof Fehler) throw v; if (v === null || v === '') return 0; if (typeof v === 'boolean') return v ? 1 : 0; if (typeof v === 'number') return v; const z = alsZahl(v); if (z === null) throw F.wert; return z; };
     function auswerten(k) {
       if ('w' in k) return k.w;
-      if (k.ref) { if (k.ref.includes(':')) return feld(k.ref); const v = wert(k.ref); if (v instanceof Fehler) throw v; return v; }
+      if (k.ref) {
+        let r = { wert, feld };
+        if (k.blatt && k.blatt.toLowerCase() !== String(blatt.name || '').toLowerCase()) { r = mappe ? mappe(k.blatt) : null; if (!r) throw F.bezug; }
+        if (k.ref.includes(':')) return r.feld(k.ref); const v = r.wert(k.ref); if (v instanceof Fehler) throw v; return v;
+      }
       if (k.fn) {
         const n = fnName(k.fn);
         if (n === 'WENN') { const b = auswerten(k.args[0]); const ja = Array.isArray(b) ? b.flat()[0] : b; const ziel = ja && ja !== 0 ? k.args[1] : k.args[2]; return ziel ? (auswerten(ziel) ?? 0) : (ja ? true : false); }
@@ -231,9 +237,20 @@
     return { wert, feld };
   }
 
+  // Mehrere Blätter: Bezüge wie 'Datenbank'!B11 gehen über die Mappe
+  function mappe(blaetter) {
+    const cache = new Map();
+    const hol = (name) => {
+      const b = (blaetter || []).find((x) => String(x.name).toLowerCase() === String(name).toLowerCase());
+      if (!b) return null;
+      if (!cache.has(b)) cache.set(b, rechner(b, hol));
+      return cache.get(b);
+    };
+    return hol;
+  }
   // Alle Werte eines Blatts
-  function rechneAlles(blatt) {
-    const r = rechner(blatt); const aus = {};
+  function rechneAlles(blatt, m = null) {
+    const r = (m && m(blatt.name)) || rechner(blatt, m); const aus = {};
     for (const a of Object.keys(blatt.zellen)) aus[a] = r.wert(a);
     return aus;
   }
@@ -279,7 +296,7 @@
     });
   }
 
-  const A = { spalteZuNr, nrZuSpalte, adresse, zerlege, bereich, alsZahl, zeige, rechner, rechneAlles, nachExcel, vonExcel, verschiebe, Fehler, datumText };
+  const A = { mappe, spalteZuNr, nrZuSpalte, adresse, zerlege, bereich, alsZahl, zeige, rechner, rechneAlles, nachExcel, vonExcel, verschiebe, Fehler, datumText };
   if (typeof module !== 'undefined' && module.exports) module.exports = A;
   else wurzel.Formeln = A;
 })(typeof window !== 'undefined' ? window : globalThis);
