@@ -46,7 +46,7 @@
     else if (u.update) { st = `Update ${u.neu}`; art = 'update'; los = '<span class="updknopf" data-update="' + a.id + '">Aktualisieren</span>'; }
     else if ((a.status === 'fehlt' || (a.web && !a.version)) && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
     else if (a.status === 'fehlt') los = '';
-    const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : a.id === 'specht' ? SPECHT : '<span class="papier"></span>';
+    const bild = window.VOEGEL?.[a.id] ? vogel(a.id, { origami: 'ruhezustand-2', kranich: 'ruhezustand-3', albatros: 'ruhezustand-4', specht: 'ruhezustand-2' }[a.id] || 'ruhezustand-3', 140) : a.id === 'specht' ? SPECHT : '<span class="papier"></span>';
     return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
       <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}${(a.version || u.installiert) && (a.version || u.installiert) !== '0' ? ` · <span class="ver">Version ${esc(a.version || u.installiert)}</span>` : ''}</span>
       <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${los}</span></span></button>`;
@@ -171,10 +171,22 @@
   app.addEventListener('mouseover', (e) => {
     const v = e.target.closest('.vogel');
     if (!v || v.dataset.winkt || !window.VOEGEL?.[v.dataset.app] || v.classList.contains('bald')) return;
-    v.dataset.winkt = '1';
-    v.querySelector('.bild').innerHTML = vogel(v.dataset.app, 'winkt', 140);
-    setTimeout(() => { if (!v.isConnected) return; v.querySelector('.bild').innerHTML = vogel(v.dataset.app, 'ruhezustand-3', 140); delete v.dataset.winkt; }, 2300);
+    // erst winken, beim nächsten Mal etwas Eigenes
+    const n = Number(v.dataset.mal || 0); v.dataset.mal = n + 1;
+    zeigeKurz(v, n % 2 ? eigenes(v.dataset.app) : 'winkt', n % 2 ? 3400 : 2300);
   });
+  // Eigene Animationen je Vogel (passend zur App), nie zweimal dasselbe hintereinander
+  const zuletzt = {};
+  function eigenes(id) {
+    const l = window.VOEGEL_EIGEN?.[id] || ['winkt', 'erledigt'];
+    let a; do { a = l[Math.floor(Math.random() * l.length)]; } while (l.length > 1 && a === zuletzt[id]);
+    zuletzt[id] = a; return a;
+  }
+  function zeigeKurz(v, anim, dauer) {
+    v.dataset.winkt = '1';
+    v.querySelector('.bild').innerHTML = vogel(v.dataset.app, anim, 140);
+    setTimeout(() => { if (!v.isConnected) return; v.querySelector('.bild').innerHTML = vogel(v.dataset.app, ['ruhezustand-2', 'ruhezustand-3', 'ruhezustand-4'][Math.floor(Math.random() * 3)], 140); delete v.dataset.winkt; }, dauer);
+  }
 
   async function laden() {
     [S.apps, S.zuletzt, S.version] = await Promise.all([N.apps(), N.zuletzt(), N.version()]);
@@ -193,8 +205,6 @@
     const v = [...document.querySelectorAll('.vogel:not(.bald)')].filter((x) => window.VOEGEL?.[x.dataset.app] && !x.dataset.winkt);
     const k = v[Math.floor(Math.random() * v.length)];
     if (!k) return;
-    k.dataset.winkt = '1';
-    k.querySelector('.bild').innerHTML = vogel(k.dataset.app, Math.random() < 0.5 ? 'winkt' : 'erledigt', 140);
-    setTimeout(() => { if (k.isConnected) k.querySelector('.bild').innerHTML = vogel(k.dataset.app, 'ruhezustand-3', 140); delete k.dataset.winkt; }, 3400);
-  }, 11000);
+    zeigeKurz(k, eigenes(k.dataset.app), 3600);
+  }, 7000);
 })();

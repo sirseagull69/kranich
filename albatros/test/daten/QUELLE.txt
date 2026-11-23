@@ -1,0 +1,1 @@
+vbaProject.bin: Beispiel-VBA-Projekt aus XlsxWriter (BSD-2-Clause, John McNamara), nur zum Testen des VBA-Lesers.

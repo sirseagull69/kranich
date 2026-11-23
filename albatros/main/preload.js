@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('ALB', {
   datei: { importieren: rufe('datei:importieren'), exportieren: rufe('datei:exportieren'), bild: rufe('datei:bild'), zeigen: rufe('datei:zeigen') },
   assistent: rufe('assistent'),
   erklaeren: rufe('erklaeren'),
+  makroSchreiben: rufe('makro:schreiben'),
+  drucken: rufe('drucken'),
   einstellungen: { lesen: rufe('einstellungen:lesen'), setzen: rufe('einstellungen:setzen') },
   hirnTesten: rufe('hirn:testen'),
   standFoto: rufe('stand:foto'),

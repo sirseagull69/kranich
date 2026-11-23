@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 // Fertig gebündelte Excel-Bibliothek (MIT), damit im Installer nichts fehlt
 const ExcelJS = require('./fremd/exceljs.min.js');
 const F = require('../ui/formeln');
+const VBA = require('./vba');
 
 const leeresBlatt = (name = 'Blatt 1') => ({ name, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} });
 
@@ -67,8 +68,8 @@ function csvSchreiben(blatt, blaetter = null) {
   for (let ze = 0; ze <= maxZe; ze++) {
     const z = [];
     for (let sp = 0; sp <= maxSp; sp++) {
-      const v = werte[F.adresse(sp, ze)];
-      let t = v === null || v === undefined ? '' : typeof v === 'number' ? String(v).replace('.', ',') : String(v);
+      const ad = F.adresse(sp, ze); const v = werte[ad]; const roh = blatt.zellen[ad];
+      let t = v === null || v === undefined ? '' : typeof roh === 'string' && !roh.startsWith('=') && F.datumArt(roh) ? roh : typeof v === 'number' ? String(v).replace('.', ',') : String(v);
       if (/[;"\n]/.test(t)) t = `"${t.replace(/"/g, '""')}"`;
       z.push(t);
     }
@@ -117,6 +118,65 @@ function strukturBezuege(formel, tab, zeile) {
   });
 }
 
+// Zahlenformat aus Excel → Albatros
+function formatAusExcel(fmt) {
+  if (!fmt || fmt === 'General' || fmt === '@') return fmt === '@' ? 'text' : null;
+  if (/€|EUR/.test(fmt)) return 'eur';
+  if (/%/.test(fmt)) return 'prozent';
+  if (/^\[?h+\]?:mm(:ss)?$/i.test(fmt)) return 'uhrzeit';
+  if (/[dt].*[my].*h/i.test(fmt)) return 'datumzeit';
+  if (/mmmm\s*y/i.test(fmt) && !/d/i.test(fmt)) return 'monat';
+  if (/(d|t).*m{3,}/i.test(fmt)) return 'datumlang';
+  if (/[dmy]{2}/i.test(fmt)) return 'datum';
+  if (/^#,##0\.00$|^0\.00$/.test(fmt)) return 'zahl';
+  if (/^#,##0$/.test(fmt)) return 'ganz';
+  return null;
+}
+const FORMAT_EXCEL = { eur: '#,##0.00 "€"', prozent: '0.0%', datum: 'dd.mm.yyyy', ganz: '#,##0', zahl: '#,##0.00', datumlang: 'd. mmmm yyyy', monat: 'mmmm yyyy', uhrzeit: 'hh:mm', datumzeit: 'dd.mm.yyyy hh:mm', text: '@' };
+function listeMerken(b, a, formel) {
+  let quelle;
+  if (/^".*"$/.test(formel)) quelle = { werte: formel.slice(1, -1).split(',').map((x) => x.trim()).filter(Boolean) };
+  else quelle = { bereich: formel.replace(/\$/g, '').replace(/^=/, '') };
+  const k = JSON.stringify(quelle); b._listen = b._listen || {}; (b._listen[k] = b._listen[k] || []).push(a);
+}
+// Viele Einzelzellen → wenige Bereiche (spaltenweise)
+function zusammenfassen(adressen) {
+  const spalten = new Map();
+  for (const a of adressen) { const z = F.zerlege(a); if (!spalten.has(z.sp)) spalten.set(z.sp, []); spalten.get(z.sp).push(z.ze); }
+  const teile = [];
+  for (const [sp, zeilen] of spalten) {
+    zeilen.sort((x, y) => x - y); let von = zeilen[0], bis = zeilen[0];
+    for (const ze of zeilen.slice(1).concat([Infinity])) { if (ze === bis + 1) { bis = ze; continue; } teile.push(von === bis ? F.adresse(sp, von) : `${F.adresse(sp, von)}:${F.adresse(sp, bis)}`); von = bis = ze; }
+  }
+  return teile[0] && teile.length === 1 ? teile[0] : teile.join(' ');
+}
+const OPS = { greaterThan: 'groesser', lessThan: 'kleiner', equal: 'gleich', notEqual: 'ungleich', between: 'zwischen' };
+const OPS_ZURUECK = Object.fromEntries(Object.entries(OPS).map(([a, b]) => [b, a]));
+const argbZuHex = (c) => (c && c.argb && c.argb.length === 8 ? `#${c.argb.slice(2).toLowerCase()}` : null);
+function regelAusExcel(ref, r) {
+  const bereich = String(ref || '').split(' ')[0]; if (!/^[A-Z]+\d+(:[A-Z]+\d+)?$/.test(bereich)) return null;
+  const farbe = argbZuHex(r.style?.fill?.bgColor) || argbZuHex(r.style?.fill?.fgColor) || '#f8e1a8';
+  const zahl = (x) => (x === undefined ? undefined : String(x).replace(/^"|"$/g, '').replace('.', ','));
+  if (r.type === 'cellIs' && OPS[r.operator]) return { bereich, art: OPS[r.operator], wert: zahl(r.formulae?.[0]), wert2: zahl(r.formulae?.[1]), farbe };
+  if (r.type === 'containsText') return { bereich, art: 'enthaelt', wert: r.text, farbe };
+  if (r.type === 'duplicateValues') return { bereich, art: 'doppelt', farbe };
+  if (r.type === 'dataBar') return { bereich, art: 'balken', farbe: argbZuHex(r.color) || '#9fd4b2' };
+  if (r.type === 'expression' && r.formulae?.[0]) return { bereich, art: 'formel', wert: F.vonExcel(`=${r.formulae[0]}`), farbe };
+  return null;
+}
+function regelNachExcel(rg) {
+  const style = { fill: { type: 'pattern', pattern: 'solid', bgColor: { argb: `FF${String(rg.farbe || '#f8e1a8').replace('#', '').toUpperCase()}` } } };
+  const z = (x) => { const n = F.alsZahl(x); return n !== null ? String(n) : `"${String(x ?? '').replace(/"/g, '""')}"`; };
+  if (OPS_ZURUECK[rg.art]) return { type: 'cellIs', operator: OPS_ZURUECK[rg.art], formulae: rg.art === 'zwischen' ? [z(rg.wert), z(rg.wert2)] : [z(rg.wert)], style };
+  if (rg.art === 'enthaelt') { const a = rg.bereich.split(':')[0]; return { type: 'containsText', operator: 'containsText', text: rg.wert, formulae: [`NOT(ISERROR(SEARCH("${String(rg.wert).replace(/"/g, '""')}",${a})))`], style }; }
+  if (rg.art === 'doppelt') return { type: 'expression', formulae: [`COUNTIF(${absolut(rg.bereich)},${rg.bereich.split(':')[0]})>1`], style };
+  if (rg.art === 'leer') return { type: 'expression', formulae: [`LEN(TRIM(${rg.bereich.split(':')[0]}))=0`], style };
+  if (rg.art === 'balken') return { type: 'dataBar', minLength: 0, maxLength: 100, cfvo: [{ type: 'min' }, { type: 'max' }], color: { argb: `FF${String(rg.farbe || '#9fd4b2').replace('#', '').toUpperCase()}` } };
+  if (rg.art === 'formel') return { type: 'expression', formulae: [F.nachExcel(String(rg.wert).startsWith('=') ? rg.wert : `=${rg.wert}`).slice(1)], style };
+  return null;
+}
+const absolut = (b) => b.split(':').map((a) => a.replace(/^([A-Z]+)(\d+)$/, '$$$1$$$2')).join(':');
+
 async function xlsxLesen(datei) {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(fs.readFileSync(datei));
@@ -140,14 +200,27 @@ async function xlsxLesen(datei) {
         if (roh !== null && String(roh).trim() !== '') b.zellen[a] = roh;
         if (cell.font?.bold) b.fett[a] = true;
         const fmt = String(cell.numFmt || '');
-        if (/€|EUR/.test(fmt)) b.formate[a] = 'eur';
-        else if (/%/.test(fmt)) b.formate[a] = 'prozent';
-        else if (/[dmy]{2}/i.test(fmt) && !b.formate[a]) b.formate[a] = 'datum';
+        const art = formatAusExcel(fmt);
+        if (art && !(b.formate[a] === 'datum' && art !== 'datum' && /^[dmy]/i.test(fmt))) b.formate[a] = art;
+
         const farbe = cell.fill?.fgColor?.argb;
         if (cell.fill?.type === 'pattern' && farbe && farbe.length === 8 && farbe !== 'FFFFFFFF') b.farben[a] = `#${farbe.slice(2)}`;
       });
     });
     ws.columns?.forEach((c, i) => { if (c.width) b.breiten[F.nrZuSpalte(i)] = Math.round(c.width * 7.5); });
+    // Verbundene Zellen, fixierte Zeilen/Spalten, bedingte Formatierung
+    const verb = Object.values(ws._merges || {}).map((m) => m.range || m.model?.range || String(m)).filter((r) => /^[A-Z]+\d+:[A-Z]+\d+$/.test(r));
+    if (verb.length) b.verbunden = verb;
+    const v = (ws.views || []).find((x) => x.state === 'frozen');
+    if (v && (v.xSplit || v.ySplit)) b.fixiert = { sp: v.xSplit || 0, ze: v.ySplit || 0 };
+    for (const cf of ws.conditionalFormattings || []) for (const r of cf.rules || []) { const rg = regelAusExcel(cf.ref, r); if (rg) (b.regeln = b.regeln || []).push(rg); }
+    // Auswahllisten (auch in leeren Zellen)
+    for (const [k, dv] of Object.entries(ws.dataValidations?.model || {})) {
+      if (!dv || dv.type !== 'list' || !dv.formulae?.[0]) continue;
+      for (const teil of String(k).replace(/^range:/, '').split(' ')) { const r = F.bereich(teil); if (!r) continue; for (let ze = r.ze1; ze <= Math.min(r.ze2, r.ze1 + 20000); ze++) for (let sp = r.sp1; sp <= r.sp2; sp++) listeMerken(b, F.adresse(sp, ze), String(dv.formulae[0])); }
+    }
+    // Listen zusammenfassen
+    if (b._listen) { b.listen = {}; for (const [quelle, adr] of Object.entries(b._listen)) b.listen[zusammenfassen(adr)] = JSON.parse(quelle); delete b._listen; }
     blaetter.push(b);
   });
   return blaetter.length ? blaetter : [leeresBlatt()];
@@ -162,18 +235,25 @@ async function xlsxSchreiben(tabelle, datei) {
     for (const [a, roh] of Object.entries(b.zellen)) {
       const cell = ws.getCell(a);
       const w = werte[a];
-      if (String(roh).startsWith('=')) cell.value = { formula: F.nachExcel(roh).slice(1), result: w instanceof F.Fehler ? undefined : w };
+      const datumArt = !String(roh).startsWith('=') ? F.datumArt(String(roh)) : null;
+      if (String(roh).startsWith('=')) cell.value = { formula: F.nachExcel(roh).slice(1), result: w instanceof F.Fehler || Array.isArray(w) ? undefined : w };
+      else if (b.formate?.[a] === 'text') cell.value = String(roh);
       else if (typeof w === 'number') cell.value = w;
       else cell.value = String(roh);
-      const fmt = b.formate?.[a];
-      if (fmt === 'eur') cell.numFmt = '#,##0.00 "€"';
-      else if (fmt === 'prozent') cell.numFmt = '0.0%';
-      else if (fmt === 'datum') cell.numFmt = 'dd.mm.yyyy';
-      else if (fmt === 'ganz') cell.numFmt = '#,##0';
+      const fmt = b.formate?.[a] || datumArt;
+      if (fmt && typeof fmt === 'object' && fmt.eigen) cell.numFmt = String(fmt.eigen).replace(/T/g, 'd').replace(/J/g, 'y');
+      else if (FORMAT_EXCEL[fmt]) cell.numFmt = FORMAT_EXCEL[fmt];
       if (b.fett?.[a]) cell.font = { bold: true };
       if (b.farben?.[a]) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${b.farben[a].replace('#', '').toUpperCase()}` } };
     }
     for (const [sp, px] of Object.entries(b.breiten || {})) ws.getColumn(F.spalteZuNr(sp) + 1).width = Math.max(6, Math.round(px / 7.5));
+    for (const v of b.verbunden || []) { try { ws.mergeCells(v); } catch { /* überlappt */ } }
+    if (b.fixiert && (b.fixiert.ze || b.fixiert.sp)) ws.views = [{ state: 'frozen', xSplit: b.fixiert.sp || 0, ySplit: b.fixiert.ze || 0 }];
+    for (const rg of b.regeln || []) { const r = regelNachExcel(rg); if (r) ws.addConditionalFormatting({ ref: rg.bereich, rules: [r] }); }
+    for (const [bereich, q] of Object.entries(b.listen || {})) {
+      const formel = q.werte ? `"${q.werte.join(',').slice(0, 250)}"` : absolut(String(q.bereich).replace(/^.*!/, (x) => x));
+      for (const teil of bereich.split(' ')) { const r = F.bereich(teil); if (!r) continue; for (let ze = r.ze1; ze <= Math.min(r.ze2, r.ze1 + 5000); ze++) for (let sp = r.sp1; sp <= r.sp2; sp++) ws.getCell(F.adresse(sp, ze)).dataValidation = { type: 'list', allowBlank: true, formulae: [formel] }; }
+    }
   }
   fs.writeFileSync(datei, Buffer.from(await wb.xlsx.writeBuffer()));
 }
@@ -181,9 +261,13 @@ async function xlsxSchreiben(tabelle, datei) {
 async function importieren(datei) {
   const endung = path.extname(datei).toLowerCase();
   const name = path.basename(datei, endung);
-  if (endung === '.xlsx' || endung === '.xlsm' || endung === '.xltx') return { name, blaetter: await xlsxLesen(datei) };
+  if (endung === '.xlsx' || endung === '.xlsm' || endung === '.xltx') {
+    const blaetter = await xlsxLesen(datei);
+    const vba = endung === '.xlsm' ? VBA.ausXlsm(fs.readFileSync(datei)) : [];
+    return { name, blaetter, vba };
+  }
   if (endung === '.csv' || endung === '.txt' || endung === '.tsv') return { name, blaetter: csvLesen(fs.readFileSync(datei, 'utf8')) };
   throw new Error('Nur Excel-Dateien (.xlsx, .xlsm) und .csv gehen.');
 }
 
-module.exports = { Tabellen, leeresBlatt, csvLesen, csvSchreiben, xlsxLesen, xlsxSchreiben, importieren };
+module.exports = { formatAusExcel, regelAusExcel, regelNachExcel, Tabellen, leeresBlatt, csvLesen, csvSchreiben, xlsxLesen, xlsxSchreiben, importieren };
