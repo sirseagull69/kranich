@@ -54,9 +54,12 @@ function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm =
     }
 
     const win = process.platform === 'win32';
-    const kind = win
+    // Ein fester Pfad zu einer .exe (eingebautes Claude) läuft direkt, ohne Shell –
+    // sonst zerlegt cmd.exe Pfade mit Leerzeichen („Selbst gfaltet“).
+    const direkt = win && /[\\/]/.test(programm) && /\.exe$/i.test(programm);
+    const kind = win && !direkt
       ? _spawn([programm, ...args].map((a) => (a === '' ? '""' : zitiereWin(a))).join(' '), { shell: true, windowsHide: true, env: env || process.env })
-      : _spawn(programm, args, { env: env || process.env });
+      : _spawn(programm, args, { windowsHide: true, env: env || process.env });
 
     let aus = '';
     let fehler = '';
