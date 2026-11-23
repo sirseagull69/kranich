@@ -135,8 +135,10 @@
         <div class="platz"></div>
         <div style="position:relative"><button type="button" class="btn" data-aktion="exportmenue">${sym('export', 16)} Exportieren</button></div>
         <button type="button" class="rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button></header>
-      <div class="werk">
+      <div class="werk mitleiste">
+        <aside class="blatt seite" aria-label="Blätter und Schnell rechnen"></aside>
         <div class="links">
+          <div class="blattueber"><span class="hand">${esc(S.t.name)}</span><b class="h blattname2" title="Doppelklick zum Umbenennen">${esc(blatt().name)}</b></div>
           <div class="blatt leiste" role="toolbar" aria-label="Werkzeuge">
             <button type="button" class="wz" data-aktion="rueckgaengig" title="Rückgängig (Strg+Z)">${sym('zurueck', 15)}</button>
             <button type="button" class="wz" data-aktion="wiederholen" title="Wiederholen (Strg+Y)">${sym('vor', 15)}</button><span class="tz"></span>
@@ -150,7 +152,7 @@
             <button type="button" class="wz" data-aktion="diagramm" title="Diagramm aus der Markierung">${sym('diagramm', 15)} Diagramm</button>
             <button type="button" class="wz" data-aktion="summe-unten" title="Summe unter die Markierung">${sym('summe', 15)} Summe</button>
           </div>
-          <div class="blatt formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"></div>
+          <div class="blatt formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"><span class="erklaerung leise"></span></div>
           <div class="blatt raster"><div class="rasterscroll" tabindex="0" aria-label="Tabelle"></div><div class="blaetter"></div></div>
         </div>
         <aside class="blatt helfer" aria-label="Albatros hilft"></aside>
@@ -179,6 +181,7 @@
     const zeilen = Math.max(g.ze + 16, 40, S.ende.ze + 4);
     const a = auswahl();
     const breite = (sp) => b.breiten[Fo.nrZuSpalte(sp)] || 110;
+    const chips = chipSpalten(b);
     let html = `<table class="gitter"><colgroup><col style="width:46px">${Array.from({ length: spalten }, (_, sp) => `<col style="width:${breite(sp)}px">`).join('')}</colgroup><thead><tr><th class="nr"></th>`;
     for (let sp = 0; sp < spalten; sp++) html += `<th data-spalte="${sp}" class="${sp >= a.sp1 && sp <= a.sp2 ? 'sel' : ''}">${Fo.nrZuSpalte(sp)}<span class="ziehen" data-ziehen="${sp}"></span></th>`;
     html += '</tr></thead><tbody>';
@@ -195,7 +198,9 @@
         if (sp >= a.sp1 && sp <= a.sp2 && ze >= a.ze1 && ze <= a.ze2 && (a.sp1 !== a.sp2 || a.ze1 !== a.ze2)) kl.push('in');
         if (sp === S.anker.sp && ze === S.anker.ze) kl.push('aktiv');
         const farbe = b.farben[ad] ? ` style="background-color:${esc(b.farben[ad])}"` : '';
-        html += `<td data-a="${ad}" class="${kl.join(' ')}"${farbe}>${esc(Fo.zeige(w, b.formate[ad]))}</td>`;
+        const text = Fo.zeige(w, b.formate[ad]);
+        const inhalt = ze > 0 && chips.has(sp) && typeof w === 'string' && text ? `<span class="tchip" style="background:${chipFarbe(text)}">${esc(text)}</span>` : esc(text);
+        html += `<td data-a="${ad}" class="${kl.join(' ')}"${farbe}>${inhalt}</td>`;
       }
       html += '</tr>';
     }
@@ -208,18 +213,60 @@
     zeigeAuswahl();
   }
 
+  function eintraege(bl) { const g = groesse(bl); let n = 0; for (let ze = 1; ze <= g.ze; ze++) { let voll = false, formel = false; for (let sp = 0; sp <= g.sp; sp++) { const v = bl.zellen[Fo.adresse(sp, ze)]; if (v !== undefined) voll = true; if (String(v ?? '').startsWith('=')) formel = true; } if (voll && !formel) n++; } return n; }
   function zeichneReiter() {
+    const seite = app.querySelector('.seite');
+    if (seite) {
+      const mehrere = S.t.blaetter.length > 1;
+      const andere = (S.liste || []).filter((t) => t.id !== S.t.id).slice(0, 4);
+      seite.innerHTML = `<span class="sl-titel">Blätter</span>
+        ${S.t.blaetter.map((b, i) => `<button type="button" class="sl-blatt" aria-current="${i === S.blattNr}" data-aktion="blatt" data-i="${i}" title="Doppelklick zum Umbenennen"><i></i><span>${esc(b.name)}</span><small>${eintraege(b)}</small>${mehrere && i === S.blattNr ? `<span class="x" data-aktion="blatt-weg" data-i="${i}" title="Blatt löschen">✕</span>` : ''}</button>`).join('')}
+        <button type="button" class="sl-neu" data-aktion="blatt-dazu">${sym('plus', 13, 2.4)} Neues Blatt</button>
+        <span class="sl-titel">Schnell rechnen</span>
+        <div class="sl-knoepfe"><button type="button" data-aktion="unten" data-fn="SUMME" title="Summe unter die Markierung">Summe</button><button type="button" data-aktion="unten" data-fn="MITTELWERT" title="Durchschnitt unter die Markierung">Mittel</button><button type="button" data-aktion="unten" data-fn="ANZAHL" title="Anzahl unter die Markierung">Zählen</button><button type="button" data-aktion="sortieren">Sortieren</button></div>
+        ${andere.length ? `<span class="sl-titel">Zuletzt geöffnet</span>${andere.map((t) => `<button type="button" class="sl-datei" data-aktion="tabelle" data-id="${esc(t.id)}">${esc(t.name)}</button>`).join('')}` : ''}`;
+    }
     const r = app.querySelector('.blaetter'); if (!r) return;
-    const mehrere = S.t.blaetter.length > 1;
-    r.innerHTML = `${S.t.blaetter.map((b, i) => `<button type="button" class="blattreiter" aria-current="${i === S.blattNr}" data-aktion="blatt" data-i="${i}" title="Doppelklick zum Umbenennen">${esc(b.name)}${mehrere && i === S.blattNr ? `<span class="x" data-aktion="blatt-weg" data-i="${i}" title="Blatt löschen">✕</span>` : ''}</button>`).join('')}
-      <button type="button" class="blattreiter" data-aktion="blatt-dazu" title="Neues Blatt">${sym('plus', 13, 2.4)}</button><span class="statuszeile"></span>`;
+    r.innerHTML = '<span class="statuszeile"></span>';
     zeigeStatus();
   }
 
   function zeigeStatus() {
     const z = app.querySelector('.statuszeile'); if (!z) return;
-    const zahlen = sammle(auswahlText()).map((ad) => S.werte[ad]).filter((v) => typeof v === 'number');
-    z.textContent = zahlen.length > 1 ? `Summe ${Fo.zeige(zahlen.reduce((x, y) => x + y, 0))} · Schnitt ${Fo.zeige(zahlen.reduce((x, y) => x + y, 0) / zahlen.length)} · ${zahlen.length} Zahlen` : '';
+    const liste = sammle(auswahlText());
+    const zahlen = liste.map((ad) => S.werte[ad]).filter((v) => typeof v === 'number');
+    const fmt = blatt().formate[Fo.adresse(S.anker.sp, S.anker.ze)];
+    z.innerHTML = `<span>Gewählt: <b>${liste.length} ${liste.length === 1 ? 'Zelle' : 'Zellen'}</b></span>${zahlen.length ? `<span>Summe: <b>${esc(Fo.zeige(zahlen.reduce((x, y) => x + y, 0), fmt))}</b></span>` : ''}${zahlen.length > 1 ? `<span>Schnitt: <b>${esc(Fo.zeige(zahlen.reduce((x, y) => x + y, 0) / zahlen.length, fmt))}</b></span>` : ''}<span class="platz"></span><span>${eintraege(blatt())} Einträge</span>`;
+  }
+
+  // Formel in Klartext (ohne Claude)
+  const KLAR = { SUMME: 'zählt alle Zahlen zusammen', MITTELWERT: 'rechnet den Durchschnitt aus', MIN: 'sucht den kleinsten Wert', MAX: 'sucht den größten Wert', ANZAHL: 'zählt, wie viele Zahlen es sind', ANZAHL2: 'zählt alle gefüllten Zellen', WENN: 'prüft eine Bedingung und zeigt je nachdem etwas anderes', SUMMEWENN: 'zählt nur die passenden Zeilen zusammen', 'ZÄHLENWENN': 'zählt die passenden Einträge', MITTELWERTWENN: 'Durchschnitt nur der passenden Zeilen', RUNDEN: 'rundet die Zahl', AUFRUNDEN: 'rundet nach oben', ABRUNDEN: 'rundet nach unten', SVERWEIS: 'sucht einen Wert in einer Liste', RMZ: 'rechnet die Monatsrate eines Kredits aus', PRODUKT: 'multipliziert alles miteinander', HEUTE: 'zeigt das heutige Datum', VERKETTEN: 'hängt Texte zusammen' };
+  function klartext(roh) {
+    if (!roh || !String(roh).startsWith('=')) return '';
+    const fn = /^=\s*([A-ZÄÖÜ][A-ZÄÖÜ0-9.]*)\(/i.exec(roh)?.[1]?.toUpperCase();
+    const en = { SUM: 'SUMME', AVERAGE: 'MITTELWERT', IF: 'WENN', SUMIF: 'SUMMEWENN', COUNTIF: 'ZÄHLENWENN', COUNT: 'ANZAHL', ROUND: 'RUNDEN', VLOOKUP: 'SVERWEIS', PMT: 'RMZ' };
+    if (fn && KLAR[en[fn] || fn]) return KLAR[en[fn] || fn];
+    if (/[+\-*/]/.test(roh.slice(1))) return 'rechnet mit anderen Zellen';
+    return 'übernimmt den Wert einer anderen Zelle';
+  }
+  // Kategorie-Spalten bekommen Chips
+  function chipSpalten(b) { const set = new Set(); for (let sp = 0; sp < 30; sp++) { const k = String(b.zellen[Fo.adresse(sp, 0)] || ''); if (/^(kategorie|art|typ|status|bezahlt|bereich|gruppe)/i.test(k.trim())) set.add(sp); } return set; }
+  const CHIPFARBEN = ['#dcf0e3', '#fdebd3', '#e3ecf8', '#efe6fb', '#fbe3e3', '#e9f3d6', '#f6eedb'];
+  const chipFarbe = (t) => { let h = 0; for (const c of String(t).toLowerCase()) h = (h * 31 + c.charCodeAt(0)) >>> 0; return CHIPFARBEN[h % CHIPFARBEN.length]; };
+  // Kleiner Tipp: was bleibt übrig, pro Tag
+  function tipp(b) {
+    for (const [ad, roh] of Object.entries(b.zellen)) {
+      if (!/^(bleibt|noch übrig|übrig|saldo|kassenstand|rest)/i.test(String(roh).trim())) continue;
+      const z = Fo.zerlege(ad);
+      for (let sp = z.sp + 1; sp < z.sp + 8; sp++) {
+        const w = S.werte[Fo.adresse(sp, z.ze)];
+        if (typeof w === 'number') {
+          const heute = new Date(); const tage = new Date(heute.getFullYear(), heute.getMonth() + 1, 0).getDate() - heute.getDate() + 1;
+          return w >= 0 ? `Dir bleiben noch ${Fo.zeige(w, 'eur')}. Bis Monatsende sind das gut ${Fo.zeige(w / tage, 'eur')} pro Tag.` : `Du liegst ${Fo.zeige(-w, 'eur')} im Minus.`;
+        }
+      }
+    }
+    return '';
   }
 
   // Nur Markierung neu zeichnen (schnell)
@@ -236,6 +283,7 @@
     const ad = Fo.adresse(S.anker.sp, S.anker.ze);
     const adr = app.querySelector('.formelzeile .adr'); if (adr) adr.textContent = viele ? auswahlText() : ad;
     const fz = document.getElementById('formel'); if (fz && document.activeElement !== fz) fz.value = blatt().zellen[ad] ?? '';
+    const er = app.querySelector('.formelzeile .erklaerung'); if (er) er.textContent = klartext(blatt().zellen[ad]);
     zeigeStatus();
     zeichneWerte();
   }
@@ -311,7 +359,7 @@
     app.querySelectorAll('.rasterscroll td[data-a]').forEach((td) => {
       const a = td.dataset.a; const w = S.werte[a];
       const t = Fo.zeige(w, b.formate[a]);
-      if (td.textContent !== t) td.textContent = t;
+      if (td.textContent !== t && !td.querySelector('.tchip')) td.textContent = t;
       td.classList.toggle('zahl', typeof w === 'number');
       td.classList.toggle('fehler', w instanceof Fo.Fehler);
     });
@@ -373,7 +421,7 @@
     geaendert(); zeichneTabelle();
     meldung(`Sortiert nach Spalte ${Fo.nrZuSpalte(sp)} (${auf ? 'aufsteigend' : 'absteigend'}). Nochmal klicken dreht um.`);
   }
-  function summeUnten() {
+  function summeUnten(fn = 'SUMME') {
     const a = auswahl(); const b = blatt();
     merke();
     for (let sp = a.sp1; sp <= a.sp2; sp++) {
@@ -381,8 +429,8 @@
       if (ze1 === ze2) { ze1 = typeof S.werte[Fo.adresse(sp, 0)] === 'string' ? 1 : 0; ze2 = ze1; while (S.werte[Fo.adresse(sp, ze2 + 1)] !== undefined && S.werte[Fo.adresse(sp, ze2 + 1)] !== null) ze2++; }
       let ziel = ze2 + 1; while (b.zellen[Fo.adresse(sp, ziel)] !== undefined) ziel++;
       const ad = Fo.adresse(sp, ziel);
-      b.zellen[ad] = `=SUMME(${Fo.adresse(sp, ze1)}:${Fo.adresse(sp, ze2)})`; b.fett[ad] = true;
-      const vorbild = b.formate[Fo.adresse(sp, ze2)]; if (vorbild) b.formate[ad] = vorbild;
+      b.zellen[ad] = `=${fn}(${Fo.adresse(sp, ze1)}:${Fo.adresse(sp, ze2)})`; b.fett[ad] = true;
+      const vorbild = b.formate[Fo.adresse(sp, ze2)]; if (vorbild && fn !== 'ANZAHL') b.formate[ad] = vorbild;
     }
     geaendert(); zeichneTabelle();
   }
@@ -416,6 +464,7 @@
     const h = app.querySelector('.helfer'); if (!h) return;
     h.innerHTML = `<header><span class="helfervogel">${vogel(S.denkt ? 'denkt-nach' : 'ruhezustand-3', 34)}</span><b class="h">Albatros hilft</b><div class="platz"></div><span class="chip grau" style="box-shadow:none;background:var(--mint)"><i style="background:${S.denkt ? '#e8a53a' : 'var(--gruen)'}"></i>${S.denkt ? 'Rechnet …' : 'Bereit'}</span></header>
       <div class="werte" aria-live="polite"></div>
+      <div class="tipp-karte" hidden><b class="h">Kleiner Tipp</b><span></span></div>
       <div class="schnell">
         <button type="button" data-aktion="diagramm">${sym('diagramm', 15)} Diagramm</button>
         <button type="button" data-aktion="erklaeren">${sym('fx', 15)} Formel erklären</button>
@@ -444,6 +493,7 @@
       w.hidden = false;
     }
     const hinweis = app.querySelector('.auswahlhinweis'); if (hinweis) hinweis.textContent = `Markiert: ${text}`;
+    const tk = app.querySelector('.tipp-karte'); if (tk) { const t = tipp(blatt()); tk.hidden = !t; tk.querySelector('span').textContent = t; }
   }
   function zeichneGespraech() {
     const g = app.querySelector('.gespraech'); if (!g) return;
@@ -603,6 +653,7 @@
     'spalte-dazu': () => { merke(); spalteEinfuegen(auswahl().sp2 + 1); geaendert(); zeichneTabelle(); waehle(auswahl().sp2 + 1, S.anker.ze); },
     sortieren: () => sortiere(),
     'summe-unten': () => summeUnten(),
+    unten: (el) => summeUnten(el.dataset.fn),
     diagramm: () => zeigeDiagramm(),
     erklaeren: async () => {
       const ad = Fo.adresse(S.anker.sp, S.anker.ze); const roh = blatt().zellen[ad];
@@ -629,8 +680,8 @@
         else if (r?.fehler) meldung(`Klappt nicht: ${r.fehler.nachricht}`);
       });
     },
-    blatt: (el, ev) => { if (ev?.target?.closest('[data-aktion="blatt-weg"]')) return; S.blattNr = Number(el.dataset.i); S.anker = { sp: 0, ze: 0 }; S.ende = { sp: 0, ze: 0 }; S.zurueck = []; S.vor = []; app.querySelector('.blattname').textContent = blatt().name; zeichneTabelle(); },
-    'blatt-dazu': () => { S.t.blaetter.push({ name: `Blatt ${S.t.blaetter.length + 1}`, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} }); S.blattNr = S.t.blaetter.length - 1; S.zurueck = []; app.querySelector('.blattname').textContent = blatt().name; geaendert(); zeichneTabelle(); },
+    blatt: (el, ev) => { if (ev?.target?.closest('[data-aktion="blatt-weg"]')) return; S.blattNr = Number(el.dataset.i); S.anker = { sp: 0, ze: 0 }; S.ende = { sp: 0, ze: 0 }; S.zurueck = []; S.vor = []; app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } zeichneTabelle(); },
+    'blatt-dazu': () => { S.t.blaetter.push({ name: `Blatt ${S.t.blaetter.length + 1}`, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} }); S.blattNr = S.t.blaetter.length - 1; S.zurueck = []; app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } geaendert(); zeichneTabelle(); },
     'blatt-weg': (el) => { const i = Number(el.dataset.i); if (S.t.blaetter.length < 2 || !window.confirm(`Blatt „${S.t.blaetter[i].name}“ löschen?`)) return; S.t.blaetter.splice(i, 1); S.blattNr = 0; S.zurueck = []; geaendert(); zeichneTabelle(); },
   };
 
@@ -645,8 +696,8 @@
   });
   app.addEventListener('dblclick', (ev) => {
     const td = ev.target.closest('td[data-a]'); if (td && S.ansicht === 'tabelle') { starteBearbeiten(); return; }
-    const r = ev.target.closest('.blattreiter[data-i]');
-    if (r) { const b = S.t.blaetter[Number(r.dataset.i)]; const f = document.createElement('input'); f.value = b.name; f.style.width = '110px'; r.replaceWith(f); f.focus(); f.select(); const ok = () => { b.name = f.value.trim().slice(0, 31) || b.name; app.querySelector('.blattname').textContent = blatt().name; geaendert(); zeichneReiter(); }; f.addEventListener('blur', ok, { once: true }); f.addEventListener('keydown', (e) => { if (e.key === 'Enter') f.blur(); }); return; }
+    const r = ev.target.closest('.sl-blatt[data-i], .blattname2');
+    if (r) { const b = S.t.blaetter[r.dataset.i !== undefined ? Number(r.dataset.i) : S.blattNr]; const f = document.createElement('input'); f.value = b.name; f.style.width = '110px'; r.replaceWith(f); f.focus(); f.select(); const ok = () => { b.name = f.value.trim().slice(0, 31) || b.name; if (r.dataset.i === undefined) { r.textContent = b.name; f.replaceWith(r); } app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } geaendert(); zeichneReiter(); }; f.addEventListener('blur', ok, { once: true }); f.addEventListener('keydown', (e) => { if (e.key === 'Enter') f.blur(); }); return; }
   });
   // Markieren mit Maus (ziehen), Spalten/Zeilen per Kopf, Spaltenbreite ziehen
   let zieht = false;

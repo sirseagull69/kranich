@@ -159,3 +159,37 @@ table.gitter{border-collapse:separate;border-spacing:0;table-layout:fixed;font:1
 .menue small{display:block;font:400 12px 'Source Serif 4',serif;color:var(--leise)}
 @media (max-width:1100px){.karten{grid-template-columns:repeat(2,minmax(0,1fr))}.zeile2{grid-template-columns:1fr}.werk{grid-template-columns:minmax(0,1fr) 300px}}
 @media print{body{background:#fff}.kopf,.leiste,.helfer,.blaetter,.formelzeile{display:none!important}.werk{display:block;padding:0}.raster{box-shadow:none}.rasterscroll{overflow:visible}}
+
+/* ---------- Seitenleiste, Überschrift, Chips, Statusleiste, Tipp ---------- */
+.werk.mitleiste{grid-template-columns:210px minmax(0,1fr) 340px}
+.seite{padding:14px 10px;display:flex;flex-direction:column;gap:4px;overflow:auto;min-height:0}
+.sl-titel{font:700 11px 'Bricolage Grotesque',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:#9a9486;padding:10px 6px 4px}
+.sl-titel:first-child{padding-top:2px}
+.sl-blatt{display:flex;align-items:center;gap:8px;min-height:38px;padding:0 10px;border:0;border-radius:9px;background:transparent;text-align:left;font:600 14px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.sl-blatt i{width:7px;height:7px;border-radius:50%;background:transparent;flex:none}
+.sl-blatt span:first-of-type{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-blatt small{font:600 12px 'Bricolage Grotesque',sans-serif;color:#9a9486}
+.sl-blatt:hover{background:#f6f3ec}
+.sl-blatt[aria-current="true"]{background:var(--mint);box-shadow:inset 3px 0 0 var(--gruen)}
+.sl-blatt[aria-current="true"] i{background:var(--gruen)}
+.sl-blatt .x{opacity:.5;font-size:12px}.sl-blatt .x:hover{opacity:1;color:#c0392b}
+.sl-neu{display:flex;align-items:center;gap:6px;min-height:36px;margin-top:4px;padding:0 10px;border:1.5px dashed #cfe6d7;border-radius:9px;background:transparent;font:600 13px 'Bricolage Grotesque',sans-serif;color:var(--dunkel)}
+.sl-neu:hover{background:var(--mint)}
+.sl-knoepfe{display:flex;flex-wrap:wrap;gap:6px;padding:2px 2px 4px}
+.sl-knoepfe button{min-height:36px;padding:0 12px;border:1px solid var(--rand);border-radius:9px;background:#fff;font:600 13.5px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.sl-knoepfe button:hover{border-color:#b8dcc5;background:var(--mint)}
+.sl-datei{border:0;background:transparent;text-align:left;padding:7px 10px;border-radius:8px;font:14px 'Source Serif 4',serif;color:var(--leise);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sl-datei:hover{background:#f6f3ec;color:var(--tinte)}
+.blattueber{display:flex;flex-direction:column;padding:0 4px;line-height:1.1}
+.blattueber .hand{font-size:22px}
+.blattueber b{font-size:26px;font-weight:800;letter-spacing:-.015em;cursor:text}
+.formelzeile .erklaerung{padding:0 12px;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.gitter tbody tr:first-child td{background:#f3faf5;font:700 13.5px 'Bricolage Grotesque',sans-serif}
+.tchip{display:inline-block;padding:1px 9px;border-radius:999px;font:600 12.5px 'Bricolage Grotesque',sans-serif;color:#1d2742;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
+.blaetter{justify-content:flex-start}
+.statuszeile{display:flex;gap:16px;width:100%;margin-left:0;font:500 12.5px 'Bricolage Grotesque',sans-serif;color:var(--leise)}
+.statuszeile b{color:var(--tinte)}
+.tipp-karte{display:flex;flex-direction:column;gap:3px;margin:6px 0 2px;padding:12px 14px;border-radius:10px;background:#fdebd9;position:relative}
+.tipp-karte b{font:600 22px 'Caveat',cursive;color:#a5491b}
+.tipp-karte span{font-size:13.5px;line-height:1.4;color:#5b3a22}
+@media (max-width:1250px){.werk.mitleiste{grid-template-columns:minmax(0,1fr) 320px}.werk.mitleiste .seite{display:none}}
