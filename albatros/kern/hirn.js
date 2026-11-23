@@ -86,7 +86,7 @@ function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm =
       try { daten = JSON.parse(aus.trim().split('\n').pop()); } catch { /* unten behandelt */ }
       if (daten && !daten.is_error && typeof daten.result === 'string') return resolve(daten.result);
       const roh = `${daten?.result || ''} ${fehler} ${aus}`.toLowerCase();
-      if (code === 127 || /not recognized|nicht als interner|command not found/.test(roh)) {
+      if (code === 127 || /not recognized|nicht als interner|command not found|nicht gefunden|falsch geschrieben|cannot find|is not found|no such file/.test(roh)) {
         return reject(new HirnFehler('nicht-installiert', 'Claude Code ist auf diesem Rechner nicht installiert.'));
       }
       if (/log ?in|authenticat|anmeld|unauthorized|401/.test(roh)) {
@@ -156,7 +156,8 @@ async function frageClaudeHier(auftrag, e, schnell, zeitlimitMs) {
   try {
     return { text: await frageClaude({ ...auftrag, modell, programm: e.claudeProgramm || 'claude', ...(zeitlimitMs ? { zeitlimitMs } : {}) }), weg: 'claude' };
   } catch (f) {
-    if (f.art !== 'nicht-installiert') throw f;
+    const startPanne = f.art === 'antwort' && /Ende-Code: (1|127|9009)\b/.test(f.details || '') && !/Antwort:/.test(f.details || '');
+    if (f.art !== 'nicht-installiert' && !startPanne) throw f;
     const eb = Eingebaut.aufruf();
     if (!eb) throw new HirnFehler('nicht-installiert', 'Hier ist kein Claude da. Im Startfenster „Selbst gfaltet“ unter Einstellungen → „Claude einrichten“ geht es ohne Installation.');
     return { text: await frageClaude({ ...auftrag, modell, programm: eb.programm, env: eb.env, ...(zeitlimitMs ? { zeitlimitMs } : {}) }), weg: 'eingebaut' };
