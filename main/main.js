@@ -301,6 +301,8 @@ function oeffneFenster() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
   fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
+  // Vom Launcher „Selbst gfaltet“: --oeffne=<projekt-id>
+  fenster.webContents.once('did-finish-load', () => { const id = oeffneArg(process.argv); if (id) fenster.webContents.send('start:oeffne', id); });
   // Links aus Entwürfen nie im Programm öffnen.
   fenster.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   fenster.webContents.on('will-navigate', (e) => e.preventDefault());
@@ -314,9 +316,26 @@ function start() {
   return oeffneFenster();
 }
 
+function oeffneArg(argv) {
+  const a = (argv || []).find((x) => String(x).startsWith('--oeffne='));
+  const id = a ? a.slice(9) : '';
+  return /^[a-z0-9-]{6,40}$/.test(id) ? id : '';
+}
+
 module.exports = { start, fotografiere, pruefe };
 
 if (!process.env.KRANICH_RAUCH) {
-  app.whenReady().then(start);
-  app.on('window-all-closed', () => app.quit());
+  // Nur ein Kranich gleichzeitig; ein zweiter Start (z. B. aus dem Launcher) holt das Fenster nach vorn
+  if (!app.requestSingleInstanceLock()) app.quit();
+  else {
+    app.on('second-instance', (_e, argv) => {
+      if (!fenster) return;
+      if (fenster.isMinimized()) fenster.restore();
+      fenster.focus();
+      const id = oeffneArg(argv);
+      if (id) fenster.webContents.send('start:oeffne', id);
+    });
+    app.whenReady().then(start);
+    app.on('window-all-closed', () => app.quit());
+  }
 }

@@ -1,0 +1,28 @@
+{
+  "name": "selbst-gfaltet",
+  "productName": "Selbst gfaltet",
+  "version": "0.1.0",
+  "description": "Startfenster der Familie Selbst gfaltet: origami, Kranich, Albatros und alle weiteren Vögel an einem Ort",
+  "author": "Nils Pohler",
+  "main": "main/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "bauen": "electron-builder --publish never"
+  },
+  "build": {
+    "appId": "de.selbstgfaltet.start",
+    "productName": "Selbst gfaltet",
+    "files": ["main/**", "ui/**", "bau/icon.png"],
+    "directories": { "output": "ausgabe", "buildResources": "bau" },
+    "artifactName": "Selbst-gfaltet-${version}-${os}-${arch}.${ext}",
+    "win": { "target": [{ "target": "nsis", "arch": ["x64"] }], "icon": "bau/icon.png" },
+    "nsis": { "oneClick": true, "perMachine": false, "shortcutName": "Selbst gfaltet" },
+    "mac": { "target": [{ "target": "dmg", "arch": ["arm64", "x64"] }], "icon": "bau/icon.png", "identity": "-", "category": "public.app-category.productivity" }
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

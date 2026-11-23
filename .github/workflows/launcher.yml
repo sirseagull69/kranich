@@ -1,0 +1,47 @@
+# Baut das Startfenster "Selbst gfaltet" (Windows und Mac) und legt es
+# als eigenes Release (start-v<version>) ab. Laeuft bei Aenderungen in launcher/.
+name: Startfenster bauen
+
+on:
+  push:
+    branches: [main]
+    paths: ['launcher/**', '.github/workflows/launcher.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bauen:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            dateien: ausgabe/*.exe
+          - os: macos-latest
+            dateien: ausgabe/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: launcher
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run bauen
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Als Release ablegen
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="start-v$(node -p "require('./package.json').version")"
+          gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" --target "$GITHUB_SHA" --latest=false --title "Selbst gfaltet ${VERSION#start-}" --notes "Das Startfenster der Familie: origami, Kranich, Albatros an einem Ort." || true
+          for versuch in 1 2 3; do
+            gh release upload "$VERSION" ${{ matrix.dateien }} --clobber && break
+            sleep 10
+          done

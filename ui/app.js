@@ -1204,5 +1204,6 @@
     const fl = await K.formate.liste();
     S.formate = fl.formate || []; S.gruppen = fl.gruppen || [];
     zeigeStart();
+    K.beimOeffnen?.((id) => oeffne(id));
   })();
 })();
