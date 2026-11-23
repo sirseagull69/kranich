@@ -45,8 +45,8 @@
   function zeigeSpeicherchip() {
     const el = document.querySelector('.speicherchip');
     if (!el) return;
-    el.className = `chip speicherchip ${S.speichert ? 'chip-grau' : 'chip-gruen'}`;
-    el.innerHTML = S.speichert ? 'Speichert …' : `${sym('haken', 13)}Gespeichert`;
+    el.className = `speicherchip ${S.speichert ? 'speichert' : ''}`;
+    el.textContent = S.speichert ? 'speichert …' : 'gespeichert';
   }
 
   // ---------- Start ----------
@@ -302,26 +302,25 @@
   function kopfHtml(rechts) {
     const p = S.projekt;
     const n = p.seiten?.length || 0;
-    const unter = S.ansicht === 'varianten' ? 'Varianten' : S.modus === 'bild' ? 'Bild bearbeiten' : n > 1 ? `${n} Boards` : (seite()?.name || '');
-    return `<header class="kopf k-kopf"><button type="button" class="marke" data-aktion="zum-start" title="Zur Startseite">${figur('ruhend', 34)}<span class="h">Kranich</span></button>
-      <button type="button" class="btn btn-q zurueckknopf" data-aktion="zum-start">${sym('links', 16)} Alle Entwürfe</button>
-      <span class="trenner" aria-hidden="true"></span>
-      <div class="titel"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><span class="unter">${esc(unter)}</span></div>
+    const unter = S.ansicht === 'varianten' ? 'Varianten' : S.modus === 'bild' ? 'Bild' : n > 1 ? `${n} Boards` : (seite()?.name || '');
+    return `<header class="kopf k-kopf schlicht"><button type="button" class="heimknopf" data-aktion="zum-start" title="Alle Entwürfe" aria-label="Zurück zu allen Entwürfen">${sym('links', 18)}${figur('ruhend', 30)}</button>
+      <div class="titel"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><span class="unter">${esc(unter)} · <span class="speicherchip">gespeichert</span></span></div>
       <div class="platz"></div>
-      <div class="modus" role="group" aria-label="Modus">
-        <button type="button" aria-pressed="${S.modus === 'entwurf'}" data-aktion="modus" data-modus="entwurf">${sym('seite', 15)} Entwurf</button>
-        <button type="button" aria-pressed="${S.modus === 'bild'}" data-aktion="modus" data-modus="bild">${sym('bild', 15)} Bild</button></div>
-      <div class="platz"></div>
-      <span class="chip speicherchip chip-gruen">${sym('haken', 13)}Gespeichert</span>
       <div class="reihe">${rechts}</div><span class="avatar h" aria-label="Angemeldet als Nils">NP</span></header>`;
+  }
+
+  // „Mehr“: selten gebrauchte Knöpfe in einem kleinen Menü
+  function mehrMenue(eintraege) {
+    return `<div class="mehr"><button type="button" class="btn btn-q rundknopf" data-aktion="mehr" title="Mehr" aria-label="Mehr" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
+      <div class="mehrmenue paper" hidden>${eintraege.map(([a, ic, t, aus]) => `<button type="button" data-aktion="${a}" ${aus ? 'disabled' : ''}>${sym(ic, 16)} ${t}</button>`).join('')}</div></div>`;
   }
 
   function kopfKnoepfe() {
     const kannZurueck = S.modus === 'bild' ? Bild.z.stand > 0 : (seite()?.stand || 0) > 0;
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
-    return `<button type="button" class="btn btn-q" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'}>${sym('zurueck', 16)} Rückgängig</button>
-      ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="alle-groessen" ${seite()?.html ? '' : 'disabled title="Erst etwas aufs Board falten"'}>${sym('mischen', 16)} Alle Größen</button>`}
-      <button type="button" class="btn" data-aktion="varianten" ${S.modus === 'bild' ? 'disabled title="Varianten gibt es im Entwurf"' : ''}>${sym('varianten', 16)} Varianten</button>
+    const leer = !seite()?.html;
+    return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
+      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer]])}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
 
@@ -330,7 +329,7 @@
     const bild = S.modus === 'bild';
     app.innerHTML = `<section class="ansicht" id="werkbank">${kopfHtml(kopfKnoepfe())}
       <div class="werkbank">
-        ${bild ? '<nav class="werkzeuge" aria-label="Werkzeuge"></nav>' : `<nav class="werkzeugleiste" aria-label="Werkzeuge">${schiene()}</nav><nav class="seitenleiste" aria-label="Boards und Ebenen" ${S.panelZu ? 'hidden' : ''}></nav>`}
+        ${bild ? '<nav class="werkzeuge" aria-label="Werkzeuge"></nav>' : `<nav class="werkzeugleiste" aria-label="Werkzeuge">${schiene()}</nav><nav class="seitenleiste" aria-label="Boards und Ebenen" ${S.panelAuf ? '' : 'hidden'}></nav>`}
         <main class="leinwand paper" aria-label="Leinwand"></main>
         ${bild ? '<div class="rechtsbild"><div class="paper reglerkarte" id="regler"></div><aside class="kranichleiste" aria-label="Kranich"></aside></div>' : '<aside class="kranichleiste" aria-label="Kranich"></aside>'}
       </div></section>`;
@@ -401,15 +400,12 @@
     const s = seite();
     const offen = s?.pruefung?.offen?.length || 0;
     const k = (aktion, ic, wort, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 19)}<span>${wort}</span></button>`;
-    return `${k('werkzeug-zeiger', 'zeiger', 'Wählen', 'Auswählen: Element anklicken, dann Kranich sagen, was sich ändern soll', `aria-pressed="${!S.hand}"`)}
-      ${k('werkzeug-hand', 'hand', 'Hand', 'Hand: Leinwand verschieben (geht auch mit gedrückter Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
-      <span class="schienenfalz"></span>
-      ${k('panel', 'ebenen', 'Boards', 'Liste der Boards und Ebenen ein- oder ausblenden', `aria-pressed="${!S.panelZu}"`)}
-      ${k('board-dazu', 'plus', 'Neu', 'Neues Board in einem anderen Format dazulegen')}
-      ${k('app-pruefung', 'haken', 'Prüfen', 'Selbstprüfung: Kranich misst das Board nach (Lesbarkeit, Überstand, zu kleine Knöpfe)', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
-      ${k('alle-groessen', 'mischen', 'Größen', 'Alle Größen: dieses Board in weitere Formate falten (Story, Flyer …)', s?.html && !S.projekt?.app?.plan ? '' : 'disabled')}
+    return `${k('werkzeug-zeiger', 'zeiger', 'Wählen', 'Element anklicken, dann Kranich sagen, was sich ändern soll', `aria-pressed="${!S.hand}"`)}
+      ${k('werkzeug-hand', 'hand', 'Hand', 'Leinwand verschieben (geht auch mit gedrückter Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
+      ${k('panel', 'ebenen', 'Boards', 'Liste aller Boards ein- oder ausblenden', `aria-pressed="${Boolean(S.panelAuf)}"`)}
+      ${k('app-pruefung', 'haken', 'Prüfen', 'Kranich misst das Board nach: Lesbarkeit, Überstand, zu kleine Knöpfe', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
       <div class="platz"></div>
-      ${k('modus', 'bild', 'Bild', 'Zur Bildbearbeitung wechseln', 'data-modus="bild"')}`;
+      ${k('modus', 'bild', 'Bild', 'Zur Bildbearbeitung', 'data-modus="bild"')}`;
   }
 
   function boardZeile(x, aktiv, mehrere, klein) {
@@ -490,8 +486,8 @@
     if (!aside || !S.projekt) return;
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
-    aside.innerHTML = `<div class="leistenkopf"><span class="leistenfigur">${figur(haltung, 34)}</span><div class="lk-txt"><b class="h">Kranich hilft mit</b><span class="hand">${hand}</span></div><span class="chip ${chipArt}">${chip}</span></div>
-      <div class="leistenlaschen" role="tablist"><button type="button" role="tab" aria-selected="${!verlaufAn}" data-aktion="leiste" data-lasche="kranich">Kranich</button><button type="button" role="tab" aria-selected="${verlaufAn}" data-aktion="leiste" data-lasche="verlauf">Verlauf</button></div>
+    aside.innerHTML = `<div class="leistenkopf"><span class="leistenfigur">${figur(haltung, 34)}</span><div class="lk-txt"><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><span class="hand">${verlaufAn ? 'frühere Fassungen' : hand}</span></div>
+        <button type="button" class="btn btn-q rundknopf" data-aktion="leiste" data-lasche="${verlaufAn ? 'kranich' : 'verlauf'}" aria-pressed="${verlaufAn}" title="${verlaufAn ? 'Zurück zum Gespräch' : 'Verlauf: frühere Fassungen'}" aria-label="Verlauf">${sym(verlaufAn ? 'schliessen' : 'uhr', 17)}</button></div>
       <div class="leistenblatt">
         <div class="verlauf" aria-live="polite"></div>
         <div class="wunschfeld"></div>
@@ -782,7 +778,8 @@
     const nav = app.querySelector('.werkzeuge');
     if (!nav) return;
     const z = Bild.z;
-    nav.innerHTML = `<span class="k-abschnitt">Werkzeuge</span>
+    nav.innerHTML = `<button type="button" class="btn btn-q zumentwurf" data-aktion="modus" data-modus="entwurf">${sym('links', 16)} Zurück zum Entwurf</button>
+      <span class="k-abschnitt">Werkzeuge</span>
       ${WERKZEUGE.map(([k, t]) => `<button type="button" class="wz" aria-pressed="${z.werkzeug === k}" data-aktion="werkzeug" data-w="${k}" ${!Bild.hatBild() || z.laeuft ? 'disabled' : ''}>${sym(k, 18)}${t}</button>`).join('')}
       <label class="farbzeile"><input type="color" class="farbknopf" id="bildfarbe" value="${z.farbe}"> Malfarbe</label>
       <div class="fold" style="margin:12px 0 10px"></div>
@@ -973,7 +970,8 @@
       feld.addEventListener('keydown', (e) => { if (e.key === 'Enter') feld.blur(); if (e.key === 'Escape') { feld.value = S.projekt.name; feld.blur(); } });
     },
     'modus': (el) => { if (S.modus === el.dataset.modus && S.ansicht === 'werkbank') return; S.modus = el.dataset.modus; S.kranich.zustand = 'bereit'; renderWerkbank(); },
-    'panel': () => { S.panelZu = !S.panelZu; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = S.panelZu; renderSeitenleiste(); },
+    'panel': () => { S.panelAuf = !S.panelAuf; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = !S.panelAuf; renderSeitenleiste(); },
+    'mehr': (el) => { const m = el.nextElementSibling; m.hidden = !m.hidden; el.setAttribute('aria-expanded', String(!m.hidden)); if (!m.hidden) setTimeout(() => document.addEventListener('click', () => { m.hidden = true; el.setAttribute('aria-expanded', 'false'); }, { once: true }), 0); },
     'werkzeug-hand': () => { S.hand = true; app.querySelector('.leinwand')?.classList.add('greifbereit', 'hand-an'); renderSeitenleiste(); },
     'werkzeug-zeiger': () => { S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); renderSeitenleiste(); },
     'leiste': (el) => { S.leisteLasche = el.dataset.lasche; renderLeiste(); },
@@ -1155,7 +1153,7 @@
   window.App = {
     zeigeStart, oeffne, neuesProjekt, aktionen, S, renderWerkbank, sendeEntwurf, sendeBild,
     renderStart, kopfHtml, seite, chat, setzeKranich, renderVerlauf, renderMitte, renderSeitenleiste, renderKopfKnoepfe,
-    zeigeBoards, waehleBoard, geaendert, speichernSpaeter, pruefeUndRepariere, pruefBericht, formatSymbol,
+    zeigeBoards, waehleBoard, geaendert, mehrMenue, speichernSpaeter, pruefeUndRepariere, pruefBericht, formatSymbol,
     get auftragNr() { return auftragNr; }, neuerAuftrag: () => ++auftragNr,
   };
 

@@ -337,8 +337,8 @@
     const p = S.projekt;
     const fehlt = p.seiten.filter((b) => !b.html).length;
     const fertigBoards = p.seiten.filter((b) => b.html).length;
-    return `<button type="button" class="btn btn-q" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'}>${sym('zurueck', 16)} Rückgängig</button>
-      <button type="button" class="btn" data-aktion="app-plan-zeigen">${sym('liste', 16)} Plan</button>
+    return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
+      ${App.mehrMenue([['app-plan-zeigen', 'liste', 'Plan ansehen']])}
       ${fehlt && S.kranich.zustand !== 'denkt' ? `<button type="button" class="btn" data-aktion="app-weiter">${figur('arbeitend', 16)} Weiter falten (${fehlt})</button>` : ''}
       <button type="button" class="btn" data-aktion="app-abspielen" ${fertigBoards ? '' : 'disabled'}>${sym('senden', 16)} Abspielen</button>
       <button type="button" class="btn btn-p" data-aktion="app-uebergabe" ${fertigBoards ? '' : 'disabled'}>${sym('export', 16)} Übergeben</button>`;
