@@ -6,8 +6,8 @@
 const APPS = {
   kranich: { name: 'Kranich', farbe: '#7c5cd6', facette: '#4a2f9a', hell: '#d6caf9', aufgabe: 'Entwerfen und Bilder bearbeiten' },
   origami: { name: 'origami', farbe: '#e8743b', facette: '#b4521f', hell: '#f8d3bd', aufgabe: 'KI-Assistent, steckt als Copilot in jeder App' },
-  eule: { name: 'Eule', farbe: '#c47f17', facette: '#8a5512', hell: '#f3dcb2', aufgabe: 'Schreiben (statt Word)' },
-  elster: { name: 'Elster', farbe: '#1f7a74', facette: '#135450', hell: '#dcefec', aufgabe: 'Rechnen und Tabellen (statt Excel)' },
+  albatros: { name: 'Albatros', farbe: '#2f8a55', facette: '#1d5e3a', hell: '#dcf0e3', aufgabe: 'Tabellen und Rechnen (statt Excel), einfacher und mit viel Hilfe von origami' },
+  schreiben: { name: 'Schreibprogramm (Name folgt)', farbe: '#c47f17', facette: '#8a5512', hell: '#f3dcb2', aufgabe: 'Schreiben (statt Word)' },
 };
 
 const GRUNDLOOK = `

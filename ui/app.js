@@ -95,7 +95,7 @@
     const e = S.einstellungen || {};
     const hirn = e.weg === 'api' ? 'API-Schlüssel' : `Claude · ${e.claudeModell || 'opus'}`;
     return `<aside class="seitenkarte"><span class="klebe"></span>
-      <button type="button" class="sk-marke" data-aktion="lasche" data-lasche="start">${figur('ruhend', 38)}<span class="h">Kranich</span></button>
+      <button type="button" class="sk-marke" data-aktion="lasche" data-lasche="start">${figur(S.erstesMal === false ? 'ruhend' : 'landet', 38)}<span class="h">Kranich</span></button>
       <button type="button" class="sk-neu" data-aktion="neu" data-art="entwurf">${sym('plus', 16, 2.4)}<span>Neuer Entwurf</span><kbd>Strg N</kbd></button>
       <label class="sk-suche">${sym('suche', 15)}<input id="psuche" placeholder="Entwürfe durchsuchen" aria-label="Entwürfe durchsuchen"></label>
       <div class="sk-mitte">${mitte}</div>
@@ -128,7 +128,7 @@
             <div class="startheld"><div><span class="hand dachzeile">${esc(gruss())} – na, was falten wir?</span>
               <h1 class="h">Was soll heute <mark>entstehen?</mark></h1>
               <p class="leise">Ein Satz reicht. Kranich faltet Oberflächen, Posts, Plakate und ganze Apps.</p></div>
-              <div class="figurecke">${figur('arbeitend', 120)}<span class="hand">Ich hab Papier<br>und Zeit.</span></div></div>
+              <div class="figurecke">${figur('ruhend', 120)}<span class="hand">Ich hab Papier<br>und Zeit.</span></div></div>
             <div class="kacheln">
               ${[['app', 'varianten', 'Ganze App', 'mit Plan'], ['bild', 'bild', 'Bild bearbeiten', 'freistellen & Co.'], ['ausbild', 'mischen', 'Aus Bild', 'Screenshot rein']].map(([art, ic, t, x]) => `<button type="button" class="kachel startkarte" data-aktion="neu" data-art="${art}">${sym(ic, 20)}<span><b class="h">${t}</b><small>${x}</small></span></button>`).join('')}
               <button type="button" class="kachel startkarte" data-aktion="neu" data-art="entwurf">${sym('seite', 20)}<span><b class="h">Leeres Blatt</b><small>Format wählen</small></span></button>
@@ -142,6 +142,7 @@
               <button type="button" class="btn btn-q" data-aktion="neu" data-art="entwurf">${sym('lineal', 16)} Format wählen</button>
               <div class="platz"></div><button type="button" class="btn btn-dunkel" data-aktion="start-falten">Falten ${sym('senden', 16, 2.4)}</button></div></div>
         </main></section>`;
+      S.erstesMal = false;
       document.getElementById('startwunsch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') aktionen['start-falten'](); });
       const ps = document.getElementById('psuche');
       ps.value = S.projektSuche || '';
@@ -518,7 +519,7 @@
     bereit: ['ruhend', 'Bereit', 'chip-grau', 'na, was falten wir?'],
     denkt: ['arbeitend', 'Bei der Arbeit', 'chip-zart', 'einen Moment, ich falte'],
     fertig: ['fertig', 'Fertig', 'chip-gruen', 'tada – schau mal'],
-    fehler: ['ruhend', 'Keine Verbindung', 'chip-rot', 'hm, da klemmt was'],
+    fehler: ['schlaeft', 'Keine Verbindung', 'chip-rot', 'hm, da klemmt was'],
   };
 
   function renderLeiste() {
@@ -526,7 +527,7 @@
     if (!aside || !S.projekt) return;
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
-    aside.innerHTML = `<header class="blattkopf"><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><div class="platz"></div><span class="pille ${S.kranich.zustand === 'denkt' ? 'arbeitet' : ''}"><i></i> ${esc(chip)}</span>
+    aside.innerHTML = `<header class="blattkopf"><span class="chatfigur">${figur(haltung, 30)}</span><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><div class="platz"></div><span class="pille ${S.kranich.zustand === 'denkt' ? 'arbeitet' : ''}"><i></i> ${esc(chip)}</span>
         <button type="button" class="btn btn-q rundknopf" data-aktion="leiste" data-lasche="${verlaufAn ? 'kranich' : 'verlauf'}" aria-pressed="${verlaufAn}" title="${verlaufAn ? 'Zurück zum Gespräch' : 'Frühere Fassungen'}" aria-label="Verlauf">${sym(verlaufAn ? 'schliessen' : 'uhr', 17)}</button></header>
       <div class="leistenblatt">
         <div class="verlauf" aria-live="polite"></div>
@@ -559,7 +560,7 @@
     el.innerHTML = chat.map((c, i) => {
       if (c.wer === 'ich') return `<div class="blase-ich">${esc(c.text)}</div>`;
       const letzte = i === chat.length - 1;
-      const haltung = c.fehler ? 'ruhend' : 'fertig';
+      const haltung = c.fehler ? 'still' : letzte && S.kranich.zustand === 'fertig' ? 'fertig' : 'still';
       return `<div class="blase-kr ${c.fehler ? 'fehler' : ''}"><span class="ava">${figur(haltung, 30)}</span><div class="inhalt">
         ${c.fehler ? `<span class="titelz">${esc(c.titel || 'Keine Verbindung zu Claude')}</span>` : ''}<span>${esc(c.text)}</span>
         ${c.chips?.length ? `<div class="chips">${c.chips.map((t) => `<span class="chip chip-gruen">${sym('haken', 13)}${esc(t)}</span>`).join('')}</div>` : ''}

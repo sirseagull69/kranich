@@ -19,7 +19,7 @@
     return `<div class="appauftrag"><div class="appauftrag-links">
         <div style="display:flex;flex-direction:column"><h1 class="h" style="margin:0;font-size:34px;font-weight:800;letter-spacing:-.02em">Ganze App entwerfen</h1><span class="hand" style="font-size:21px">erzähl mir von deiner App, ich mach den Plan</span></div>
         <label for="appwunsch" class="lbl">Was für eine App?</label>
-        <textarea id="appwunsch" class="feld" rows="5" style="font-size:17px;min-height:140px" placeholder="z. B. „Eule – Schreibprogramm der origami-Familie, Briefe und Berichte, origami als Copilot rechts“">${esc(a.text)}</textarea>
+        <textarea id="appwunsch" class="feld" rows="5" style="font-size:17px;min-height:140px" placeholder="z. B. „Albatros – Tabellenprogramm der Familie, einfacher als Excel, origami hilft rechts“">${esc(a.text)}</textarea>
         <div class="reihe">${a.bild ? `<span class="anhang"><img src="${a.bild.dataUrl}" alt=""><button type="button" class="btn btn-s btn-q" data-aktion="app-bild-weg">Entfernen</button></span>` : `<button type="button" class="btn btn-s btn-q" data-aktion="app-bild">${sym('klammer', 15)} Skizze oder Bild anhängen</button>`}
           <button type="button" class="btn btn-s btn-q" disabled title="Sprechen kommt noch">${sym('mikro', 15)} Sprechen</button><div class="platz"></div><span class="hand" style="font-size:18px">je genauer, desto besser der Plan</span></div>
         <div class="appoptionen">
@@ -128,35 +128,22 @@
     } else {
       const z = zaehle(plan);
       const bs = plan.bausteine;
-      koerper = `<div class="planblatt paper">
-        <div class="plankopf">${figur('fertig', 56)}<div style="display:flex;flex-direction:column"><h1 class="h">Plan für „${esc(plan.name)}“</h1><span class="hand" style="font-size:21px">schau drüber, bevor ich falte</span></div><div class="platz"></div>
-          <span class="chip chip-grau">${esc({ desktop: 'Desktop', handy: 'Handy', beides: 'Desktop und Handy' }[p.app.geraet] || '')}</span><span class="chip chip-zart">${p.app.look === 'eigen' ? 'Eigener Look' : 'Look der Familie'}</span></div>
-        <div class="plankoerper">
-          <section class="planspalte" aria-label="Bildschirme"><div class="reihe"><span class="lbl" style="flex:1">Bildschirme</span><span class="leise" style="font-size:13px">${z.bildschirme} geplant</span></div>
-            <div class="planliste">${plan.bildschirme.map((b) => `<div class="plankarte cardw"><div class="card"><div class="reihe" style="align-items:flex-start"><div style="flex:1;min-width:0;display:flex;flex-direction:column"><b class="h" style="font-size:16px">${esc(b.name)}</b><span class="leise" style="font-size:12.5px">${esc(FORMAT_NAME[b.format] || b.format)} · ${esc(formatMass(b.format))}</span></div><button type="button" class="btn btn-s btn-q" data-aktion="app-bs-weg" data-id="${b.id}">Entfernen</button></div>
-              <span style="font-size:13.5px">${esc(b.zweck)}</span>
-              <div class="zustandschips">${Object.entries(ZUSTAND).map(([k, t]) => `<button type="button" class="chip ${b.zustaende.includes(k) ? (k === 'fehler' ? 'chip-rot' : 'chip-zart') : 'chip-aus'}" aria-pressed="${b.zustaende.includes(k)}" data-aktion="app-zustand" data-id="${b.id}" data-z="${k}">${t}</button>`).join('')}</div></div></div>`).join('')}
-              ${S.planNeu ? `<div class="plankarte"><div class="card" style="gap:8px"><input class="feld" id="bs-name" placeholder="Name, z. B. „Suche“"><select class="feld" id="bs-format">${Object.entries(FORMAT_NAME).map(([k, t]) => `<option value="${k}" ${k === (p.app.geraet === 'handy' ? 'app' : 'fenster') ? 'selected' : ''}>${t}</option>`).join('')}</select><input class="feld" id="bs-zweck" placeholder="Was tut man hier?"><div class="reihe"><button type="button" class="btn btn-s btn-p" data-aktion="app-bs-anlegen">Dazu</button><button type="button" class="btn btn-s btn-q" data-aktion="app-bs-abbrechen">Abbrechen</button></div></div></div>` : `<button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="app-bs-neu">${sym('plus', 14)} Bildschirm dazu</button>`}
-            </div></section>
-          <section class="planspalte planmitte" aria-label="Ablauf"><div class="reihe"><span class="lbl" style="flex:1">Ablauf</span><span class="leise" style="font-size:13px">Pfeile = welcher Knopf wohin führt</span></div><div class="diagramm">${ablaufDiagramm(plan)}</div></section>
-          <section class="planspalte" aria-label="Bausteine" style="width:300px;flex:none"><div class="reihe"><span class="lbl" style="flex:1">Bausteine</span><button type="button" class="btn btn-s btn-q" data-aktion="app-bausteine-aendern">${S.bausteineAendern ? 'Fertig' : 'Ändern'}</button></div>
-            <div class="bausteinvorschau" style="--k-haus:${bs.hausfarbe};--k-facette:${bs.facette};--k-hell:${bs.hell}">
-              <span class="lbl" style="font-size:10.5px">Farben</span>
-              <div class="farbreihe">${[['Papier', '#f6f1e7'], ['Tinte', '#1d2742'], ['Hausfarbe', bs.hausfarbe], ['Facette', bs.facette], ['Hell', bs.hell]].map(([t, f], i) => `<label class="farbfeld"><span style="background:${f}"></span><b>${t}</b><small>${f}</small>${S.bausteineAendern && i > 1 ? `<input type="color" value="${f}" data-farbe="${['', '', 'hausfarbe', 'facette', 'hell'][i]}" aria-label="${t}">` : ''}</label>`).join('')}</div>
-              <span class="lbl" style="font-size:10.5px">Schrift</span>
-              <div><b class="h" style="font-size:22px">Überschrift</b><div style="font-size:14px">Fließtext für Briefe und Berichte</div><small class="leise">Bricolage Grotesque · Source Serif 4</small></div>
-              <span class="lbl" style="font-size:10.5px">Knopf</span>
-              <div class="reihe"><span class="bv-knopf">Hauptknopf</span><span class="bv-knopf2">Abbrechen</span></div>
-              <span class="lbl" style="font-size:10.5px">Karte und Kopfzeile</span>
-              <div class="bv-kopf"><b class="h">${esc(plan.name)}</b><span class="chip chip-gruen">Gespeichert</span></div>
-              <div class="bv-karte"><b class="h">Bericht KW 47</b><small class="leise">Geändert heute, 08:30</small></div>
-              ${bs.hinweis ? `<span class="hand" style="font-size:18px" title="${esc(bs.hinweis)}">${esc(bs.hinweis.length > 90 ? `${bs.hinweis.slice(0, 88)}…` : bs.hinweis)}</span>` : ''}
-            </div></section>
+      const minuten = Math.max(2, Math.ceil(z.boards * 0.5));
+      koerper = `<div class="planblatt einfach">
+        <div class="plankopf2"><div><span class="hand">Plan steht – schau kurz drüber</span><h1 class="h">${z.bildschirme} Bildschirme für <mark>${esc(plan.name)}</mark></h1>
+          <p class="leise">Kranich faltet jeden Bildschirm einzeln – und zusätzlich, wie er aussieht, wenn er leer ist, lädt oder ein Fehler kommt. Das sind die kleinen Schalter auf jeder Karte.</p></div>
+          <div class="planknopf"><button type="button" class="btn btn-p btn-gross" data-aktion="app-falten">${figur('arbeitend', 20)} Alles falten</button><small class="leise">${z.boards} Boards · etwa ${minuten} Minuten</small></div></div>
+        <div class="planliste raster">${plan.bildschirme.map((b, i) => `<div class="plankarte"><div class="pk-kopf"><span class="pk-nr">${i + 1}</span><b class="h">${esc(b.name)}</b><button type="button" class="btn btn-s btn-q rundknopf" data-aktion="app-bs-weg" data-id="${b.id}" title="Bildschirm entfernen" aria-label="Entfernen">${sym('schliessen', 14)}</button></div>
+            <p>${esc(b.zweck)}</p>
+            <div class="zustandschips">${Object.entries(ZUSTAND).map(([k, t]) => `<button type="button" class="chip ${b.zustaende.includes(k) ? 'chip-zart' : 'chip-aus'}" aria-pressed="${b.zustaende.includes(k)}" data-aktion="app-zustand" data-id="${b.id}" data-z="${k}" title="${b.zustaende.includes(k) ? 'Wird gefaltet – klicken zum Weglassen' : 'Klicken, damit Kranich das auch faltet'}">${b.zustaende.includes(k) ? sym('haken', 11, 3) : ''}${t}</button>`).join('')}</div></div>`).join('')}
+          ${S.planNeu ? `<div class="plankarte"><input class="feld" id="bs-name" placeholder="Name, z. B. „Suche“"><select class="feld" id="bs-format">${Object.entries(FORMAT_NAME).map(([k, t]) => `<option value="${k}" ${k === (p.app.geraet === 'handy' ? 'app' : 'fenster') ? 'selected' : ''}>${t}</option>`).join('')}</select><input class="feld" id="bs-zweck" placeholder="Was tut man hier?"><div class="reihe"><button type="button" class="btn btn-s btn-p" data-aktion="app-bs-anlegen">Dazu</button><button type="button" class="btn btn-s btn-q" data-aktion="app-bs-abbrechen">Abbrechen</button></div></div>` : `<button type="button" class="plankarte neu" data-aktion="app-bs-neu">${sym('plus', 18)}<span>Bildschirm dazu</span></button>`}
         </div>
-        <div class="planfuss"><b class="h" style="font-size:16px">${z.bildschirme} Bildschirme, ${z.boards} Boards${z.boards > z.bildschirme ? ' mit Zuständen' : ''}</b><span class="leise">dauert etwa ${Math.max(1, Math.ceil(z.boards * 0.5))} Minuten</span><div class="platz"></div><button type="button" class="btn btn-p" data-aktion="app-falten">${figur('arbeitend', 18)} Alles falten</button></div>
-        ${eselsohr(54)}</div>`;
+        <div class="planfarben"><span class="k-abschnitt">Farben</span>${[['Hausfarbe', bs.hausfarbe, 'hausfarbe'], ['Falten', bs.facette, 'facette'], ['Hell', bs.hell, 'hell']].map(([t, f, k]) => `<label class="farbpunkt" title="${t} ändern"><span style="background:${f}"></span>${t}<input type="color" value="${f}" data-farbe="${k}" aria-label="${t}"></label>`).join('')}
+          <div class="platz"></div><details class="planmehr"><summary>Wie hängen die Bildschirme zusammen?</summary><div class="diagramm">${ablaufDiagramm(plan)}</div></details></div>
+        <div class="planfuss"><b class="h">${z.boards} Boards</b><span class="leise">etwa ${minuten} Minuten, 4 gleichzeitig</span><div class="platz"></div><button type="button" class="btn btn-p" data-aktion="app-falten">${figur('arbeitend', 18)} Alles falten</button></div>
+      </div>`;
     }
-    app.innerHTML = `<section class="ansicht" id="plan">${App.kopfHtml(`<button type="button" class="btn btn-q" data-aktion="app-auftrag-aendern">${sym('zurueck', 16)} Auftrag ändern</button>${plan && !S.planLaeuft ? `<button type="button" class="btn btn-p" data-aktion="app-falten">${sym('varianten', 16)} Alles falten</button>` : ''}`)}
+    app.innerHTML = `<section class="ansicht" id="plan">${App.kopfHtml(`<button type="button" class="btn btn-q" data-aktion="app-auftrag-aendern">${sym('zurueck', 16)} Auftrag ändern</button>`)}
       <div style="flex:1;min-height:0;position:relative;display:flex;padding:0 16px 16px">${koerper}</div></section>`;
     const t = app.querySelector('.titel span');
     if (t) t.textContent = '/ Plan';
@@ -480,7 +467,7 @@
     const e = await K.einstellungen.lesen();
     const standard = await K.export.standardOrdner();
     const zust = boards.filter((b) => b.zustand).length;
-    const w = { ziel: 'speichern', ordner: '', app: 'eule' };
+    const w = { ziel: 'speichern', ordner: '', app: 'albatros' };
     const name = p.app?.plan?.name || p.name;
     const sl = name.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'kranich';
     const s = document.createElement('div');
@@ -493,7 +480,7 @@
           <pre class="baum">${esc(`${sl}-paket/\n├─ boards/        ${boards.length} Dateien\n├─ bausteine.css\n├─ plan.json\n└─ LIESMICH.md`)}</pre>
           <span class="lbl">Ziel-Ordner</span>
           <div class="ziel" role="radio" tabindex="0" data-ziel="speichern" aria-checked="true"><div class="zk"><b class="h">Speichern</b><div class="platz"></div><button type="button" class="btn btn-s" data-ordner>Ordner wählen</button></div><span class="leise ordnertext" style="font-size:12.5px">${esc(standard)}</span></div>
-          <div class="ziel" role="radio" tabindex="0" data-ziel="app" aria-checked="false"><div class="zk"><b class="h">In ein App-Projekt</b><div class="platz"></div><select class="feld" id="pk-app">${[['origami', 'origami'], ['kranich', 'Kranich'], ['eule', 'Eule'], ['elster', 'Elster']].map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></div></div>
+          <div class="ziel" role="radio" tabindex="0" data-ziel="app" aria-checked="false"><div class="zk"><b class="h">In ein App-Projekt</b><div class="platz"></div><select class="feld" id="pk-app">${[['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schreibprogramm']].map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></div></div>
           <label class="reihe leise" style="gap:8px;font-size:13px"><input type="checkbox" disabled> origami Bescheid geben (kommt, sobald origami angebunden ist)</label></div></div>
       <div class="dialogfuss"><span class="leise status" style="flex:1">${boards.length + 3} Dateien</span><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-los>${figur('arbeitend', 18)} Paket falten</button></div>
       ${eselsohr(54, 'rgba(0,0,0,0)')}</div>`;

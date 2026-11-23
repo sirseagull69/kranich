@@ -4,16 +4,47 @@
   const SCHATTEN = '<ellipse cx="46" cy="87" rx="18" ry="2.4" fill="#1d2742" opacity="0.14"></ellipse>';
   const BEINE = '<polygon points="40,58 43,58 41,86" fill="#6243c4"></polygon><polygon points="48,58 51,58 52,86" fill="#6243c4"></polygon><polygon points="12,50 30,46 30,58" fill="#4a2f9a"></polygon>';
 
+  // Hilfen für SMIL-Animationen
+  const pts = (werte, keys, dur, extra = '') => `<animate attributeName="points" values="${werte.join(';')}" keyTimes="${keys}" dur="${dur}" repeatCount="indefinite" calcMode="spline" keySplines="${Array(werte.length - 1).fill('0.45 0 0.55 1').join(';')}" ${extra}></animate>`;
+  const schwebe = (y, dur) => `<animateTransform attributeName="transform" type="translate" values="0 0;0 -${y};0 0" dur="${dur}" repeatCount="indefinite" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"></animateTransform>`;
+  let zaehler = 0;
+
+  // Flügelschlag beim Drüberfahren (begin über die id des SVGs)
+  const flattern = (id, grund, hoch) => `<animate attributeName="points" values="${grund};${hoch};${grund};${hoch};${grund}" dur="0.7s" begin="${id}.mouseenter" calcMode="spline" keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"></animate>`;
+
   const HALTUNG = {
-    ruhend: `<g>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 71,41" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 38,32" fill="#d6caf9"></polygon><polygon points="71,41 84,48 69,47" fill="#1d2742"></polygon></g>`,
-    arbeitend: `<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -1.6;0 0;0 -1.6;0 0" dur="6s" repeatCount="indefinite"></animateTransform>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 64,9" fill="#4a2f9a"><animate attributeName="points" values="56,56 62,58 64,9;56,56 62,58 64,9;56,56 62,58 60,11;56,56 62,58 60,11;56,56 62,58 64,9" keyTimes="0;0.4;0.5;0.85;1" dur="2.4s" repeatCount="indefinite"></animate></polygon><polygon points="30,52 56,55 34,27" fill="#d6caf9"></polygon><polygon points="64,9 79,9 63,16" fill="#1d2742"><animate attributeName="points" values="64,9 79,9 63,16;64,9 79,9 63,16;60,11 74,17 59,18;60,11 74,17 59,18;64,9 79,9 63,16" keyTimes="0;0.4;0.5;0.85;1" dur="2.4s" repeatCount="indefinite"></animate></polygon></g>`,
-    fertig: `<g>${BEINE}<polygon points="42,52 59,55 64,5" fill="#7c5cd6"></polygon><polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 70,18" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 20,8" fill="#d6caf9"></polygon><polygon points="70,18 84,20 69,25" fill="#1d2742"></polygon></g>`,
+    still: () => `<g>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 71,41" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 38,32" fill="#d6caf9"></polygon><polygon points="71,41 84,48 69,47" fill="#1d2742"></polygon></g>`,
+    // ruhig atmen, ab und zu nicken, Flügel hebt sich leicht
+    ruhend: (id) => `<g>${schwebe(0.9, '4.2s')}${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon>
+      <polygon points="56,56 62,58 71,41" fill="#4a2f9a">${pts(['56,56 62,58 71,41', '56,56 62,58 71,41', '56,56 62,58 73,45', '56,56 62,58 73,45', '56,56 62,58 71,41'], '0;0.78;0.84;0.92;1', '7s')}</polygon>
+      <polygon points="30,52 56,55 38,32" fill="#d6caf9">${pts(['30,52 56,55 38,32', '30,52 56,55 36,29', '30,52 56,55 38,32'], '0;0.5;1', '4.2s')}${flattern(id, '30,52 56,55 38,32', '30,52 56,55 22,10')}</polygon>
+      <polygon points="71,41 84,48 69,47" fill="#1d2742">${pts(['71,41 84,48 69,47', '71,41 84,48 69,47', '73,45 85,54 71,51', '73,45 85,54 71,51', '71,41 84,48 69,47'], '0;0.78;0.84;0.92;1', '7s')}</polygon></g>`,
+    // faltet: wippt, pickt mit dem Kopf, Flügel arbeitet
+    arbeitend: () => `<g>${schwebe(1.6, '1.2s')}${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon>
+      <polygon points="56,56 62,58 64,9" fill="#4a2f9a">${pts(['56,56 62,58 64,9', '56,56 62,58 64,9', '56,56 62,58 60,11', '56,56 62,58 60,11', '56,56 62,58 64,9'], '0;0.4;0.5;0.85;1', '2.4s')}</polygon>
+      <polygon points="30,52 56,55 34,27" fill="#d6caf9">${pts(['30,52 56,55 34,27', '30,52 56,55 28,22', '30,52 56,55 34,27'], '0;0.5;1', '0.9s')}</polygon>
+      <polygon points="64,9 79,9 63,16" fill="#1d2742">${pts(['64,9 79,9 63,16', '64,9 79,9 63,16', '60,11 74,17 59,18', '60,11 74,17 59,18', '64,9 79,9 63,16'], '0;0.4;0.5;0.85;1', '2.4s')}</polygon></g>`,
+    // fertig: hüpft zweimal und schlägt mit den Flügeln, dann stolz
+    fertig: () => `<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -7;0 0;0 -4;0 0" keyTimes="0;0.22;0.45;0.62;0.8" dur="1.3s" repeatCount="1" calcMode="spline" keySplines="0.2 0.8 0.4 1;0.6 0 0.8 0.4;0.2 0.8 0.4 1;0.6 0 0.8 0.4"></animateTransform>${BEINE}
+      <polygon points="42,52 59,55 64,5" fill="#7c5cd6"><animate attributeName="points" values="42,52 59,55 64,5;42,52 59,55 74,14;42,52 59,55 64,5;42,52 59,55 74,14;42,52 59,55 64,5" dur="0.8s" repeatCount="2"></animate></polygon>
+      <polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 70,18" fill="#4a2f9a"></polygon>
+      <polygon points="30,52 56,55 20,8" fill="#d6caf9"><animate attributeName="points" values="30,52 56,55 20,8;30,52 56,55 10,22;30,52 56,55 20,8;30,52 56,55 10,22;30,52 56,55 20,8" dur="0.8s" repeatCount="2"></animate></polygon>
+      <polygon points="70,18 84,20 69,25" fill="#1d2742"></polygon></g>`,
+    // schläft (keine Verbindung): Kopf eingezogen, langsam atmen, Zz
+    schlaeft: () => `<g>${schwebe(0.6, '5s')}${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 58,44" fill="#4a2f9a"></polygon><polygon points="30,52 56,55 40,36" fill="#d6caf9"></polygon><polygon points="58,44 68,50 57,49" fill="#1d2742"></polygon></g>
+      <text x="66" y="34" font-family="Caveat,cursive" font-size="14" fill="#7c5cd6">z<animate attributeName="opacity" values="0;1;0" dur="2.6s" repeatCount="indefinite"></animate><animateTransform attributeName="transform" type="translate" values="0 4;4 -6" dur="2.6s" repeatCount="indefinite"></animateTransform></text>
+      <text x="74" y="24" font-family="Caveat,cursive" font-size="11" fill="#7c5cd6" opacity="0">z<animate attributeName="opacity" values="0;1;0" dur="2.6s" begin="1.3s" repeatCount="indefinite"></animate></text>`,
+    // landet: kommt von oben angeflogen und setzt auf (einmal)
+    landet: (id) => `<g opacity="0"><animate attributeName="opacity" values="0;1" dur="0.4s" fill="freeze"></animate><animateTransform attributeName="transform" type="translate" values="18 -30;4 -6;0 0" keyTimes="0;0.7;1" dur="1.1s" fill="freeze" calcMode="spline" keySplines="0.2 0.7 0.4 1;0.4 0 0.2 1"></animateTransform>${BEINE}<polygon points="24,58 62,58 46,38" fill="#7c5cd6"></polygon><polygon points="56,56 62,58 71,41" fill="#4a2f9a"></polygon>
+      <polygon points="30,52 56,55 38,32" fill="#d6caf9"><animate attributeName="points" values="30,52 56,55 14,12;30,52 56,55 30,40;30,52 56,55 14,12;30,52 56,55 30,40;30,52 56,55 38,32" keyTimes="0;0.25;0.5;0.75;1" dur="1.1s" fill="freeze"></animate>${flattern(id, '30,52 56,55 38,32', '30,52 56,55 22,10')}</polygon>
+      <polygon points="71,41 84,48 69,47" fill="#1d2742"></polygon></g>`,
   };
-  const NAMEN = { ruhend: 'Kranich ruhend', arbeitend: 'Kranich arbeitet', fertig: 'Kranich ist fertig' };
+  const NAMEN = { still: 'Kranich', ruhend: 'Kranich ruhend', arbeitend: 'Kranich arbeitet', fertig: 'Kranich ist fertig', schlaeft: 'Kranich schläft', landet: 'Kranich landet' };
 
   window.figur = function figur(haltung = 'ruhend', groesse = 34) {
     const h = HALTUNG[haltung] ? haltung : 'ruhend';
-    return `<svg viewBox="0 0 100 100" width="${groesse}" height="${groesse}" role="img" aria-label="${NAMEN[h]}" style="display:block;flex:none">${SCHATTEN}${HALTUNG[h]}</svg>`;
+    const id = `kr${++zaehler}`;
+    return `<svg id="${id}" viewBox="0 0 100 100" width="${groesse}" height="${groesse}" role="img" aria-label="${NAMEN[h]}" style="display:block;flex:none;overflow:visible">${SCHATTEN}${HALTUNG[h](id)}</svg>`;
   };
 
   window.eselsohr = function eselsohr() { return ''; };

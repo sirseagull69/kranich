@@ -147,3 +147,32 @@ mark{background:linear-gradient(transparent 55%,var(--marker) 55%,var(--marker) 
 .sk-neu{border-color:var(--navy)!important;color:var(--navy)!important}
 .sk-neu:hover{color:#fff!important}
 .leinwandrahmen .leinwand{background-image:radial-gradient(rgba(74,47,154,.10) 1px,transparent 1.3px)!important;background-size:20px 20px!important}
+/* Plan einfach */
+.planblatt.einfach{flex:1;min-height:0;overflow:auto;background:transparent!important;box-shadow:none!important;padding:26px 30px 10px!important;display:flex;flex-direction:column;gap:22px;max-width:1240px;margin:0 auto;width:100%}
+.plankopf2{display:flex;align-items:flex-end;gap:30px}
+.plankopf2 > div:first-child{flex:1}
+.plankopf2 .hand{font-size:24px;color:var(--facette)}
+.plankopf2 h1{margin:2px 0 8px;font-size:38px;font-weight:800;letter-spacing:-.025em;line-height:1.1}
+.plankopf2 p{margin:0;font-size:15.5px;max-width:640px}
+.planknopf{display:flex;flex-direction:column;align-items:center;gap:6px}
+.planliste.raster{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.planblatt.einfach .plankarte{background:#fff;border-radius:3px;box-shadow:0 1px 2px rgba(30,40,70,.08),0 6px 18px rgba(30,40,70,.06);padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;border:0}
+.planblatt.einfach .plankarte p{margin:0;font-size:14px;color:#3d4458;line-height:1.45;flex:1}
+.pk-kopf{display:flex;align-items:center;gap:10px}
+.pk-kopf b{flex:1;font-size:16.5px}
+.pk-nr{width:26px;height:26px;border-radius:50%;background:var(--hauch);color:var(--facette);display:flex;align-items:center;justify-content:center;font:800 13px 'Bricolage Grotesque',sans-serif;flex:none}
+.plankarte.neu{align-items:center;justify-content:center;flex-direction:row!important;border:2px dashed var(--strich)!important;background:transparent!important;box-shadow:none!important;color:var(--facette);font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer;min-height:120px}
+.zustandschips{display:flex;flex-wrap:wrap;gap:5px}
+.zustandschips .chip{border:0;cursor:pointer;font-size:12px;gap:3px}
+.chip-aus{background:transparent;color:#9a9486;box-shadow:inset 0 0 0 1px var(--strich)}
+.planfarben{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.farbpunkt{position:relative;display:flex;align-items:center;gap:7px;font:600 13.5px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.farbpunkt span{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(0,0,0,.1)}
+.farbpunkt input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.planmehr summary{cursor:pointer;color:var(--facette);font:600 14px 'Bricolage Grotesque',sans-serif}
+.planmehr[open]{flex-basis:100%}
+.planmehr .diagramm{margin-top:10px;height:420px}
+.planblatt.einfach .planfuss{border-top:1.5px dashed var(--strich);padding:14px 0 6px}
+.planliste.raster{flex:none!important;align-items:start;align-content:start;overflow:visible!important}
+.plankarte.neu{min-height:110px!important;align-self:stretch}
+.chatfigur{display:flex;margin-right:-4px}

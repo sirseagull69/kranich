@@ -118,7 +118,7 @@ test('Export entfernt interne Marken, baut SVG und sichere Dateinamen', () => {
 
 test('Look der Familie nennt alle Apps', () => {
   const t = lookText();
-  for (const n of ['Kranich', 'origami', 'Eule', 'Elster']) assert.match(t, new RegExp(n));
+  for (const n of ['Kranich', 'origami', 'Albatros']) assert.match(t, new RegExp(n));
 });
 
 function falschesKind({ ausgabe = '', fehler = '', code = 0, enoent = false }) {

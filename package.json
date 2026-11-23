@@ -1,7 +1,7 @@
 {
   "name": "kranich",
   "productName": "Kranich",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Kranich aus der origami-Familie: Oberflächen entwerfen und Bilder bearbeiten, gesteuert per KI",
   "author": "Nils Pohler",
   "main": "main/main.js",

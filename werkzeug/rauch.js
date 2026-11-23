@@ -197,7 +197,7 @@ app.whenReady().then(async () => {
     await bisDa("!!document.querySelector('.planblatt')", 8000);
     await warte(400);
     await foto('16-app-plan');
-    await pruefe('Plan: 3 Bildschirme, Ablauf, Bausteine', "document.querySelectorAll('.plankarte').length === 3 && !!document.querySelector('.diagramm svg line') && App.S.projekt.app.plan.bausteine.hausfarbe === '#c47f17'");
+    await pruefe('Plan: 3 Bildschirme, Ablauf, Bausteine', "document.querySelectorAll('.plankarte:not(.neu)').length === 3 && !!document.querySelector('.diagramm svg line') && App.S.projekt.app.plan.bausteine.hausfarbe === '#c47f17'");
     await js("document.querySelector('[data-aktion=\"app-zustand\"][data-id=\"editor\"][data-z=\"fehler\"]').click()");
     await pruefe('Zustand im Plan ergänzt', "App.S.projekt.app.plan.bildschirme[1].zustaende.includes('fehler')");
     await js("document.querySelector('.planfuss [data-aktion=\"app-falten\"]').click()");

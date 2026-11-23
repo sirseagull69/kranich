@@ -15,7 +15,7 @@
     return { el: s, zu };
   }
 
-  const APPS = [['origami', 'origami'], ['kranich', 'Kranich'], ['eule', 'Eule'], ['elster', 'Elster']];
+  const APPS = [['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schreibprogramm']];
 
   // ---------- Exportieren ----------
   async function exportieren({ projekt, modus, seite }) {
