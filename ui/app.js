@@ -516,8 +516,11 @@
     const k = S.kranich;
     let html = '';
     if (k.zustand === 'denkt') {
-      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.titel || (k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …'))}</b><span class="leise bandmeldung" style="font-size:13px">${esc(k.meldung)}</span>${k.gesamt != null ? `<div class="gesamtbalken"><i style="width:${k.gesamt}%"></i></div>` : ''}</div>
-        <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button></div>`;
+      const titel = k.titel || (k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …');
+      html = S.bandZu
+        ? `<div class="hinweisband paper zu" title="${esc(titel)}">${figur('arbeitend', 26)}<b class="h">${k.gesamt != null ? `<span class="bandprozent">${Math.round(k.gesamt)} %</span>` : 'Faltet …'}</b>${k.gesamt != null ? `<div class="gesamtbalken"><i style="width:${k.gesamt}%"></i></div>` : ''}<button type="button" class="btn btn-s btn-q rundknopf" data-aktion="band-klappen" title="Aufklappen" aria-label="Aufklappen" aria-expanded="false">${sym('hoch', 14)}</button></div>`
+        : `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(titel)}</b><span class="leise bandmeldung" style="font-size:13px">${esc(k.meldung)}</span>${k.gesamt != null ? `<div class="gesamtbalken"><i style="width:${k.gesamt}%"></i></div>` : ''}</div>
+        <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button><button type="button" class="btn btn-s btn-q rundknopf" data-aktion="band-klappen" title="Einklappen" aria-label="Einklappen" aria-expanded="true">${sym('runter', 14)}</button></div>`;
     } else if (k.zustand === 'fehler') {
       html = `<div class="hinweisband paper fehler" role="alert">${figur('ruhend', 34)}<div style="display:flex;flex-direction:column"><b class="h">${esc(k.fehler?.nachricht || 'Kranich kommt gerade nicht an Claude ran')}</b>
         <span class="leise" style="font-size:13px">Dein Entwurf ist gespeichert, nichts geht verloren.${k.fehler?.details ? ` <button type="button" class="linkknopf" data-aktion="fehler-details">Was ist passiert?</button>` : ''}</span></div>
@@ -1098,6 +1101,7 @@
       setzeKranich('bereit', { anpassen: null }); renderKopfKnoepfe(); geaendert();
     },
     'fehler-weg': () => setzeKranich('bereit'),
+    'band-klappen': () => { S.bandZu = !S.bandZu; renderMitte(); },
     'fehler-details': () => {
       const f = S.kranich.fehler || {};
       const d = document.createElement('div'); d.className = 'schleier';

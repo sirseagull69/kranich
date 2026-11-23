@@ -239,6 +239,7 @@
         S.kranich.meldung = meldung();
         const m = document.querySelector('.hinweisband .bandmeldung'); if (m) m.textContent = S.kranich.meldung;
         const g = document.querySelector('.hinweisband .gesamtbalken i'); if (g) g.style.width = `${gesamt}%`;
+        const pz = document.querySelector('.hinweisband .bandprozent'); if (pz) pz.textContent = `${Math.round(gesamt)} %`;
       }
     };
     const uhr = setInterval(tick, 1000);
