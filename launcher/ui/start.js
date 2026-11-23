@@ -36,6 +36,7 @@
   const STATUS = { bereit: ['Bereit', ''], adresse: ['Adresse fehlt', 'grau'], bald: ['Kommt bald', 'grau'], fehlt: ['Nicht installiert', 'grau'] };
   const LOS = { bereit: 'Öffnen →', adresse: 'Einrichten', bald: '', fehlt: 'Installieren' };
 
+  const SPECHT = '<svg class="specht-bild" width="120" height="120" viewBox="0 0 64 64" aria-hidden="true"><rect x="47" y="6" width="5" height="54" rx="1.5" fill="#e3ddcf"/><polygon points="20,50 28,26 38,22 44,40 34,52" fill="#1d2742"/><polygon points="28,26 38,22 34,34" fill="#2c3a5e"/><polygon points="34,34 38,22 44,40" fill="#3a4a72"/><polygon points="36,36 44,40 40,46" fill="#fffdf9"/><polygon points="20,50 14,58 24,54" fill="#1d2742"/><g class="specht-kopf"><polygon points="30,18 40,14 42,24 34,26" fill="#fffdf9"/><polygon points="30,18 36,11 42,15 40,14" fill="#b23a28"/><polygon points="36,11 44,12 42,17" fill="#8f2a1c"/><polygon points="42,19 50,21 42,23" fill="#e8b04a"/><circle cx="38" cy="19" r="1.6" fill="#1d2742"/></g></svg>';
   function karte(a) {
     let [st, art] = STATUS[a.status] || STATUS.fehlt;
     const u = S.updates[a.id] || {};
@@ -45,7 +46,7 @@
     else if (u.update) { st = `Update ${u.neu}`; art = 'update'; los = '<span class="updknopf" data-update="' + a.id + '">Aktualisieren</span>'; }
     else if ((a.status === 'fehlt' || (a.web && !a.version)) && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
     else if (a.status === 'fehlt') los = '';
-    const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : '<span class="papier"></span>';
+    const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : a.id === 'specht' ? SPECHT : '<span class="papier"></span>';
     return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
       <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}${(a.version || u.installiert) && (a.version || u.installiert) !== '0' ? ` · <span class="ver">Version ${esc(a.version || u.installiert)}</span>` : ''}</span>
       <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${los}</span></span></button>`;

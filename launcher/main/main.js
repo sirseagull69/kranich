@@ -15,6 +15,7 @@ const APPS = [
   { id: 'origami', name: 'origami', aufgabe: 'Dein KI-Assistent', farbe: '#e8743b', hell: '#ffeadb', art: 'programm', datei: 'origami', web: true },
   { id: 'kranich', name: 'Kranich', aufgabe: 'Gestalten', farbe: '#7c5cd6', hell: '#ece6fd', art: 'programm', datei: 'Kranich', release: 'https://github.com/sirseagull69/kranich/releases/latest' },
   { id: 'albatros', name: 'Albatros', aufgabe: 'Tabellen', farbe: '#2f8a55', hell: '#dcf0e3', art: 'programm', datei: 'Albatros' },
+  { id: 'specht', name: 'Specht', aufgabe: 'IT-Helfer', farbe: '#b23a28', hell: '#f8e2dc', art: 'programm', datei: 'Specht' },
   { id: 'schreiben', name: 'Schreibprogramm', aufgabe: 'Schreiben', farbe: '#c47f17', hell: '#f8ead2', art: 'programm', datei: 'Schreiben', bald: true },
 ];
 
@@ -75,7 +76,7 @@ function zuletzt() {
 
 // ---------- Updates (aus dem öffentlichen Download-Repo) ----------
 const DOWNLOADS = 'https://api.github.com/repos/sirseagull69/selbst-gfaltet-downloads/releases?per_page=60';
-const PRAEFIX = { origami: 'origami-v', kranich: 'kranich-v', albatros: 'albatros-v', schreiben: 'schreiben-v', start: 'start-v' };
+const PRAEFIX = { origami: 'origami-v', kranich: 'kranich-v', albatros: 'albatros-v', specht: 'specht-v', schreiben: 'schreiben-v', start: 'start-v' };
 const neuer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b || '0').split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 function passendeDatei(assets) {
   if (WIN) return assets.find((a) => /\.exe$/i.test(a.name));

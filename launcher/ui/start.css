@@ -19,7 +19,7 @@ header{display:flex;align-items:center;gap:12px;padding:18px 28px 0}
 main{flex:1;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-direction:column;gap:24px;max-width:1240px;width:100%;margin:0 auto}
 .gruss .hand{font-size:25px;display:block}
 .gruss h1{margin:0;font:800 40px/1.08 'Bricolage Grotesque',sans-serif;letter-spacing:-.025em}
-.voegel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.voegel{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px}
 .vogel{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:10px 10px 14px;border:0;border-radius:4px;background:var(--blatt);box-shadow:var(--schatten);text-align:left;transition:transform .15s,box-shadow .15s}
 .vogel:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(30,40,70,.10),0 18px 36px rgba(30,40,70,.14)}
 .vogel:focus-visible{outline:3px solid var(--farbe);outline-offset:3px}
@@ -84,3 +84,9 @@ main{flex:1;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-
 
 .ver{font:500 12px ui-monospace,Consolas,monospace;color:#9a9486}
 header .ver{margin-right:6px}
+
+/* Specht klopft, wenn man über die Karte fährt */
+.specht-kopf{transform-origin:36px 26px;transform-box:view-box}
+.vogel:hover .specht-kopf{animation:specht-klopf 1s ease-in-out 1}
+@keyframes specht-klopf{0%,100%{transform:rotate(0)}15%,45%,75%{transform:rotate(14deg)}30%,60%,90%{transform:rotate(0)}}
+@media (prefers-reduced-motion:reduce){.vogel:hover .specht-kopf{animation:none}}
