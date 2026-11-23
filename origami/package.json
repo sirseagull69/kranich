@@ -40,7 +40,8 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "shortcutName": "origami"
+      "shortcutName": "origami",
+      "createDesktopShortcut": false
     },
     "mac": {
       "target": [

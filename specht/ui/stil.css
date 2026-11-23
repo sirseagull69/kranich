@@ -314,3 +314,157 @@ mark{background:none;box-shadow:inset 0 -.22em 0 var(--hell);padding:0}
 .nachschlag-kopf{padding-right:14px}
 .nachschlag-kopf .hand{font-size:12.5px}
 .nachschlag-inhalt{background:#f7f5f0}
+
+/* ===== Specht 0.2.0 – Aufbau „Serverschrank“: oben die Leiste mit Frage und Klopf-LEDs, darunter die Antworten ===== */
+:root{--grund:#eef0f3;--blatt:#ffffff;--rand:#e3e6ec;--strich:#d9dde5;--feld:#f4f6f9;--navy:#1d2742;--navy2:#26324f}
+body{background:var(--grund);background-image:none}
+#app{padding:0;gap:0}
+.schrank{flex:none;background:var(--navy);color:#fff;padding:14px 22px 0;box-shadow:0 2px 10px rgba(20,28,50,.18);position:relative;z-index:2}
+.schrank-oben{display:flex;align-items:center;gap:16px}
+.schrank .kopf{display:flex;align-items:center;gap:10px;flex:none;background:none;padding:0;margin:0;border-radius:0}
+.schrank .kopf::after{display:none}
+.schrank .kopf .name{display:flex;flex-direction:column;line-height:1.15}
+.schrank .kopf .name b{font:800 21px var(--g);color:#fff}
+.schrank .kopf .name span{font:12px var(--mono);color:#9aa4bd}
+.fragezeile{flex:1;display:flex;align-items:center;gap:8px;max-width:820px;margin:0 auto;background:#fff;border-radius:12px;padding:6px 6px 6px 16px;box-shadow:0 0 0 3px rgba(255,255,255,.08)}
+.fragezeile textarea{flex:1;border:0;outline:0;resize:none;font:16px/1.4 var(--s);color:var(--tinte);background:transparent;min-height:24px;max-height:120px;padding:8px 0}
+.fragezeile:focus-within{box-shadow:0 0 0 3px rgba(210,58,42,.55)}
+.fragezeile .btn.senden{min-height:42px;padding:0 20px;font-size:15px;border-radius:9px;background:var(--rot)}
+.schrank .pille{background:var(--navy2);color:#dfe4ef;box-shadow:inset 0 0 0 1px rgba(255,255,255,.12)}
+.rundknopf.hell{background:transparent;box-shadow:none;color:#c3cad9;width:40px;height:40px}
+.rundknopf.hell:hover{background:var(--navy2);color:#fff}
+.schrank-unten{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08)}
+.leise-hell{color:#9aa4bd;font-size:14px}
+.leds{display:flex;flex-wrap:wrap;gap:6px}
+.led{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 9px 0 7px;border:0;border-radius:6px;background:var(--navy2);color:#c3cad9;font:600 11.5px var(--mono);letter-spacing:.02em}
+.led:hover{background:#33405f;color:#fff}
+.led i{width:8px;height:8px;border-radius:50%;background:#5d6782;flex:none}
+.led.an i{background:#3ccf7a;box-shadow:0 0 6px rgba(60,207,122,.7)}
+.led.aus i{background:#ff5a47;box-shadow:0 0 6px rgba(255,90,71,.8)}
+.led.gewollt i{background:#8a8f9c}
+.klopfknopf{flex:none;height:30px;padding:0 14px;border:1px solid rgba(255,255,255,.22);border-radius:8px;background:transparent;color:#fff;font:700 12.5px var(--mono);letter-spacing:.06em;text-transform:uppercase}
+.klopfknopf:hover:not(:disabled){background:var(--navy2)}
+.reiter{display:flex;gap:2px;margin:0 -6px}
+.reiter button{position:relative;display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 12px;border:0;background:transparent;color:#aeb6ca;font:600 14px var(--g);border-radius:8px 8px 0 0}
+.reiter button:hover{color:#fff}
+.reiter button[aria-current="page"]{background:var(--grund);color:var(--tinte)}
+.reiter .zahl{min-width:20px;height:18px;padding:0 6px;border-radius:999px;background:var(--rot);color:#fff;font:700 11px var(--g);display:inline-flex;align-items:center;justify-content:center}
+
+.buehne2{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);gap:18px;padding:18px 22px}
+.buehne2.mit-blatt{grid-template-columns:minmax(360px,1fr) minmax(460px,48%)}
+.antworten{min-height:0;display:flex;flex-direction:column}
+.antworten-kopf{display:flex;align-items:center;gap:10px;max-width:860px;width:100%;margin:0 auto;padding-bottom:6px}
+.abschnitt{font:700 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#7a8296}
+.antworten .gespraech{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:16px;width:100%;max-width:860px;margin:0 auto;padding:6px 4px 30px}
+.leerstart{display:flex;flex-direction:column;gap:12px;padding-top:26px}
+.leer-vogel{display:flex;align-items:center;gap:18px;padding:18px 22px;background:#fff;border-radius:14px;box-shadow:0 1px 2px rgba(20,28,50,.06),0 6px 18px rgba(20,28,50,.06)}
+.leer-vogel b{font:800 24px var(--g)}
+.leer-vogel p{margin:4px 0 0;color:var(--leise);font-size:15.5px}
+.leerstart .abschnitt{margin-top:12px}
+.hinweise{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.hinweis{display:flex;flex-direction:column;gap:3px;padding:12px 14px 12px 16px;border:0;border-left:4px solid #9aa4bd;border-radius:10px;background:#fff;text-align:left;box-shadow:0 1px 2px rgba(20,28,50,.06)}
+.hinweis.warn{border-left-color:var(--rot)}
+.hinweis b{font:700 15px var(--g)}
+.hinweis span{font-size:13.5px;color:var(--leise);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hinweis:hover{box-shadow:0 1px 2px rgba(20,28,50,.06),0 6px 16px rgba(20,28,50,.10)}
+.leerstart .vorschlaege button,.antwort .vorschlaege button{min-height:38px;padding:0 15px;border:0;border-radius:999px;background:#fff;box-shadow:inset 0 0 0 1.5px var(--strich);font:600 14px var(--g);color:var(--tinte)}
+.leerstart .vorschlaege button:hover,.antwort .vorschlaege button:hover{box-shadow:inset 0 0 0 1.5px var(--rot);color:var(--rot)}
+.frage-zettel{align-self:flex-end;max-width:80%;background:var(--navy);color:#fff;border:0;border-radius:14px 14px 4px 14px;padding:11px 15px;font:600 15.5px/1.4 var(--g);box-shadow:none;transform:none}
+.frage-zettel::before{display:none}
+.antwort{background:#fff;border-radius:14px;padding:14px 18px 16px;box-shadow:0 1px 2px rgba(20,28,50,.06),0 6px 18px rgba(20,28,50,.06)}
+.antwort .wer-zeile b{font:700 14px var(--g)}
+.antwort-text{font-size:16px;line-height:1.6}
+.nachschlag{border-radius:14px;background:#fff}
+.nachschlag-kopf{padding:12px 12px 10px 18px;border-bottom:1px solid var(--rand)}
+.nachschlag-kopf .hand{font:800 18px var(--g);letter-spacing:0;text-transform:none;color:var(--tinte)}
+.nachschlag-kopf .hand::before{content:none}
+.nachschlag-inhalt{background:var(--grund)}
+.nachschlag-inhalt .karte{border-radius:12px}
+@media (max-width:1180px){.buehne2.mit-blatt{grid-template-columns:minmax(0,1fr)}.buehne2.mit-blatt .antworten{display:none}.schrank .pille{display:none}}
+.schrank .kopf .specht{background:#f3f4f7;border-radius:12px;padding:2px}
+.leer-vogel .specht{flex:none}
+
+/* ===== Specht 0.2.0 – Widget-Wand (Entwurf N3 Nachtblau, Nils 23.11.) ===== */
+:root{--grund:#f1efea;--kachel:#fff;--tinte:#18202b;--leise:#6a7380;--rot:#c8372d;--rothell:#fbeeec;--linie:#eff0f2;--gruen2:#2fae63;--gelb2:#eaa53a;--grau2:#c9cdd3;--nacht:#1f2a44}
+body{background:var(--grund);background-image:none}
+#app{padding:18px 22px;gap:14px}
+.wandkopf{display:flex;align-items:center;gap:10px;flex:none}
+.wandkopf .kopf{display:flex;align-items:center;gap:8px;background:none;padding:0;margin:0}
+.wandkopf .kopf .specht{background:none;padding:0}
+.wandkopf .kopf .name{display:flex;flex-direction:row;align-items:baseline;gap:8px}
+.wandkopf .kopf .name b{font:800 21px var(--g);color:var(--tinte)}
+.wandkopf .kopf .name span{font:13.5px var(--s);color:var(--leise)}
+.wandkopf .kopf .name span::before{content:'· '}
+.wandkopf .pille{background:#fff;box-shadow:none;color:var(--leise)}
+.wandkopf .rundknopf{width:38px;height:38px;border-radius:999px;background:#fff;box-shadow:none}
+.wand{flex:1;min-height:0;display:grid;grid-template-columns:minmax(330px,0.95fr) minmax(0,2fr);gap:14px}
+.wand.gross{grid-template-columns:minmax(0,1fr) 270px}
+.k{background:var(--kachel);border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;min-height:0;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.kopfz{display:flex;align-items:center;gap:6px;margin-bottom:8px;flex:none}
+.kopfz h3{margin:0;flex:1;font:700 11.5px var(--g);letter-spacing:.12em;text-transform:uppercase;color:var(--leise)}
+.wtitel{border:0;background:none;padding:0;font:inherit;letter-spacing:inherit;text-transform:inherit;color:inherit}
+.wtitel:hover{color:var(--rot)}
+.mini{border:0;font:600 12.5px var(--g);color:var(--leise);padding:4px 10px;border-radius:999px;background:var(--linie)}
+.mini:hover:not(:disabled){color:var(--tinte);background:#e5e7eb}
+/* Frage-Kachel */
+.frage{background:var(--nacht);color:#fff}
+.frage .kopfz h3{color:#9fb0d0}
+.frage .mini{background:rgba(255,255,255,.1);color:#cfd8ea}
+.frage .mini:hover{background:rgba(255,255,255,.18);color:#fff}
+.fr-in{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex:1;min-height:0}
+.frage h1{font:800 32px/1.1 var(--g);margin:4px 0 14px;letter-spacing:-.015em}
+.fr-text{color:#c3cde2;margin:0 0 12px}
+.bsp{display:flex;flex-direction:column;gap:7px;align-items:flex-start}
+.bsp button{border:0;text-align:left;padding:8px 13px;border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font:600 14px var(--g)}
+.bsp button:hover{background:rgba(255,255,255,.18)}
+.frage .vogel{flex:none;margin-top:-6px}
+.frage .eing{display:flex;align-items:flex-end;gap:8px;background:#fff;border-radius:14px;padding:6px 6px 6px 16px;margin-top:12px;flex:none}
+.frage .eing textarea{flex:1;border:0;outline:0;resize:none;background:none;font:16px/1.4 var(--s);color:var(--tinte);padding:9px 0;max-height:140px;min-height:22px}
+.frage .eing .btn.senden{background:var(--rot);min-height:42px;padding:0 18px;font-size:15px;border-radius:11px}
+.frage .gespraech{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:4px 2px 4px;max-width:none;margin:0}
+.frage .frage-zettel{align-self:flex-end;max-width:85%;background:rgba(255,255,255,.12);color:#fff;border-radius:14px 14px 4px 14px;padding:9px 13px;font:600 14.5px/1.4 var(--g);box-shadow:none;transform:none;border:0}
+.frage .antwort{background:#fff;color:var(--tinte);border-radius:14px;padding:12px 14px;box-shadow:none}
+.frage .antwort-text{font-size:15px;line-height:1.55}
+.frage .antwort .vorschlaege button{min-height:34px;font-size:13px}
+.frage .denkt i{background:#9fb0d0}
+.wand.gross .frage .gespraech{padding:4px 8%}
+/* Widgets */
+.widgets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:14px;min-height:0;overflow:auto}
+.widget.gross{grid-column:span 2}
+.widget.wackelt{animation:wackeln .35s ease-in-out infinite alternate;cursor:grab;outline:2px dashed #d5d9df;outline-offset:-2px}
+.widget.zieht{opacity:.4}
+@keyframes wackeln{from{transform:rotate(-.4deg)}to{transform:rotate(.4deg)}}
+.zahl{font:800 38px/1 var(--g);margin-bottom:6px}.zahl small{font:600 14px var(--g);color:var(--leise)}
+.warnzeile{margin:0 0 6px;color:var(--rot);font-size:14px;font-weight:600}
+.srvl{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;overflow:auto;min-height:0}
+.s{display:flex;align-items:center;gap:7px;padding:5px 0;border:0;border-bottom:1px solid var(--linie);background:none;text-align:left;font-size:13px;min-width:0}
+.s b{font:700 12.5px var(--g)}.s span{color:var(--leise);margin-left:auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px}
+.s:hover b{color:var(--rot)}
+.s i,.netzr i,.led i{width:8px;height:8px;border-radius:50%;background:var(--grau2);flex:none}
+.s.an i,.netzr .an i,.led.an i{background:var(--gruen2)}.s.aus i,.netzr .aus i,.led.aus i{background:var(--rot)}.s.gewollt i,.led.gewollt i{background:#e1e3e7}.s.aus b{color:var(--rot)}
+.z{display:flex;align-items:center;gap:8px;width:100%;padding:8px 0;border:0;border-top:1px solid var(--linie);background:none;text-align:left;font:600 14px var(--g);color:var(--tinte)}
+.z b{font-weight:600;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.z small{margin-left:auto;color:var(--leise);font:12.5px var(--s);flex:none}
+.z:hover b{color:var(--rot)}
+.tag{display:inline-block;flex:none;padding:2px 8px;border-radius:999px;background:var(--linie);color:var(--leise);font:700 11px var(--g)}.tag.rot{background:var(--rothell);color:#a3291d}
+.bk{display:flex;gap:16px;align-items:center;flex:1;min-height:0}
+.bk b{font:700 15px var(--g)}.bk p{margin:3px 0 8px;font-size:13.5px;color:var(--leise)}
+.ring{width:104px;height:104px;flex:none;border-radius:50%;background:conic-gradient(var(--rot) 0 var(--voll),var(--linie) var(--voll));display:flex;align-items:center;justify-content:center}
+.ring div{width:78px;height:78px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font:800 19px var(--g)}
+.bk-rest{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.bk-rest span{padding:3px 9px;border-radius:999px;background:var(--linie);font:600 12px var(--g);color:var(--leise)}
+.stand{margin:6px 0 0;font-size:12px}
+.netzr{display:flex;flex-wrap:wrap;gap:6px;overflow:auto}
+.netzr span{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:9px;background:var(--linie);font:600 12.5px var(--g)}
+.hinzu{grid-column:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 14px;background:#fff;border-radius:16px;margin-top:-4px}
+.wand:has(.hinzu){grid-template-rows:minmax(0,1fr) auto}
+.wand:has(.hinzu) .frage{grid-row:span 2}
+/* schmale Leiste beim großen Gespräch */
+.schmal{overflow:auto}
+.leds{display:flex;flex-direction:column;gap:3px}
+.led{display:flex;align-items:center;gap:8px;padding:5px 6px;border:0;border-radius:8px;background:none;font:700 12.5px var(--g);color:var(--tinte);text-align:left}
+.led:hover{background:var(--linie)}
+.schmal .z b{white-space:normal;font-size:13px}
+/* Nachschlagen als Blatt über der Wand */
+.nachschlag{position:fixed;top:14px;right:14px;bottom:14px;width:min(620px,92vw);z-index:20;border-radius:18px;box-shadow:0 20px 60px rgba(20,28,50,.25)}
+@media (max-width:1100px){.wand{grid-template-columns:minmax(0,1fr)}.widgets{grid-template-columns:1fr}.widget.gross{grid-column:auto}}
+.widgets{overflow-x:hidden;padding:2px}

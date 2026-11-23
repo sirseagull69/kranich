@@ -26,13 +26,12 @@
     wolke: '<path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 9.5 4.25 4.25 0 0 0 7 18z"/>',
   };
   const sym = (n, g = 16, f = 'currentColor') => `<svg width="${g}" height="${g}" viewBox="0 0 24 24" fill="none" stroke="${f}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n] || ''}</svg>`;
-  const specht = (g = 44, klasse = '') => `<svg class="specht ${klasse}" width="${g}" height="${g}" viewBox="0 0 64 64" role="img" aria-label="Specht">
-    <circle cx="32" cy="32" r="31" fill="#f8e2dc"/>
-    <rect x="47" y="8" width="5" height="50" rx="1.5" fill="#e3ddcf"/>
-    <polygon points="20,50 28,26 38,22 44,40 34,52" fill="#1d2742"/><polygon points="28,26 38,22 34,34" fill="#2c3a5e"/><polygon points="34,34 38,22 44,40" fill="#3a4a72"/>
-    <polygon points="36,36 44,40 40,46" fill="#fffdf9"/><polygon points="20,50 14,58 24,54" fill="#1d2742"/>
-    <g class="kopf-teil"><polygon points="30,18 40,14 42,24 34,26" fill="#fffdf9"/><polygon points="30,18 36,11 42,15 40,14" fill="#b23a28"/><polygon points="36,11 44,12 42,17" fill="#8f2a1c"/><polygon points="42,19 50,21 42,23" fill="#e8b04a"/><circle cx="38" cy="19" r="1.6" fill="#1d2742"/></g>
-  </svg>`;
+  // Der gefaltete Specht (gleiche Familie wie Ori, Kranich, Albatros) mit allen Animationen aus voegel.js
+  const VOGEL_ART = { klopft: 'pc-check', nickt: 'erledigt', schief: 'ratlos', schuettelt: 'sicher', denkt: 'denkt-nach', winkt: 'winkt' };
+  const specht = (g = 44, klasse = '') => {
+    const svg = window.VOGEL?.[VOGEL_ART[klasse] || 'ruhezustand-3'] || window.VOGEL?.ruhezustand || '';
+    return `<span class="specht ${klasse}" role="img" aria-label="Specht" style="display:inline-flex;width:${g}px;height:${g}px">${svg.replace(/__G__/g, g)}</span>`;
+  };
   const wann = (iso) => {
     if (!iso) return '';
     const t = new Date(iso); const d = (Date.now() - t.getTime()) / 1000;
@@ -80,7 +79,10 @@
   }
   function vogelMacht(art) {
     const v = app.querySelector('.kopf .specht'); if (!v) return;
-    v.classList.remove('klopft', 'nickt', 'schief', 'schuettelt'); void v.getBoundingClientRect(); v.classList.add(art);
+    const g = parseInt(v.style.width, 10) || 38;
+    v.outerHTML = specht(g, art);
+    clearTimeout(vogelMacht.uhr);
+    vogelMacht.uhr = setTimeout(() => { const w = app.querySelector('.kopf .specht'); if (w && !S.klopft) w.outerHTML = specht(g); }, 4200);
   }
 
   // ---------- Kopf, Leiste, Helfer ----------
@@ -93,63 +95,83 @@
   }
   const klopfText = () => (S.klopft ? 'klopft gerade ab …' : S.d.letzterKlopf ? `zuletzt abgeklopft ${wann(S.d.letzterKlopf)}` : 'noch nicht abgeklopft');
   function kopf() {
-    return `<div class="kopf">${specht(42, S.klopft ? 'klopft' : '')}<div class="name"><b>Specht</b><span>${esc(klopfText())}</span></div></div>`;
+    return `<div class="kopf">${specht(46, S.klopft ? 'klopft' : '')}<div class="name"><b>Specht</b><span>${esc(klopfText())}</span></div></div>`;
   }
   const BEREICHE = [['uebersicht', 'Übersicht'], ['server', 'Server'], ['netz', 'Netz & Switches'], ['backup', 'Backup'], ['lizenzen', 'Lizenzen'], ['freigaben', 'Freigaben'], ['anleitungen', 'Anleitungen'], ['stoerungen', 'Störungen'], ['einstellungen', 'Einstellungen']];
   const NACHSCHLAGEN = BEREICHE.filter(([k]) => !['uebersicht', 'einstellungen'].includes(k));
   const ecke = () => '<svg class="ecke" viewBox="0 0 100 100" aria-hidden="true"><polygon points="0,0 100,0 100,100" fill="#d4573f"/><polygon points="38,0 100,0 100,62" fill="#8f2a1c"/><polygon points="0,0 38,0 100,62 100,100" fill="#f8e2dc" opacity=".25"/></svg>';
-  function nav() {
-    const rot = S.d.wissen.SERVER.filter((x) => zustandVon(x.id) === 'aus').length;
-    const offen = eintraege('stoerung').filter((x) => x.status === 'offen').length;
-    const zahl = { server: rot, stoerungen: offen };
-    const aktiv = { anleitung: 'anleitungen' }[S.ansicht] || S.ansicht;
-    return `<nav class="seite blatt" aria-label="Seitenleiste"><span class="streifen" aria-hidden="true"></span>
-      ${kopf()}
-      <button type="button" class="neu-knopf" data-a="chat-neu">${sym('plus', 16)} Neue Frage</button>
-      <span class="hand">Nachschlagen</span>
-      <div class="liste">${NACHSCHLAGEN.map(([k, t]) => `<button type="button" data-a="ansicht" data-z="${k}" ${aktiv === k ? 'aria-current="page"' : ''}><span class="txt">${esc(t)}</span>${zahl[k] ? `<span class="zahl">${zahl[k]}</span>` : ''}</button>`).join('')}</div>
-      <span class="hand">Abklopfen</span>
-      <div class="klopfzeile"><span class="leise">${esc(klopfText())}</span><button type="button" class="btn klein" data-a="klopfen" ${S.klopft || keinWissen() ? 'disabled' : ''}>${S.klopft ? 'Klopft …' : 'Jetzt'}</button></div>
-      <div class="fuss">${syncPille()}<div class="fusszeile"><span class="leise">${sym('schloss', 13)} Nur lesen · ${esc(S.d.geraet.replace(/ \(.*\)$/, ''))}</span><button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></div></div>
-    </nav>`;
+  // Specht-Aufbau (0.2.0): oben die Klopfleiste mit der Frage-Zeile – wie die Front eines Serverschranks –,
+  // darunter die Antworten. Keine Seitenleiste. Nachschlagen öffnet ein Blatt rechts.
+  // ---------- Widget-Wand (0.2.0, Entwurf „N3 Nachtblau“) ----------
+  // Links die Frage-Kachel (dunkelblau), daneben anpassbare Widgets. Bei echten Fragen klappt die
+  // Frage-Kachel zum Gespräch auf, die Widgets werden zur schmalen Leiste.
+  const WIDGETS = { server: 'Server', stoerungen: 'Tagebuch', backup: 'Backup', netz: 'Netz', anleitungen: 'Anleitungen', lizenzen: 'Lizenzen', freigaben: 'Freigaben' };
+  const STANDARD_WAND = [{ id: 'server', gross: false }, { id: 'stoerungen', gross: false }, { id: 'backup', gross: false }, { id: 'netz', gross: false }];
+  function wand() { try { const w = JSON.parse(localStorage.getItem('specht-wand') || 'null'); if (Array.isArray(w) && w.every((x) => WIDGETS[x.id])) return w; } catch { /* egal */ } return STANDARD_WAND.map((x) => ({ ...x })); }
+  function wandSpeichern(w) { try { localStorage.setItem('specht-wand', JSON.stringify(w)); } catch { /* egal */ } }
+  function kopfleiste() {
+    return `<header class="wandkopf">${kopf()}<div class="platz"></div>${S.anpassen ? '<button type="button" class="btn klein haupt" data-a="anpassen">Fertig</button>' : ''}${syncPille()}<button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></header>`;
   }
-  // Start: noch keine Frage gestellt
-  function startseite() {
-    const server = S.d.wissen.SERVER;
-    const rot = server.filter((x) => zustandVon(x.id) === 'aus');
-    const offen = eintraege('stoerung').filter((x) => x.status === 'offen');
-    const voll = (S.d.wissen.BACKUP.ziele || []).filter((b) => b.voll >= 95);
-    const std = new Date().getHours();
-    const gruss = std < 11 ? 'Guten Morgen' : std < 17 ? 'Hallo' : 'Guten Abend';
-    const kacheln = keinWissen()
-      ? `<button type="button" class="infokachel" data-a="wissen-laden"><b>Wissen laden</b><span>Einmal die Wissens-Datei laden, dann kenne ich eure Server.</span></button>`
-      : `<button type="button" class="infokachel ${!S.d.letzterKlopf ? 'grau' : rot.length ? 'warn' : ''}" data-a="ansicht" data-z="server"><b>${server.length} Server</b><span>${S.d.letzterKlopf ? (rot.length ? `${rot.length} antworten nicht` : 'alle antworten') : 'noch nicht abgeklopft'}</span></button>
-        <button type="button" class="infokachel ${offen.length ? 'warn' : ''}" data-a="ansicht" data-z="stoerungen"><b>${offen.length ? `${offen.length} Störung${offen.length > 1 ? 'en' : ''} offen` : 'Tagebuch ruhig'}</b><span>${offen.length ? esc(offen[0].was.slice(0, 48)) : 'nichts offen'}</span></button>
-        <button type="button" class="infokachel ${voll.length ? 'warn' : ''}" data-a="ansicht" data-z="backup"><b>${voll.length ? `${voll.length} Backup-Ziel${voll.length > 1 ? 'e' : ''} voll` : 'Backup'}</b><span>${voll.length ? esc(voll[0].name) : esc(S.d.wissen.BACKUP.stand || 'Stand aus der Wissens-Datei')}</span></button>`;
-    const vorschlaege = S.d.wissen.VORSCHLAEGE?.length ? S.d.wissen.VORSCHLAEGE : ['Welche Server sind gerade still?', 'Was steht offen im Tagebuch?', 'Ein Drucker druckt nicht – was prüfe ich?', 'Wo läuft das Backup hin?'];
-    return `<div class="start">
-      <div class="start-oben"><div><span class="hand gross">${esc(gruss)} · Specht, dein IT-Helfer</span>
-        <h1>Was ist los in der <mark>IT?</mark></h1>
-        <p class="leise">Frag einfach. Ich ändere nichts – ich zeige dir, wo du schaust und was du tun kannst.</p></div>
-        <div class="start-vogel">${specht(118)}<span class="hand notiz">${keinWissen() ? 'Erst Wissen laden, dann leg ich los.' : S.d.letzterKlopf ? (rot.length ? 'Ein paar sind still. Erst mal fragen?' : 'Alles klopft zurück.') : 'Ich klopf erst, wenn du willst.'}</span></div></div>
-      <div class="infozeile">${kacheln}</div>
-      <div class="vorschlagsraster">${vorschlaege.slice(0, 4).map((t) => `<button type="button" class="vorschlagskarte" data-a="vorschlag" data-t="${esc(t)}"><b>${esc(t)}</b></button>`).join('')}</div>
-    </div>`;
-  }
-  function gespraechTitel(verlauf) { const f = verlauf.find((m) => m.wer === 'ich'); return f ? f.text.slice(0, 70) : 'Specht fragen'; }
-  function mitte() {
+  function frageKachel() {
     const verlauf = chatVerlauf();
-    return `<main class="mitte" aria-label="Specht fragen">
-      <div class="mitte-kopf"><b>${esc(gespraechTitel(verlauf))}</b><div class="platz"></div>${verlauf.length ? '<button type="button" class="btn klein" data-a="chat-neu">Neue Frage</button>' : ''}</div>
-      <div class="gespraech" aria-live="polite">
-        ${verlauf.length ? verlauf.map(nachricht).join('') : startseite()}
-        ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(30, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}
-      </div>
-      <div class="eingabe blatt"><span class="streifen rechts" aria-hidden="true"></span>
-        <textarea id="frage" rows="2" placeholder="Was ist los? z. B. „Der Fileserver antwortet nicht“" aria-label="Deine Frage an Specht"></textarea>
-        <div class="eingabe-fuss"><span class="leise">Enter schickt ab · Shift+Enter neue Zeile</span><div class="platz"></div><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen ${sym('pfeil', 15)}</button></div>
-      </div>
-    </main>`;
+    const vorschlaege = S.d.wissen.VORSCHLAEGE?.length ? S.d.wissen.VORSCHLAEGE : ['Welche Server sind gerade still?', 'Was steht offen im Tagebuch?', 'Ein Drucker druckt nicht – was prüfe ich?'];
+    const kopfz = `<div class="kopfz"><h3>Specht fragen</h3>${verlauf.length ? `<button type="button" class="mini" data-a="gross">${S.gross ? 'Zur Wand' : 'Ausklappen'}</button><button type="button" class="mini" data-a="chat-neu">Neue Frage</button>` : `<button type="button" class="mini" data-a="anpassen">${S.anpassen ? 'Fertig' : 'Anpassen'}</button>`}</div>`;
+    const inhalt = verlauf.length
+      ? `<div class="gespraech" aria-live="polite">${verlauf.map(nachricht).join('')}${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}</div>`
+      : `<div class="fr-in"><div><h1>${keinWissen() ? 'Hallo, ich bin Specht.' : 'Was ist los<br>in der IT?'}</h1>
+          ${keinWissen() ? '<p class="fr-text">Lade einmal deine Wissens-Datei, dann kenne ich eure Server.</p><button type="button" class="btn haupt" data-a="wissen-laden">Wissens-Datei laden</button>' : `<div class="bsp">${vorschlaege.slice(0, 3).map((t) => `<button type="button" data-a="vorschlag" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>`}</div>
+          <span class="vogel">${specht(150, S.denkt ? 'denkt' : 'winkt')}</span></div>
+          ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt"><i></i><i></i><i></i></span></div></div>` : ''}`;
+    return `<section class="k frage" aria-label="Specht fragen">${kopfz}${inhalt}
+      <div class="eing"><textarea id="frage" rows="1" placeholder="${verlauf.length ? 'Nachfragen …' : 'Beschreib\'s in einem Satz …'}" aria-label="Deine Frage an Specht"></textarea><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></section>`;
+  }
+  const kopfzeile = (w, titel, rechts = '') => `<div class="kopfz"><h3><button type="button" class="wtitel" data-a="ansicht" data-z="${w}">${esc(titel)}</button></h3>${rechts}${S.anpassen ? `<button type="button" class="mini" data-a="w-gross" data-id="${w}" title="Größer oder kleiner">↔</button><button type="button" class="mini" data-a="w-weg" data-id="${w}" title="Ausblenden">✕</button>` : ''}</div>`;
+  const W_INHALT = {
+    server() {
+      const server = S.d.wissen.SERVER;
+      const an = server.filter((x) => zustandVon(x.id) === 'an').length;
+      const rot = server.filter((x) => zustandVon(x.id) === 'aus');
+      return `${kopfzeile('server', 'Server', `<button type="button" class="mini" data-a="klopfen" ${S.klopft || keinWissen() ? 'disabled' : ''}>${S.klopft ? 'klopft …' : 'Abklopfen'}</button>`)}
+        ${keinWissen() ? '<p class="leise">Noch keine Server bekannt.</p>' : `<div class="zahl">${S.d.letzterKlopf ? `${an}<small> von ${server.length} antworten</small>` : `${server.length}<small> Server · noch nicht abgeklopft</small>`}</div>
+        ${rot.length ? `<p class="warnzeile">${esc(rot.map((x) => x.name).join(', '))} ${rot.length === 1 ? 'antwortet' : 'antworten'} nicht</p>` : ''}
+        <div class="srvl">${server.map((x) => `<button type="button" class="s ${zustandVon(x.id)}" data-a="server-oeffnen" data-id="${x.id}"><i></i><b>${esc(x.name)}</b><span>${esc(x.rolle || '')}</span></button>`).join('')}</div>`}`;
+    },
+    stoerungen() {
+      const liste = eintraege('stoerung').slice().sort((a, b) => (a.status === 'offen' ? -1 : 0) - (b.status === 'offen' ? -1 : 0) || String(b.datum).localeCompare(String(a.datum)));
+      return `${kopfzeile('stoerungen', 'Tagebuch', '<button type="button" class="mini" data-a="ansicht" data-z="stoerungen">+ Eintrag</button>')}
+        ${liste.length ? liste.slice(0, 6).map((x) => `<button type="button" class="z" data-a="stoerung-oeffnen" data-id="${esc(x.id)}"><span class="tag ${x.status === 'offen' ? 'rot' : ''}">${x.status === 'offen' ? 'offen' : 'gelöst'}</span><b>${esc(x.was)}</b><small>${datum(x.datum)}</small></button>`).join('') : '<p class="leise">Noch nichts eingetragen.</p>'}`;
+    },
+    backup() {
+      const z = S.d.wissen.BACKUP.ziele || [];
+      const v = z.slice().sort((a, b) => b.voll - a.voll)[0];
+      return `${kopfzeile('backup', 'Backup')}${v ? `<div class="bk"><div class="ring" style="--voll:${Math.min(100, v.voll)}%"><div>${Math.round(v.voll)}&nbsp;%</div></div>
+        <div><b>${esc(v.name)}</b><p>${esc(v.frei)} frei von ${esc(v.gesamt)}${v.voll >= 95 ? ' – Veeam kann dorthin bald nichts mehr sichern.' : '.'}</p>${v.voll >= 95 ? '<span class="tag rot">bald voll</span>' : ''}</div></div>
+        ${z.length > 1 ? `<div class="bk-rest">${z.filter((x) => x !== v).map((x) => `<span>${esc(x.name)} · ${Math.round(x.voll)} %</span>`).join('')}</div>` : ''}` : '<p class="leise">Kein Backup-Stand in der Wissens-Datei.</p>'}<p class="stand leise">${esc(S.d.wissen.BACKUP.stand || '')}</p>`;
+    },
+    netz() {
+      const n = S.d.wissen.NETZ;
+      return `${kopfzeile('netz', 'Netz')}${n.length ? `<div class="netzr">${n.map((x) => `<span class="${zustandVon(x.id)}"><i></i>${esc(x.name)}</span>`).join('')}</div>` : '<p class="leise">Noch keine Netzgeräte bekannt.</p>'}`;
+    },
+    anleitungen() {
+      const a = eintraege('anleitung');
+      return `${kopfzeile('anleitungen', 'Anleitungen')}${a.length ? a.slice(0, 6).map((x) => `<button type="button" class="z" data-a="anleitung-oeffnen" data-id="${esc(x.id)}"><b>${esc(x.titel)}</b><small>${(x.schritte || []).length} Schritte</small></button>`).join('') : '<p class="leise">Noch keine Anleitungen.</p>'}`;
+    },
+    lizenzen() { return `${kopfzeile('lizenzen', 'Lizenzen')}<p class="leise">Aus dem Lizenz-Tool, nur lesen. Tippen zum Öffnen.</p>`; },
+    freigaben() { const f = eintraege('freigabe'); return `${kopfzeile('freigaben', 'Freigaben')}${f.length ? f.slice(0, 6).map((x) => `<div class="z"><b>${esc(x.name || x.pfad || x.titel || '')}</b></div>`).join('') : '<p class="leise">Noch keine Freigaben eingetragen.</p>'}`; },
+  };
+  function widgetWand() {
+    const w = wand();
+    const sichtbar = w.map((x) => `<section class="k widget ${x.gross ? 'gross' : ''} ${S.anpassen ? 'wackelt' : ''}" data-w="${x.id}" ${S.anpassen ? 'draggable="true"' : ''}>${W_INHALT[x.id]()}</section>`).join('');
+    const fehlt = Object.keys(WIDGETS).filter((id) => !w.some((x) => x.id === id));
+    return `<div class="widgets">${sichtbar}</div>${S.anpassen ? `<div class="hinzu"><span class="leise">Widget hinzufügen:</span>${fehlt.length ? fehlt.map((id) => `<button type="button" class="mini" data-a="w-dazu" data-id="${id}">+ ${WIDGETS[id]}</button>`).join('') : '<span class="leise">alle da</span>'}<div class="platz"></div><button type="button" class="mini" data-a="w-standard">Zurücksetzen</button></div>` : ''}`;
+  }
+  // Schmale Leiste neben dem großen Gespräch
+  function leisteSchmal() {
+    const server = S.d.wissen.SERVER;
+    const offen = eintraege('stoerung').filter((x) => x.status === 'offen');
+    return `<aside class="k schmal"><div class="kopfz"><h3>Stand</h3></div>
+      <div class="leds">${server.map((x) => `<button type="button" class="led ${zustandVon(x.id)}" data-a="server-oeffnen" data-id="${x.id}" title="${esc(x.name)}"><i></i>${esc(x.name)}</button>`).join('')}</div>
+      ${offen.length ? `<div class="kopfz" style="margin-top:14px"><h3>Offen</h3></div>${offen.map((x) => `<button type="button" class="z" data-a="stoerung-oeffnen" data-id="${esc(x.id)}"><b>${esc(x.was)}</b></button>`).join('')}` : ''}</aside>`;
   }
   function nachschlagBlatt() {
     if (!S.ansicht || S.ansicht === 'uebersicht') return '';
@@ -476,7 +498,7 @@
     const frage = document.getElementById('frage')?.value || '';
     const scroll = app.querySelector('.nachschlag-inhalt')?.scrollTop || 0;
     const gesp = app.querySelector('.gespraech');
-    app.innerHTML = `${ecke()}<div class="buehne ${S.ansicht && S.ansicht !== 'uebersicht' ? 'mit-blatt' : ''}">${nav()}${mitte()}${nachschlagBlatt()}</div>`;
+    app.innerHTML = `${kopfleiste()}<div class="wand ${S.gross && chatVerlauf().length ? 'gross' : ''}">${frageKachel()}${S.gross && chatVerlauf().length ? leisteSchmal() : widgetWand()}</div>${nachschlagBlatt()}`;
     const f = document.getElementById('frage'); if (f) f.value = frage;
     if (!neu) { const h = app.querySelector('.nachschlag-inhalt'); if (h) h.scrollTop = scroll; }
     const g = app.querySelector('.gespraech'); if (g) g.scrollTop = g.scrollHeight;
@@ -501,7 +523,7 @@
     text = String(text || '').trim(); if (!text || S.denkt) return;
     const verlauf = [...chatVerlauf(), { wer: 'ich', text }];
     await setze('chat', CHAT_ID, { verlauf: verlauf.slice(-40) });
-    S.denkt = true; zeichne(false);
+    S.denkt = true; if (verlauf.filter((m) => m.wer === 'ich').length > 1 || text.length > 120) S.gross = true; zeichne(false);
     const r = await SP.frage(text, verlauf);
     S.denkt = false;
     const antwort = r?.fehler
@@ -546,6 +568,12 @@
     },
     ansicht: (el) => { S.ansicht = el.dataset.z; S.stoerung = null; S.bearbeite = null; if (S.ansicht === 'lizenzen') S.lizenzen = null; zeichne(); },
     helfer: () => { S.helfer = !S.helfer; zeichne(false); },
+    gross: () => { S.gross = !S.gross; zeichne(false); },
+    anpassen: () => { S.anpassen = !S.anpassen; zeichne(false); },
+    'w-gross': (el) => { const w = wand(); const x = w.find((y) => y.id === el.dataset.id); if (x) x.gross = !x.gross; wandSpeichern(w); zeichne(false); },
+    'w-weg': (el) => { wandSpeichern(wand().filter((y) => y.id !== el.dataset.id)); zeichne(false); },
+    'w-dazu': (el) => { const w = wand(); w.push({ id: el.dataset.id, gross: false }); wandSpeichern(w); zeichne(false); },
+    'w-standard': () => { wandSpeichern(STANDARD_WAND); zeichne(false); },
     zu: () => { S.ansicht = 'uebersicht'; S.stoerung = null; S.bearbeite = null; zeichne(false); },
     klopfen: () => klopfen(),
     'sync-klick': () => { if (S.d.konflikte?.length) konfliktZeigen(); else if (!S.d.konto) ersterStart(1); else { SP.sync(); } },
@@ -595,7 +623,7 @@
     'tagebuch-filter': (el) => { S.tagebuchFilter = el.dataset.z; zeichne(false); },
     fragen: () => { const f = document.getElementById('frage'); const t = f.value; f.value = ''; fragen(t); },
     vorschlag: (el) => fragen(el.dataset.t),
-    'chat-neu': async () => { await setze('chat', CHAT_ID, { verlauf: [] }); zeichne(false); },
+    'chat-neu': async () => { await setze('chat', CHAT_ID, { verlauf: [] }); S.gross = false; zeichne(false); },
     schalter: async (el) => { const k = el.dataset.k; const r = await SP.einstellungen({ [k]: el.getAttribute('aria-checked') !== 'true' }); if (!r?.fehler) { S.d.einstellungen = r; zeichne(false); } },
     'lizenz-speichern': async () => { const r = await SP.einstellungen({ lizenzUrl: document.getElementById('liz-url').value.trim(), lizenzSchluessel: document.getElementById('liz-key').value.trim() }); if (!r?.fehler) { S.d.einstellungen = r; S.lizenzen = null; meldung('Gespeichert.'); zeichne(false); } },
     'claude-speichern': async () => {
@@ -630,6 +658,18 @@
     if (ev.target.id === 'neuer-punkt' && ev.key === 'Enter') { ev.preventDefault(); AKTIONEN['netzpunkt-dazu'](); }
   });
 
+  // Widgets im Anpassen-Modus verschieben (ziehen und loslassen)
+  let gezogen = null;
+  app.addEventListener('dragstart', (ev) => { const w = ev.target.closest?.('.widget'); if (!w || !S.anpassen) return; gezogen = w.dataset.w; ev.dataTransfer.effectAllowed = 'move'; w.classList.add('zieht'); });
+  app.addEventListener('dragover', (ev) => { if (gezogen && ev.target.closest?.('.widget')) ev.preventDefault(); });
+  app.addEventListener('drop', (ev) => {
+    const ziel = ev.target.closest?.('.widget'); if (!gezogen || !ziel) return; ev.preventDefault();
+    const w = wand(); const von = w.findIndex((x) => x.id === gezogen); const nach = w.findIndex((x) => x.id === ziel.dataset.w);
+    if (von >= 0 && nach >= 0 && von !== nach) { const [x] = w.splice(von, 1); w.splice(nach, 0, x); wandSpeichern(w); }
+    gezogen = null; zeichne(false);
+  });
+  app.addEventListener('dragend', () => { gezogen = null; app.querySelectorAll('.zieht').forEach((e) => e.classList.remove('zieht')); });
+
   // ---------- Ereignisse vom Hauptprozess ----------
   SP.beiSync((s) => {
     const vorher = S.d?.sync?.art;
@@ -639,7 +679,7 @@
     if (s.art === 'konflikt') { SP.start().then((d) => { S.d.konflikte = d.konflikte; S.d.eintraege = d.eintraege; konfliktZeigen(); }); }
     if (vorher === 'laeuft' && s.art === 'synchron') vogelMacht('schuettelt');
   });
-  SP.beiKlopfStart(() => { if (!S.d || S.klopft) return; S.klopft = true; const v = app.querySelector('.kopf .specht'); v?.classList.add('klopft'); const u = app.querySelector('.kopf .name span'); if (u) u.textContent = 'IT-Helfer · klopft gerade ab …'; });
+  SP.beiKlopfStart(() => { if (!S.d || S.klopft) return; S.klopft = true; const v = app.querySelector('.kopf .specht'); if (v) v.outerHTML = specht(parseInt(v.style.width, 10) || 38, 'klopft'); const u = app.querySelector('.kopf .name span'); if (u) u.textContent = 'IT-Helfer · klopft gerade ab …'; });
   SP.beiKlopfen(({ zustand, zeit }) => { if (S.d) neuerZustand(zustand, zeit); });
   SP.beiDaten(({ eintraege: e }) => { if (!S.d) return; S.d.eintraege = e; S.d.wissen = wissenAus(e); if (!document.querySelector('.schleier') && !['anleitung'].includes(S.ansicht) && !S.stoerung) zeichne(false); });
 

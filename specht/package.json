@@ -40,7 +40,8 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "shortcutName": "Specht"
+      "shortcutName": "Specht",
+      "createDesktopShortcut": false
     },
     "mac": {
       "target": [

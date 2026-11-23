@@ -42,7 +42,8 @@
     "nsis": {
       "oneClick": true,
       "perMachine": false,
-      "shortcutName": "Kranich"
+      "shortcutName": "Kranich",
+      "createDesktopShortcut": false
     },
     "mac": {
       "target": [
