@@ -266,12 +266,25 @@
       if (hier()) { App.renderVerlauf(); App.renderMitte(); }
     }
 
-    // Boards, vier gleichzeitig
+    // Boards, vier gleichzeitig (bei Problemen zwei)
+    let bremse = false;
     const eins = async (j) => {
       const b = j.board;
       j.zustand = 'laeuft'; j.start = Date.now(); j.phase = 'schreiben'; j.prozent = 3; status(b.id, 'laeuft'); if (hier()) App.renderVerlauf();
-      const r = await K.app.board({ plan, board: { id: b.id, bildschirm: b.bildschirm, zustand: b.zustand, name: b.name, breite: b.breite, hoehe: b.hoehe }, css: p.app.css });
-      if (nr !== App.auftragNr) return;
+      // Bei Fehlern selbst nochmal probieren – mit Pause, bei „zu viel auf einmal“ länger
+      let r = null;
+      for (let versuch = 0; versuch < 3; versuch++) {
+        if (versuch) {
+          const limit = /limit|429|overload|zu viele|rate|ausgelastet|zeit/i.test(r?.fehler?.nachricht || '');
+          j.notiz = `Versuch ${versuch + 1} von 3 …`; j.phase = 'wartet'; if (hier()) App.renderVerlauf();
+          await new Promise((ok) => setTimeout(ok, (limit ? 45000 : 12000) * versuch));
+          if (nr !== App.auftragNr) return;
+        }
+        r = await K.app.board({ plan, board: { id: b.id, bildschirm: b.bildschirm, zustand: b.zustand, name: b.name, breite: b.breite, hoehe: b.hoehe }, css: p.app.css });
+        if (nr !== App.auftragNr) return;
+        if (!r?.fehler) break;
+        bremse = true;
+      }
       if (r?.fehler) { j.zustand = 'fehler'; j.notiz = r.fehler.nachricht; status(b.id, 'fehler'); if (hier()) App.renderVerlauf(); return; }
       dauern.push(Date.now() - j.start); schnitt = dauern.reduce((a, x) => a + x, 0) / dauern.length;
       const pr = await App.pruefeUndRepariere(b, r.html, nr, { status: hier(), phase: (ph) => { j.phase = ph; } });
@@ -294,8 +307,9 @@
       sichern();
     };
     const warteschlange = [...boardJobs];
-    const arbeiter = async () => { while (warteschlange.length && nr === App.auftragNr) await eins(warteschlange.shift()); };
-    await Promise.all([arbeiter(), arbeiter(), arbeiter(), arbeiter()]);
+    // Sobald etwas schiefgeht, arbeiten nur noch zwei gleichzeitig (Claude nicht überlasten)
+    const arbeiter = async (k) => { while (warteschlange.length && nr === App.auftragNr) { if (bremse && k >= 2) { await new Promise((ok) => setTimeout(ok, 3000)); if (bremse) return; } await eins(warteschlange.shift()); } };
+    await Promise.all([arbeiter(0), arbeiter(1), arbeiter(2), arbeiter(3)]);
     ende();
     if (nr !== App.auftragNr) return;
     const schief = boardJobs.filter((j) => j.zustand === 'fehler');
