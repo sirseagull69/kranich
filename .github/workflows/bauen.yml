@@ -1,4 +1,5 @@
 # Baut die Installer fuer Kranich (Windows und Mac)
+# Token fuer das Download-Repo: Secret DOWNLOADS_TOKEN
 # und legt sie auf GitHub unter
 # "Releases" ab. Laeuft, sobald sich die Versionsnummer in package.json
 # aendert (oder von Hand ueber "Run workflow").

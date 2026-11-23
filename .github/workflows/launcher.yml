@@ -1,4 +1,5 @@
 # Baut das Startfenster "Selbst gfaltet" (Windows und Mac) und legt es
+# Token fuer das Download-Repo: Secret DOWNLOADS_TOKEN
 # als eigenes Release (start-v<version>) ab. Laeuft bei Aenderungen in launcher/.
 name: Startfenster bauen
 
