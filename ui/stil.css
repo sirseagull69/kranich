@@ -239,8 +239,8 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 .boardleer .leise{font-size:calc(14px * var(--gegenzoom))}
 .boardstatus{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,.7);border:calc(2px * var(--gegenzoom)) dashed var(--linie)}
 .boardstatus.wartet{background:#fff}
-.boardstatus .chip{transform:scale(var(--gegenzoom))}
-.boardstatus .faltblatt{transform:scale(var(--gegenzoom))}
+.boardstatus .chip{transform:scale(min(var(--gegenzoom), 8));white-space:nowrap}
+.boardstatus .faltblatt{transform:scale(min(var(--gegenzoom), 8))}
 .board .auswahlrahmen,.board .huelle{outline-width:calc(2px * var(--gegenzoom))}
 .board .auswahlrahmen .masz{transform:translateX(-50%) scale(var(--gegenzoom));transform-origin:top center}
 .board-dazu{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid var(--pflaume);background:#fff;color:var(--facette);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(30,40,70,.18);z-index:4;padding:0}
@@ -369,7 +369,7 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 
 .wunschfeld>div:last-child{flex-wrap:nowrap;min-width:0}
 .wunschfeld .btn-p{flex:none}
-.boardstatus .prozentbalken{width:60%;height:6px;background:#ece4d2;transform:scale(var(--gegenzoom));overflow:hidden}
+.boardstatus .prozentbalken{position:absolute;left:0;right:0;bottom:0;height:calc(8px * var(--gegenzoom));background:#ece4d2;overflow:hidden}
 .boardstatus .prozentbalken i{display:block;height:100%;background:var(--kranich,#7c5cd6);transition:width .9s linear}
 .hinweisband .gesamtbalken{height:5px;background:#ece4d2;margin-top:6px;overflow:hidden}
 .hinweisband .gesamtbalken i{display:block;height:100%;background:#7c5cd6;transition:width .9s linear}

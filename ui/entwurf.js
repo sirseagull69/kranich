@@ -372,8 +372,7 @@
     if (!b || !['laeuft', 'pruefen', 'repariert'].includes(b.status)) return;
     const chip = b.statusEl.querySelector('.chip');
     if (!chip) return;
-    const [text] = STATUS[b.status];
-    chip.textContent = `${text.replace(' …', '')} · ${pct} %`;
+    chip.textContent = `${{ laeuft: 'Faltet', pruefen: 'Prüft', repariert: 'Repariert' }[b.status]} · ${pct} %`;
     let bar = b.statusEl.querySelector('.prozentbalken');
     if (!bar) { bar = document.createElement('div'); bar.className = 'prozentbalken'; bar.innerHTML = '<i></i>'; b.statusEl.appendChild(bar); }
     bar.firstChild.style.width = `${pct}%`;

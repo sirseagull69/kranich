@@ -195,7 +195,9 @@ app.whenReady().then(async () => {
     await pruefe('Zustand im Plan ergänzt', "App.S.projekt.app.plan.bildschirme[1].zustaende.includes('fehler')");
     await js("document.querySelector('.planfuss [data-aktion=\"app-falten\"]').click()");
     await bisDa("App.S.projekt.seiten.length === 5", 4000);
-    await warte(700);
+    await warte(1300);
+    await js("Entwurf.zoom(0.4)");
+    await warte(300);
     await foto('17-app-baut');
     // Mitten im Bau zum Start und zurück: Bau läuft weiter
     await js("window.__pid = App.S.projekt.id; App.aktionen['zum-start']()");

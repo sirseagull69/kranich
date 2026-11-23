@@ -27,7 +27,7 @@ ${extra}</style></head><body>
 
 async function frage(auftrag) {
   if (process.env.KRANICH_SPIELHIRN === 'fehler') throw new HirnFehler('keine-verbindung', 'Kranich kommt gerade nicht an Claude ran.', 'Spielhirn: keine Verbindung');
-  await new Promise((r) => setTimeout(r, 400));
+  await new Promise((r) => setTimeout(r, /data-bausteine/.test(auftrag.auftrag || '') ? 2500 : 400));
   const a = auftrag.auftrag;
   if (/Bildbearbeiter/.test(auftrag.system)) {
     return { weg: 'claude', text: JSON.stringify({ notiz: 'Mach ich: Tasse freistellen, Rest durchsichtig, dann auf 1080 × 1080.', schritte: [{ art: 'freistellen' }, { art: 'quadrat', groesse: 1080 }, { art: 'anpassen', hell: 12, waerme: -8 }] }) };
