@@ -12,7 +12,7 @@
   }
   function spiele(box, name) {
     if (!box || box.dataset.spielt || !ruhig(box)) return;
-    const alt = box.querySelector('svg');
+    const alt = box.querySelector('svg[role="img"]');
     if (!alt || !window.figur) return;
     const g = Number(alt.getAttribute('width')) || 34;
     const neu = document.createElement('div');
