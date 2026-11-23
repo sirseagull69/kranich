@@ -95,6 +95,17 @@ async function pruefe(html, format) {
   }
 }
 
+// Bildschirmfotos vom aktuellen Stand der Familie (ui/stand), für Wünsche, die eine App nennen
+function standBilder(text) {
+  const { standFuer } = require('../kern/familie');
+  return standFuer(text).map((f) => {
+    const q = path.join(__dirname, '..', 'ui', 'stand', f);
+    if (!fs.existsSync(q)) return null;
+    const z = path.join(os.tmpdir(), `kranich-stand-${Date.now()}-${f}`);
+    fs.copyFileSync(q, z); return z;
+  }).filter(Boolean);
+}
+
 function zielOrdner(ziel, appName, eigenerOrdner) {
   const e = einstellungen.alle();
   if (ziel === 'app') {
@@ -156,6 +167,7 @@ function registriere() {
     } else {
       auftrag = A.auftragNeu({ wunsch, breite, hoehe, app: appName, format: formatVon(formatId) });
     }
+    if (!bild && e.standMitgeben !== false) { const st = standBilder(wunsch); if (st.length) { bilder.push(...st); auftrag += `\n\n${require('../kern/familie').STAND_HINWEIS}`; } }
     try {
       const klein = Boolean(html && auswahl && wunsch.length < 80);
       const { text, weg } = await hirn.frage({ system, auftrag, bilder }, e, { klein, zeitlimitMs: 480000 });
@@ -182,6 +194,7 @@ function registriere() {
       let auftrag = AP.auftragPlan({ beschreibung, geraet, zustaende });
       if (look === 'eigen') auftrag += '\nLook: eigener Look für diese App (nicht die Farben der Familie), aber gleich gute Qualität.';
       if (bilder.length) auftrag += '\nEine Skizze oder ein Bild von Nils ist angehängt; richte den Plan daran aus.';
+      if (!bild && e.standMitgeben !== false) { const st = standBilder(beschreibung); if (st.length) { bilder.push(...st); auftrag += `\n${require('../kern/familie').STAND_HINWEIS}`; } }
       const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag, bilder }, e, { zeitlimitMs: 600000 });
       const plan = AP.lesePlanApp(text, { geraet });
       return { plan, weg };

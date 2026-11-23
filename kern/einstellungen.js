@@ -17,6 +17,7 @@ const STANDARD = {
   lokalModell: 'gemma4:26b',
   lokalAdresse: 'http://127.0.0.1:11434',
   lookHinweise: '',
+  standMitgeben: true, // Fotos vom aktuellen Stand der Familie mitschicken, wenn ein Wunsch eine App nennt
   exportOrdner: '',
   appOrdner: { origami: '', kranich: '', albatros: '', schreiben: '' },
 };

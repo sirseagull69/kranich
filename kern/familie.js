@@ -11,22 +11,21 @@ const APPS = {
 };
 
 const GRUNDLOOK = `
-DER LOOK DER ORIGAMI-FAMILIE (Papier-Design)
-- Grund: warmes Papier #f6f1e7, Flächen #fffdf8, Karten weiß. Optional feines Punktraster.
-- Tinte (Text): #1d2742, leiser Text #5b6170, Linien #d9d0bc.
-- Jede App hat eine Hausfarbe mit dunkler Facette und hellem Ton (siehe unten).
-- Schrift: Überschriften und Knöpfe "Bricolage Grotesque" (700/800), Fließtext "Source Serif 4", handschriftliche Randnotizen "Caveat".
-- Falt-Details statt Rundungen: Karten und Hauptknöpfe mit abgeknickter Ecke oben rechts
-  (clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%)), kleine Radien (2–3 px),
-  gestrichelte Falzlinien (border-top: 2px dashed #d9d0bc) als Trenner, Eselsohr unten rechts.
-- Registerlaschen für Reiter und Seitenlisten, Chips mit voller Rundung für Status.
-- Schatten weich und flach (0 1px 2px rgba(30,40,70,.08), 0 10px 24px rgba(30,40,70,.10)).
-- Bildsprache (wichtig, das Markenzeichen): Illustrations- und Bildflächen bekommen einen weichen Verlauf
-  von hell der Hausfarbe zu Papiergelb (z. B. linear-gradient(135deg, #d6caf9 0%, #e9e0fb 42%, #fbf0d4 100%)),
-  darin ein gestrichelter weißer Rahmen 12 px nach innen, und darauf wenige kräftige, flache Formen in der
-  Hausfarbe oder ihrer Facette (abgerundete Rechtecke, Kreise, Papierfalten). Keine Fotos, keine Verläufe
-  auf Text oder Knöpfen, keine grellen Regenbogen-Verläufe. Leere Zustände, Kopfbilder und Karten-Vorschauen nutzen diese Fläche.
-- Klickflächen mindestens 40 px hoch. Deutsche, normale Wörter, keine Fachsprache.
+DER LOOK DER FAMILIE „SELBST GFALTET“ (Stand: klarer Look, wie das Startfenster)
+- Grund: warmes Papier #f4f0e8 mit feinem Punktraster (radial-gradient, 18 px). Karten und Flächen #fffdf9, Radius 4–12 px.
+- Tinte (Text): #1d2742, leiser Text #5b6170, Linien #ebe5d8, gestrichelte Trenner 1.5px dashed #e6dfd0.
+- Schatten weich und flach: 0 1px 2px rgba(30,40,70,.08), 0 10px 24px rgba(30,40,70,.10). Keine harten Rahmen.
+- Jede App hat eine Hausfarbe mit dunkler Facette und hellem Ton (siehe unten). Hauptknopf in der Hausfarbe, Radius 10 px.
+- Schrift: Überschriften und Knöpfe "Bricolage Grotesque" (700/800, große Überschrift 40 px, Zeilenhöhe 1.08),
+  Fließtext "Source Serif 4", eine handschriftliche Zeile über der Überschrift in "Caveat" in der Hausfarbe.
+- Aufbau: ruhiger Kopf ohne Balken (Vogel + Name links, Status-Chip und runde Symbolknöpfe rechts), viel Luft,
+  Inhalt max. 1240 px breit. Startseiten: Gruß + große Frage, darunter ein Eingabe-Blatt, darunter 4 Karten mit
+  hellem Bildfeld in der Hausfarbe und dem Vogel darin, darunter zwei Blätter („Zum Ausprobieren“, „Zuletzt …“).
+- Arbeitsflächen: links ein Blatt mit Listen (kleine Großbuchstaben-Überschriften), Mitte die Fläche, rechts ein
+  Blatt für den Helfer/Chat mit Sprechblasen (eigene Nachricht in der Hausfarbe, rechts).
+- Die Vögel sind flache Papier-Origami aus Dreiecken (wie Ori): Schwanz, Körper, weißer Flügel, Hals, Kopf/Schnabel, Kiel.
+- Bewegung: Elemente gleiten beim Öffnen sanft hoch, Fenster klappen auf wie Papier.
+- Klickflächen mindestens 40 px hoch. Deutsche, normale Wörter, keine Fachsprache. Keine Emojis, keine Fotos.
 `.trim();
 
 function appListe() {
@@ -41,4 +40,20 @@ function lookText(eigeneHinweise = '') {
   return text;
 }
 
-module.exports = { APPS, lookText };
+// Fotos vom aktuellen Stand der Apps (ui/stand), passend zum Wunsch
+const STAND = {
+  kranich: ['kranich-start.jpg', 'kranich-arbeitsflaeche.jpg'],
+  albatros: ['albatros-start.jpg', 'albatros-tabelle.jpg'],
+  startfenster: ['startfenster.jpg'],
+};
+function standFuer(text = '') {
+  const t = String(text).toLowerCase();
+  const aus = [];
+  if (/kranich/.test(t)) aus.push(...STAND.kranich);
+  if (/albatros/.test(t)) aus.push(...STAND.albatros);
+  if (/startfenster|launcher|selbst gfaltet|sammlung/.test(t)) aus.push(...STAND.startfenster);
+  return [...new Set(aus)].slice(0, 4);
+}
+const STAND_HINWEIS = 'Angehängt sind Bildschirmfotos vom AKTUELLEN Stand der genannten App(s) der Familie (mit dem Werkzeug Read ansehen). Orientier dich daran: was es schon gibt, wie es aussieht. Verbessere es, ohne den Charakter der Familie zu verlieren.';
+
+module.exports = { APPS, lookText, standFuer, STAND_HINWEIS };

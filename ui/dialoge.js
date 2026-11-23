@@ -132,6 +132,7 @@
           <div class="ezeile"><div class="etext"><b>Programm</b><span>Nur ändern, wenn „claude“ nicht gefunden wird.</span></div><input class="feld" id="e-prog" value="${esc(e.claudeProgramm)}"></div>
         </section>
         <section class="ebereich" data-b="look" hidden><h2 class="h"><mark>Look</mark></h2>
+          <div class="ezeile"><div class="etext"><b>Aktuellen Stand mitschicken</b><span>Nennst du Kranich, Albatros oder das Startfenster, bekommt Claude Fotos vom aktuellen Stand dazu.</span></div><label class="schalter"><input type="checkbox" id="e-stand" ${e.standMitgeben !== false ? 'checked' : ''}><i></i></label></div>
           <div class="ezeile hoch"><div class="etext"><b>Eigene Look-Regeln</b><span>Kranich hält sich bei jedem Entwurf daran.</span></div><textarea class="feld" id="e-look" rows="5" placeholder="z. B. Hauptknöpfe immer rechts unten">${esc(e.lookHinweise)}</textarea></div>
         </section>
         <section class="ebereich" data-b="heim" hidden><h2 class="h"><mark>Heim-PC</mark></h2>
@@ -187,6 +188,7 @@
       lokalModell: el.querySelector('#e-lokalmodell').value.trim(),
       lokalAdresse: el.querySelector('#e-lokaladr').value.trim(),
       lookHinweise: el.querySelector('#e-look').value,
+      standMitgeben: el.querySelector('#e-stand').checked,
       appOrdner: Object.fromEntries([...el.querySelectorAll('[data-app]')].map((i) => [i.dataset.app, i.value.trim()])),
     });
     el.addEventListener('click', async (ev) => {
