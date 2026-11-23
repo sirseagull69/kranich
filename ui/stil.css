@@ -336,3 +336,33 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 .abspielbuehne iframe{position:absolute;left:0;top:0;border:0;background:#fff;transform-origin:0 0}
 .abspielhinweis{color:#d6caf9;font-size:13px;padding:8px 0 14px}
 .baum{margin:0;padding:10px 12px;background:#fff;border:1px solid #ece4d2;font:13px/1.6 ui-monospace,Consolas,monospace;white-space:pre}
+
+/* ---------- Bildsprache: Verlaufsfläche ----------
+   weicher Verlauf Lila → Creme, gestrichelter weißer Rahmen, darauf kräftige Formen */
+:root{--verlauf:linear-gradient(135deg,#d6caf9 0%,#e9e0fb 42%,#fbf0d4 100%)}
+.vf{position:relative;background:var(--verlauf);overflow:hidden}
+.vf::after{content:"";position:absolute;inset:12px;border:1.5px dashed rgba(255,255,255,.95);pointer-events:none}
+.vf.ohne-rahmen::after{display:none}
+.vf-form{background:#4a2f9a}
+.startkarte .bildfeld{background:var(--verlauf);position:relative;box-shadow:inset 0 0 0 1px rgba(74,47,154,.06)}
+.startkarte .bildfeld::after{content:"";position:absolute;inset:12px;border:1.5px dashed rgba(255,255,255,.95);pointer-events:none}
+.formatkarte .fvor{background:var(--verlauf);position:relative}
+.formatkarte .fvor::after{content:"";position:absolute;inset:7px;border:1px dashed rgba(255,255,255,.9);pointer-events:none}
+.formatkarte .formatsymbol{box-shadow:0 1px 2px rgba(30,40,70,.18);background:#fff;position:relative}
+.formatkarte .formatsymbol::before{content:"";position:absolute;left:0;right:0;top:0;height:22%;background:#7c5cd6}
+.formatkarte[aria-pressed="true"] .formatsymbol::before{background:#4a2f9a}
+.leerbild{width:100%;height:150px;display:flex;align-items:center;justify-content:center}
+.boardleer{background:var(--verlauf)!important;border-color:rgba(255,255,255,.95)!important}
+.boardstatus.wartet{background:var(--verlauf)!important}
+.faltblatt{background:var(--verlauf)!important}
+.leer-verlauf .rund,.figurrund{width:84px;height:84px;border-radius:50%;background:var(--verlauf);display:flex;align-items:center;justify-content:center}
+.diagramm{background:var(--verlauf)!important}
+.diagramm svg rect{filter:drop-shadow(0 1px 2px rgba(30,40,70,.12))}
+.exportvorschau .rahmen,.groessenquelle .rahmen,.groessenkarte .rahmen,.variante .rahmen{background:var(--verlauf)!important}
+.figurkopf{position:relative}
+.figurkopf>svg{background:var(--verlauf);border-radius:50%;padding:6px;box-sizing:content-box}
+.eigenekarte{background:linear-gradient(160deg,#fffdf8 55%,#f3edfd 100%)}
+.appauftrag-rechts .paper{background:linear-gradient(170deg,#fffdf8 50%,#f5effd 100%)}
+.schrittnr{background:var(--verlauf)!important}
+.avatar{background:linear-gradient(135deg,#4a2f9a,#1d2742)!important}
+.abspielen{background:radial-gradient(ellipse at 30% 20%,#3a2a6e 0%,#1d2742 60%)}

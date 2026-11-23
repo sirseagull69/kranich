@@ -88,10 +88,10 @@
       blatt = `<div class="startoben"><div class="neu">
           <div style="display:flex;align-items:baseline;gap:14px"><h1 class="h">Neu</h1><span class="hand" style="font-size:22px">womit fangen wir an?</span></div>
           <div class="karten3">
-            ${karteNeu('entwurf', 'Oberfläche entwerfen', 'Eine App-Seite, ein Fenster oder eine Webseite von Grund auf.', '<div style="width:150px;height:104px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);display:flex;flex-direction:column;gap:7px;padding:12px"><span style="height:10px;width:60%;background:#1d2742"></span><span style="height:6px;width:85%;background:#d9d0bc"></span><span style="height:6px;width:70%;background:#d9d0bc"></span><span style="margin-top:auto;height:16px;width:46%;background:#6243c4;align-self:flex-end"></span></div>')}
-            ${karteNeu('bild', 'Bild bearbeiten', 'Zuschneiden, freistellen, Farben anpassen – per Wort oder Werkzeug.', '<div style="width:150px;height:104px;background:linear-gradient(135deg,#d6caf9,#fbf0d4);position:relative;box-shadow:0 1px 2px rgba(30,40,70,.2)"><span style="position:absolute;left:48px;top:30px;width:54px;height:50px;background:#4a2f9a;border-radius:4px 4px 14px 14px"></span><span style="position:absolute;inset:14px;border:1.5px dashed #fff"></span></div>')}
-            ${karteNeu('app', 'Ganze App entwerfen', 'Alle Bildschirme mit Plan, Abläufen und Zuständen.', `<div style="display:grid;grid-template-columns:repeat(3,34px);gap:6px">${'<span style="height:24px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2)"></span>'.repeat(5)}<span style="height:24px;background:#6243c4"></span></div>`)}
-            ${karteNeu('ausbild', 'Aus Bild eine Oberfläche', 'Screenshot oder Skizze rein, bearbeitbarer Entwurf raus.', `<div style="display:flex;align-items:center;gap:10px"><div style="width:58px;height:58px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);transform:rotate(-4deg);padding:8px"><span style="display:block;height:4px;width:80%;background:#5b6170;margin-bottom:6px"></span><span style="display:block;height:4px;width:60%;background:#5b6170"></span></div><span style="color:#4a2f9a">${sym('senden', 18)}</span><div style="width:64px;height:64px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);padding:8px;display:flex;flex-direction:column;gap:5px"><span style="height:7px;width:70%;background:#1d2742"></span><span style="height:5px;width:90%;background:#d9d0bc"></span><span style="margin-top:auto;height:10px;width:50%;background:#6243c4;align-self:flex-end"></span></div></div>`)}
+            ${karteNeu('entwurf', 'Oberfläche entwerfen', 'Eine App-Seite, ein Fenster oder eine Webseite von Grund auf.', '<div style="width:118px;height:80px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);display:flex;flex-direction:column;position:relative;z-index:1"><span style="height:16px;background:#4a2f9a"></span><span style="display:flex;flex-direction:column;gap:5px;padding:9px"><span style="height:5px;width:80%;background:#d6caf9"></span><span style="height:5px;width:60%;background:#d6caf9"></span></span><span style="position:absolute;right:9px;bottom:9px;width:34px;height:12px;background:#7c5cd6"></span></div>')}
+            ${karteNeu('bild', 'Bild bearbeiten', 'Zuschneiden, freistellen, Farben anpassen – per Wort oder Werkzeug.', '<span style="width:58px;height:54px;background:#4a2f9a;border-radius:5px 5px 16px 16px;position:relative;z-index:1"></span>')}
+            ${karteNeu('app', 'Ganze App entwerfen', 'Alle Bildschirme mit Plan, Abläufen und Zuständen.', `<div style="display:grid;grid-template-columns:repeat(3,30px);gap:6px;position:relative;z-index:1">${'<span style="height:22px;background:#fff;box-shadow:0 1px 3px rgba(30,40,70,.18)"></span>'.repeat(4)}<span style="height:22px;background:#7c5cd6"></span><span style="height:22px;background:#4a2f9a"></span></div>`)}
+            ${karteNeu('ausbild', 'Aus Bild eine Oberfläche', 'Screenshot oder Skizze rein, bearbeitbarer Entwurf raus.', `<div style="display:flex;align-items:center;gap:10px;position:relative;z-index:1"><div style="width:58px;height:58px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);transform:rotate(-4deg);padding:8px"><span style="display:block;height:4px;width:80%;background:#5b6170;margin-bottom:6px"></span><span style="display:block;height:4px;width:60%;background:#5b6170"></span></div><span style="color:#4a2f9a">${sym('senden', 18)}</span><div style="width:64px;height:64px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);padding:8px;display:flex;flex-direction:column;gap:5px"><span style="height:7px;width:70%;background:#4a2f9a"></span><span style="height:5px;width:90%;background:#d9d0bc"></span><span style="margin-top:auto;height:10px;width:50%;background:#6243c4;align-self:flex-end"></span></div></div>`)}
           </div>
           <div class="hinweis">${figur('ruhend', 30)}<span>Kranich kennt den Look der origami-Familie und hält sich daran.</span></div>
         </div>
@@ -332,7 +332,7 @@
       html = `<div class="hinweisband paper">${figur('fertig', 34)}<div style="display:flex;flex-direction:column"><b class="h">3 Varianten bereit</b><span class="leise" style="font-size:13px">Ruhig, Mutig und Kompakt</span></div>
         <button type="button" class="btn btn-s btn-p" data-aktion="varianten-zeigen">Ansehen</button><button type="button" class="btn btn-s btn-q" data-aktion="fertig-weg">Später</button></div>`;
     } else if (!s.html && S.projekt.seiten.length === 1) {
-      html = `<div class="mitte"><div class="paper leerkarte">${figur('ruhend', 90)}<h2 class="h">Beschreib, was du willst</h2>
+      html = `<div class="mitte"><div class="paper leerkarte"><div class="leerbild vf">${figur('ruhend', 96)}</div><h2 class="h">Beschreib, was du willst</h2>
         <span class="leise">Schreib rechts an Kranich oder zieh ein Bild hier rein. Zum Beispiel:</span>
         <div class="vorschlaege">${['Login-Seite', 'Einstellungen', 'Startseite für eine App'].map((t) => `<button type="button" class="btn btn-s" data-aktion="vorschlag" data-text="${t}">${t}</button>`).join('')}<button type="button" class="btn btn-s" data-aktion="anhang">${sym('klammer', 14)} Aus einem Screenshot</button></div>
         <span class="hand" style="font-size:20px">ich warte hier ganz ruhig</span>${eselsohr(36, '#ffffff')}</div></div>`;
@@ -378,7 +378,7 @@
     }
     const chat = S.projekt.chat.filter((c) => (c.modus || 'entwurf') === S.modus).slice(-30);
     if (!chat.length && S.kranich.zustand !== 'denkt') {
-      el.innerHTML = `<div class="leer-verlauf">${figur('ruhend', 44)}<b class="h">Noch nichts gefaltet</b><span>Dein erster Wunsch landet hier.${S.modus === 'bild' ? ' Zum Beispiel: „Hintergrund weg und auf 1080 × 1080“.' : ''}</span></div>`;
+      el.innerHTML = `<div class="leer-verlauf"><span class="figurrund">${figur('ruhend', 56)}</span><b class="h">Noch nichts gefaltet</b><span>Dein erster Wunsch landet hier.${S.modus === 'bild' ? ' Zum Beispiel: „Hintergrund weg und auf 1080 × 1080“.' : ''}</span></div>`;
       return;
     }
     const fortschritt = S.kranich.zustand === 'denkt' && S.kranich.anpassen
@@ -682,7 +682,7 @@
 
   function renderBildLeer() {
     const L = app.querySelector('.leinwand');
-    L.insertAdjacentHTML('beforeend', `<div class="mitte"><div class="paper leerkarte">${figur('ruhend', 90)}<h2 class="h">Welches Bild bearbeiten wir?</h2>
+    L.insertAdjacentHTML('beforeend', `<div class="mitte"><div class="paper leerkarte"><div class="leerbild vf"><span style="width:70px;height:64px;background:#4a2f9a;border-radius:5px 5px 18px 18px;position:relative;z-index:1"></span></div><h2 class="h">Welches Bild bearbeiten wir?</h2>
       <span class="leise">Zieh ein Bild hier rein oder wähl eins aus.</span>
       <button type="button" class="btn btn-p" data-aktion="bild-einfuegen">${sym('ordner', 16)} Bild wählen</button>${eselsohr(36, '#ffffff')}</div></div>`);
   }

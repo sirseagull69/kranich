@@ -21,6 +21,11 @@ DER LOOK DER ORIGAMI-FAMILIE (Papier-Design)
   gestrichelte Falzlinien (border-top: 2px dashed #d9d0bc) als Trenner, Eselsohr unten rechts.
 - Registerlaschen für Reiter und Seitenlisten, Chips mit voller Rundung für Status.
 - Schatten weich und flach (0 1px 2px rgba(30,40,70,.08), 0 10px 24px rgba(30,40,70,.10)).
+- Bildsprache (wichtig, das Markenzeichen): Illustrations- und Bildflächen bekommen einen weichen Verlauf
+  von hell der Hausfarbe zu Papiergelb (z. B. linear-gradient(135deg, #d6caf9 0%, #e9e0fb 42%, #fbf0d4 100%)),
+  darin ein gestrichelter weißer Rahmen 12 px nach innen, und darauf wenige kräftige, flache Formen in der
+  Hausfarbe oder ihrer Facette (abgerundete Rechtecke, Kreise, Papierfalten). Keine Fotos, keine Verläufe
+  auf Text oder Knöpfen, keine grellen Regenbogen-Verläufe. Leere Zustände, Kopfbilder und Karten-Vorschauen nutzen diese Fläche.
 - Klickflächen mindestens 40 px hoch. Deutsche, normale Wörter, keine Fachsprache.
 `.trim();
 
