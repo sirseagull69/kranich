@@ -160,6 +160,7 @@ function registriere() {
   ipcMain.handle('claude:laden', async (e) => { try { return { ok: true, version: await Claude.laden((u, o) => net.fetch(u, { ...(o || {}), headers: { 'User-Agent': 'Selbst-gfaltet' } }), (pct) => e.sender.send('claude:fortschritt', pct)) }; } catch (f) { return { fehler: f.message }; } });
   ipcMain.handle('claude:token', (_e, t) => Claude.setzeToken(t));
   ipcMain.handle('claude:abmelden', () => Claude.abmelden());
+  ipcMain.handle('claude:anmeldenFenster', () => Claude.anmeldenFenster());
   ipcMain.handle('einst:setzen', (_e, neu) => einstSetzen({ origamiAdresse: String(neu?.origamiAdresse ?? einst().origamiAdresse).trim().slice(0, 300), nachStartSchliessen: neu?.nachStartSchliessen ?? einst().nachStartSchliessen, pfade: typeof neu?.pfade === 'object' ? neu.pfade : einst().pfade }));
 }
 

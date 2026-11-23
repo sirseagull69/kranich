@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('nest', {
   claudeStatus: () => ipcRenderer.invoke('claude:status'),
   claudeLaden: () => ipcRenderer.invoke('claude:laden'),
   claudeToken: (t) => ipcRenderer.invoke('claude:token', t),
+  claudeAnmeldenFenster: () => ipcRenderer.invoke('claude:anmeldenFenster'),
   claudeAbmelden: () => ipcRenderer.invoke('claude:abmelden'),
   beiClaudeFortschritt: (cb) => ipcRenderer.on('claude:fortschritt', (_e, p) => cb(p)),
   einstSetzen: (neu) => ipcRenderer.invoke('einst:setzen', neu),

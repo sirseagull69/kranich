@@ -116,4 +116,16 @@ async function setzeToken(token) {
 }
 function abmelden() { const z = zugang(); delete z.token; speichereZugang(z); return status(); }
 
-module.exports = { status, laden, setzeToken, abmelden };
+// Öffnet ein Terminal, in dem sich Claude den Token holt (claude setup-token)
+function anmeldenFenster() {
+  const p = programm();
+  if (!fs.existsSync(p)) return { fehler: 'Erst Claude einrichten.' };
+  if (process.platform === 'win32') {
+    spawn('cmd.exe', ['/c', 'start', '"Claude anmelden"', 'cmd', '/k', `"${p}" setup-token`], { detached: true, stdio: 'ignore', windowsVerbatimArguments: true }).unref();
+  } else if (process.platform === 'darwin') {
+    spawn('osascript', ['-e', `tell application "Terminal" to do script "'${p.replace(/'/g, "'\\''")}' setup-token"`, '-e', 'tell application "Terminal" to activate'], { detached: true, stdio: 'ignore' }).unref();
+  } else return { fehler: 'Nur Windows und Mac.' };
+  return { ok: true };
+}
+
+module.exports = { status, laden, setzeToken, abmelden, anmeldenFenster };

@@ -101,7 +101,8 @@
       <div class="ezeile" style="flex-wrap:wrap"><div class="t"><b>Claude für alle Vögel</b><span id="c-info">${cs.da ? (cs.token ? `Eingerichtet (Version ${esc(cs.version)}). Läuft ohne Installation, auch auf dem Arbeits-Notebook.` : 'Heruntergeladen – fehlt noch der Anmelde-Token.') : 'Für Geräte ohne Claude Code: einmal laden (ca. 175 MB), dann nutzen alle Vögel es.'}</span></div>
         <button type="button" class="btn" style="background:#5b3fc4" data-claude-laden>${cs.da ? 'Neu laden' : 'Claude einrichten'}</button>
         <div id="c-token" style="flex-basis:100%;display:${cs.da && !cs.token ? 'flex' : 'none'};flex-direction:column;gap:8px;padding-top:10px">
-          <span class="leise" style="font-size:13px">Am PC mit Claude Code im Terminal <b>claude setup-token</b> eingeben, anmelden und den Code (beginnt mit sk-ant-) hier einfügen.</span>
+          <span class="leise" style="font-size:13px">Klick auf „Hier anmelden“: Ein Fenster geht auf, im Browser mit deinem Claude-Konto bestätigen. Den Code (beginnt mit sk-ant-) aus dem Fenster kopieren und hier einfügen.</span>
+          <button type="button" class="btn" style="background:#5b3fc4;align-self:flex-start" data-claude-anmelden>Hier anmelden</button>
           <div class="reihe"><input class="feld" id="c-tokfeld" type="password" placeholder="sk-ant-…" style="flex:1;width:auto"><button type="button" class="btn" style="background:#1d2742" data-claude-token>Prüfen</button></div></div>
         ${cs.token ? '<button type="button" class="btn q" style="margin-left:auto" data-claude-ab>Abmelden</button>' : ''}</div>
       <div class="reihe" style="justify-content:flex-end;padding-top:14px"><button type="button" class="btn q" data-zu>Abbrechen</button><button type="button" class="btn" style="background:#1d2742" data-speichern>Speichern</button></div></div>`;
@@ -129,6 +130,7 @@
         meldung('Claude ist eingerichtet.');
         return;
       }
+      if (ev.target.closest('[data-claude-anmelden]')) { const r = await N.claudeAnmeldenFenster(); if (r.fehler) info.textContent = r.fehler; return; }
       if (ev.target.closest('[data-claude-ab]')) { await N.claudeAbmelden(); info.textContent = 'Abgemeldet.'; return; }
       if (ev.target.closest('[data-speichern]')) {
         const pfade = { ...(e.pfade || {}) };
