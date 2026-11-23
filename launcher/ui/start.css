@@ -80,3 +80,6 @@ main{flex:1;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-
 .updknopf{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:8px;background:var(--farbe);color:#fff;font:700 13px 'Bricolage Grotesque',sans-serif}
 .updknopf:hover{filter:brightness(.93)}
 .band{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:#fffdf9;box-shadow:var(--schatten);border-left:4px solid #7c5cd6}
+
+.ver{font:500 12px ui-monospace,Consolas,monospace;color:#9a9486}
+header .ver{margin-right:6px}
