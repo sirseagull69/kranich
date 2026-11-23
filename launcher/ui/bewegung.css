@@ -22,7 +22,7 @@ button:active:not(:disabled){transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 /* Startfenster */
 body:not(.ruhig) header{animation:von-oben .55s var(--sanft) both}
-body:not(.ruhig) .marke .blatt{animation:marke-falten .9s var(--feder) .2s both}
+body:not(.ruhig) .marke .markenbild{animation:marke-falten .9s var(--feder) .2s both}
 body:not(.ruhig) .gruss .hand{animation:hoch .6s var(--sanft) .15s both}
 body:not(.ruhig) .gruss h1{animation:hoch .6s var(--sanft) .25s both}
 body:not(.ruhig) .gruss h1::after{content:"";display:block;width:180px;height:6px;margin-top:6px;border-radius:3px;background:linear-gradient(90deg,#ffd9c2,#ddd2fb,#cfe9d8);animation:falz-ziehen .9s var(--sanft) .55s both}

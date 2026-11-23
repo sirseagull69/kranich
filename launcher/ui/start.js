@@ -53,7 +53,7 @@
 
   function render() {
     const origami = S.apps.find((a) => a.id === 'origami');
-    app.innerHTML = `<header><div class="marke"><span class="blatt"><i></i></span><b class="h">Selbst gfaltet</b></div><div class="platz"></div>
+    app.innerHTML = `<header><div class="marke"><img src="marke.svg" width="32" height="32" alt="" class="markenbild"><b class="h">Selbst gfaltet</b></div><div class="platz"></div>
         <button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></header>
       <main>${(() => { const n = Object.entries(S.updates).filter(([id, u]) => u.update && id !== 'start').length + (S.updates.start?.update ? 1 : 0); return n >= 2 ? `<div class="band"><b class="h">${n} Updates da</b><span class="leise">Alles mit einem Klick, nacheinander.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-alle>Alles aktualisieren</button></div>` : ''; })()}${S.updates.start?.update && Object.values(S.updates).filter((u) => u.update).length < 2 ? `<div class="band"><b class="h">Neue Version vom Startfenster (${esc(S.updates.start.neu)})</b><span class="leise">Dauert nur ein paar Sekunden.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-update="start">${S.laedt.start != null ? `Lädt ${S.laedt.start} %` : 'Jetzt aktualisieren'}</button></div>` : ''}
         <div class="gruss"><span class="hand">${esc(gruss())} – welcher Vogel darf heute?</span><h1>Was machen wir heute?</h1></div>
