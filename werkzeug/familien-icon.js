@@ -21,9 +21,9 @@ function gross() {
     <circle cx="520" cy="452" r="186" fill="#ddd0fb" opacity=".9"/>
     <circle cx="676" cy="604" r="182" fill="#c9ecd6" opacity=".9"/>
     <ellipse cx="512" cy="818" rx="300" ry="26" fill="#3a2a10" opacity=".08"/>
-    ${still(V.kranich['ruhezustand-3'], 342, 300, 380)}
+    ${still(V.kranich['ruhezustand-3'], 322, 280, 380)}
     ${still(V.origami['ruhezustand-3'], 180, 460, 330)}
-    ${still(V.albatros['ruhezustand-3'], 540, 470, 340)}
+    ${still(V.albatros['ruhezustand-3'], 592, 500, 320)}
   </g>
   <path d="M700 96 L928 324 H760 A60 60 0 0 1 700 264Z" fill="#e7d4ab"/>
 </svg>`;

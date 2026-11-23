@@ -18,16 +18,22 @@ function affin(src, dst) {
   return { m: [a, b, c, d, e, f], an: ([x, y]) => [a * x + b * y + c, d * x + e * y + f], lin: ([x, y]) => [a * x + b * y, d * x + e * y] };
 }
 const ORI_BASIS = { schwanz: '18,64 8,50 32,60', koerper: '18,64 70,64 52,40', fluegel: '36,51 61,52 40,12', hals: '70,64 86,40 78,62', kopf: '86,40 96,45 84,47', bein: '36,64 52,64 46,78' };
+// Neue Vögel nach Nils' Entwurf (Kranich-Canvas „Vogel-Alternativen“, Variante A):
+// gebaut wie Ori, mit Kiel statt Beinen; Extras hängen an einem Teil und bewegen sich mit.
 const VOEGEL = {
   kranich: {
-    basis: { schwanz: '24,58 10,48 32,54', koerper: '24,58 62,58 46,38', fluegel: '30,52 56,55 39,27', hals: '56,56 71,41 62,58', kopf: '71,41 84,48 69,47', bein: '40,58 43,58 41,86', bein2: '48,58 51,58 52,86' },
-    farben: { '#c2410c': '#4a2f9a', '#ff8a4c': '#7c5cd6', '#ffc9a8': '#d6caf9', '#2d1a10': '#1d2742', '#e8590c': '#6243c4', '#fff0e6': '#f1ecfd', '#7a3a1c': '#3a2380' },
-    rolleFarbe: {},
+    kiel: true,
+    basis: { schwanz: '18,64 2,40 32,60', koerper: '18,64 70,64 52,40', fluegel: '35,51 60,52 42,6', hals: '66,64 82,16 75,62', kopf: '82,16 99,22 80,23', bein: '36,64 52,64 46,79' },
+    extras: [{ nach: 'kopf', punkte: '82,16 86,14 85,19', farbe: '#e8590c' }],
+    farben: { '#c2410c': '#4a2f9a', '#ff8a4c': '#7c5cd6', '#ffc9a8': '#c3b4f5', '#2d1a10': '#1d2742', '#e8590c': '#6243c4', '#fff0e6': '#f1ecfd', '#7a3a1c': '#3a2380' },
+    rolleFarbe: { schwanz: '#7c5cd6', koerper: '#c3b4f5', fluegel: '#ffffff', hals: '#7c5cd6', kopf: '#1d2742', bein: '#4a2f9a' },
   },
   albatros: {
-    basis: { schwanz: '16,66 2,58 28,62', koerper: '16,66 70,66 50,44', fluegel: '28,58 62,58 16,36', hals: '60,62 78,42 72,66', kopf: '78,42 95,48 78,52', bein: '40,66 44,66 42,84', bein2: '50,66 54,66 55,84' },
-    farben: { '#c2410c': '#1d5e3a', '#ff8a4c': '#2f8a55', '#ffc9a8': '#a8dcbb', '#2d1a10': '#1d2742', '#e8590c': '#2f8a55', '#fff0e6': '#e6f4eb', '#7a3a1c': '#14472b' },
-    rolleFarbe: { schwanz: '#1d5e3a', koerper: '#2f8a55', fluegel: '#a8dcbb', hals: '#1d5e3a', kopf: '#e8a53a', bein: '#1d5e3a' },
+    kiel: true,
+    basis: { schwanz: '16,64 6,56 30,61', koerper: '16,64 72,64 50,44', fluegel: '34,53 62,53 8,16', hals: '68,64 82,42 78,62', kopf: '82,42 98,48 82,50', bein: '36,64 52,64 46,79' },
+    extras: [{ nach: 'fluegel', punkte: '8,16 19,21 15,27', farbe: '#1b4d2d' }, { nach: 'kopf', punkte: '96,47 99,52 94,50', farbe: '#c27a18' }],
+    farben: { '#c2410c': '#1d5e3a', '#ff8a4c': '#2f8a55', '#ffc9a8': '#a8d9b5', '#2d1a10': '#1d2742', '#e8590c': '#2f8a55', '#fff0e6': '#e6f4eb', '#7a3a1c': '#14472b' },
+    rolleFarbe: { schwanz: '#2f8a55', koerper: '#a8d9b5', fluegel: '#ffffff', hals: '#2f8a55', kopf: '#e8a23a', bein: '#1b4d2d' },
   },
 };
 const papier = (pts) => pts.every(([x, y]) => [20, 50, 80].includes(x) && [20, 50, 80].includes(y)) || pts.every(([x, y]) => x === pts[0][0] && y === pts[0][1]);
@@ -35,11 +41,12 @@ const papier = (pts) => pts.every(([x, y]) => [20, 50, 80].includes(x) && [20, 5
 function wandle(svg, vogel) {
   const v = VOEGEL[vogel];
   const A = {}; for (const r of Object.keys(ORI_BASIS)) A[r] = affin(P(ORI_BASIS[r]), P(v.basis[r]));
-  const A2 = affin(P(ORI_BASIS.bein), P(v.basis.bein2));
+  const A2 = v.kiel ? null : affin(P(ORI_BASIS.bein), P(v.basis.bein2));
   const abb = (rolle, s) => {
     const pts = P(s);
     if (papier(pts)) return s;
     if (rolle === 'kopf') { const a = pts[0]; const a2 = A.hals.an(a); return S(pts.map((p) => { const l = A.kopf.lin([p[0] - a[0], p[1] - a[1]]); return [a2[0] + l[0], a2[1] + l[1]]; })); }
+    if (rolle === 'bein' && v.kiel) return S(pts.map(A.bein.an));
     if (rolle === 'bein' || rolle === 'bein2') {
       // Kiel von Ori → Beine. Ist der Kiel eingeklappt oder liegt er quer (Flug, Papierflieger), ziehen wir die Beine ein.
       const [b1, b2, sp] = pts; const mx = (b1[0] + b2[0]) / 2, my = (b1[1] + b2[1]) / 2;
@@ -70,7 +77,19 @@ function wandle(svg, vogel) {
       const farbe = v.rolleFarbe[rolle === 'bein2' ? 'bein' : rolle] || v.farben[x.farbe] || x.farbe;
       return `<polygon points="${abb(rolle, x.punkte)}" fill="${farbe}">${innen}</polygon>`;
     };
-    aus += r === 'bein' ? neu('bein2') + neu('bein') : neu(r);
+    const extras = (v.extras || []).filter((e) => e.nach === r && !(r === 'kopf' && liste.slice(0, i).some((y, j) => j >= startIdx && rollen[j - startIdx] === 'kopf')));
+    const extraPoly = (e) => {
+      const basisT = P(v.basis[e.nach]); const ep = P(e.punkte);
+      const folge = (wert) => {
+        const ziel = P(abb(r, wert));
+        const det = (ziel[1][0] - ziel[0][0]) * (ziel[2][1] - ziel[0][1]) - (ziel[2][0] - ziel[0][0]) * (ziel[1][1] - ziel[0][1]);
+        if (Math.abs(det) < 0.5 || papier(P(wert))) return S([ziel[0], ziel[0], ziel[0]]);
+        const M = affin(basisT, ziel); return S(ep.map(M.an));
+      };
+      const innen = x.innen.replace(/attributeName="points" values="([^"]*)"/g, (_, vals) => `attributeName="points" values="${vals.split(';').map(folge).join(';')}"`).replace(/<animate attributeName="(fill|opacity)"[^>]*>(<\/animate>)?/g, '');
+      return `<polygon points="${folge(x.punkte)}" fill="${e.farbe}">${innen}</polygon>`;
+    };
+    aus += (r === 'bein' && !v.kiel ? neu('bein2') + neu('bein') : neu(r)) + extras.map(extraPoly).join('');
     pos = x.ende;
   });
   aus += svg.slice(pos);
