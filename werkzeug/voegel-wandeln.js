@@ -36,13 +36,15 @@ const VOEGEL = {
     rolleFarbe: { schwanz: '#2f8a55', koerper: '#a8d9b5', fluegel: '#ffffff', hals: '#2f8a55', kopf: '#e8a23a', bein: '#1b4d2d' },
   },
   specht: {
-    // Specht: aufrecht, steifer Schwanz nach unten (stützt sich am Stamm ab), langer spitzer Schnabel, rote Kappe.
+    // Specht, gebaut wie die Geschwister (waagrecht, weißer Flügel, Körper in hellem Hauston):
+    // steifer Stützschwanz nach unten, langer gerader Schnabel, rote Kappe.
     kiel: true,
-    basis: { schwanz: '30,72 20,90 38,70', koerper: '30,72 64,68 58,26', fluegel: '40,63 60,58 50,30', hals: '56,66 70,22 63,64', kopf: '70,22 97,28 70,33', bein: '40,70 54,70 48,82' },
-    extras: [{ nach: 'kopf', punkte: '70,22 63,13 79,17', farbe: '#d23a2a' }, { nach: 'kopf', punkte: '86,26 97,28 86,30', farbe: '#e0a63a' }],
-    farben: { '#c2410c': '#a3291d', '#ff8a4c': '#d23a2a', '#ffc9a8': '#f4c6bd', '#2d1a10': '#1d2742', '#e8590c': '#c8372d', '#fff0e6': '#fbe9e5', '#7a3a1c': '#7e2518' },
-    rolleFarbe: { schwanz: '#1d2742', koerper: '#c9d0de', fluegel: '#1d2742', hals: '#2b3554', kopf: '#ffffff', bein: '#2b3554' },
+    basis: { schwanz: '18,66 7,81 31,62', koerper: '18,66 70,64 52,38', fluegel: '34,53 62,52 36,12', hals: '66,64 80,30 75,62', kopf: '80,30 99,35 80,39', bein: '36,64 52,64 46,79' },
+    extras: [{ nach: 'kopf', punkte: '80,30 75,22 88,26', farbe: '#e8483a' }, { nach: 'kopf', punkte: '89,33 99,35 89,37', farbe: '#e0a63a' }],
+    farben: { '#c2410c': '#8f2a1c', '#ff8a4c': '#c8372d', '#ffc9a8': '#f2b9b0', '#2d1a10': '#1d2742', '#e8590c': '#c8372d', '#fff0e6': '#fbe9e5', '#7a3a1c': '#7e2518' },
+    rolleFarbe: { schwanz: '#c8372d', koerper: '#f2b9b0', fluegel: '#ffffff', hals: '#c8372d', kopf: '#1d2742', bein: '#8f2a1c' },
   },
+
 };
 const papier = (pts) => pts.every(([x, y]) => [20, 50, 80].includes(x) && [20, 50, 80].includes(y)) || pts.every(([x, y]) => x === pts[0][0] && y === pts[0][1]);
 
