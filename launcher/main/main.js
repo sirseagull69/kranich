@@ -177,6 +177,22 @@ function starte(id, args = []) {
   return { ok: true };
 }
 
+let hauptfenster = null;
+// ---------- Stand-Fotos: die App fotografiert sich selbst (für Kranich) ----------
+const standZuletzt = {};
+function standFoto(name) {
+  if (!/^[a-z0-9-]{3,40}$/.test(name) || !hauptfenster || hauptfenster.isMinimized() || !hauptfenster.isVisible()) return false;
+  if (Date.now() - (standZuletzt[name] || 0) < 30 * 60 * 1000) return false;
+  standZuletzt[name] = Date.now();
+  hauptfenster.webContents.capturePage().then((bild) => {
+    const b = bild.getSize().width > 1280 ? bild.resize({ width: 1280 }) : bild;
+    const ordner = path.join(app.getPath('userData'), 'stand');
+    fs.mkdirSync(ordner, { recursive: true });
+    fs.writeFileSync(path.join(ordner, `${name}.jpg`), b.toJPEG(72));
+  }).catch(() => {});
+  return true;
+}
+
 function registriere() {
   ipcMain.handle('apps', async () => Promise.all(APPS.map(async (a) => ({ ...a, status: status(a), pfad: a.art === 'programm' ? pfadVon(a) : '', version: a.art === 'programm' ? await installiert(a.id) : null }))));
   ipcMain.handle('zuletzt', () => zuletzt());
@@ -191,6 +207,7 @@ function registriere() {
     try { return await ladeUndInstalliere(id, e.sender); } catch (f) { return { fehler: f.message || 'Download klappt nicht.' }; } finally { laeuft.delete(id); }
   });
   ipcMain.handle('version', () => app.getVersion());
+  ipcMain.handle('stand:foto', (_e, name) => standFoto(String(name)));
   ipcMain.handle('claude:status', () => Claude.status());
   ipcMain.handle('claude:laden', async (e) => { try { return { ok: true, version: await Claude.laden((u, o) => net.fetch(u, { ...(o || {}), headers: { 'User-Agent': 'Selbst-gfaltet' } }), (pct) => e.sender.send('claude:fortschritt', pct)) }; } catch (f) { return { fehler: f.message }; } });
   ipcMain.handle('claude:token', (_e, t) => Claude.setzeToken(t));
@@ -206,6 +223,7 @@ function fenster() {
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
+  hauptfenster = w;
   w.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   // Nur zum Testen: Bild vom Fenster speichern
   if (process.env.LAUNCHER_FOTO) w.webContents.once('did-finish-load', () => setTimeout(async () => { fs.writeFileSync(process.env.LAUNCHER_FOTO, (await w.webContents.capturePage()).toPNG()); app.quit(); }, 1800));

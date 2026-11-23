@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld('nest', {
   updateLaden: (id) => ipcRenderer.invoke('update:laden', id),
   beiFortschritt: (cb) => ipcRenderer.on('update:fortschritt', (_e, d) => cb(d)),
   version: () => ipcRenderer.invoke('version'),
+  standFoto: (n) => ipcRenderer.invoke('stand:foto', n),
   claudeStatus: () => ipcRenderer.invoke('claude:status'),
   claudeLaden: () => ipcRenderer.invoke('claude:laden'),
   claudeToken: (t) => ipcRenderer.invoke('claude:token', t),

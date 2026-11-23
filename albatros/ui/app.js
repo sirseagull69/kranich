@@ -112,6 +112,7 @@
           <section class="blatt tipp"><h2 class="h">Excel-Datei mitgebracht?</h2><div class="ablage">Datei hierher ziehen<br><span class="leise" style="font-weight:400;font-size:13px">.xlsx oder .csv</span></div><button type="button" class="btn weiss" data-aktion="oeffnen">${sym('oeffnen', 16)} Datei öffnen</button></section>
         </div>
       </main>`;
+    setTimeout(() => { if (S.ansicht === 'start' && !document.querySelector('.schleier')) A.standFoto?.('albatros-start'); }, 2500);
     const f = document.getElementById('startfrage');
     f.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') aktionen.ausrechnen(); });
   }
@@ -165,6 +166,7 @@
     zeichneTabelle();
     zeichneHelfer();
     app.querySelector('.rasterscroll').focus();
+    setTimeout(() => { if (S.ansicht === 'tabelle' && !document.querySelector('.schleier')) A.standFoto?.('albatros-tabelle'); }, 3000);
   }
 
   // ---------- Gitter ----------

@@ -31,6 +31,22 @@ function oeffneArg(argv) {
   return datei ? { datei } : null;
 }
 
+
+// ---------- Stand-Fotos: die App fotografiert sich selbst (für Kranich) ----------
+const standZuletzt = {};
+function standFoto(name) {
+  if (!/^[a-z0-9-]{3,40}$/.test(name) || !fenster || fenster.isMinimized() || !fenster.isVisible()) return false;
+  if (Date.now() - (standZuletzt[name] || 0) < 30 * 60 * 1000) return false;
+  standZuletzt[name] = Date.now();
+  fenster.webContents.capturePage().then((bild) => {
+    const b = bild.getSize().width > 1280 ? bild.resize({ width: 1280 }) : bild;
+    const ordner = path.join(app.getPath('userData'), 'stand');
+    fs.mkdirSync(ordner, { recursive: true });
+    fs.writeFileSync(path.join(ordner, `${name}.jpg`), b.toJPEG(72));
+  }).catch(() => {});
+  return true;
+}
+
 function registriere() {
   handle('tabellen:liste', () => tabellen.liste());
   handle('tabellen:neu', (name, blaetter) => tabellen.neu(name, blaetter));
@@ -77,6 +93,7 @@ function registriere() {
     return A.leseAntwort(text);
   });
 
+  handle('stand:foto', (name) => standFoto(String(name)));
   handle('einstellungen:lesen', () => ({ ...einstellungen.fuerOberflaeche(), eingebaut: Eingebaut.status(), version: app.getVersion() }));
   handle('einstellungen:setzen', (neu) => einstellungen.setze(neu));
   handle('hirn:testen', async () => {

@@ -150,6 +150,7 @@
           </div>
         </main></section>`;
       S.erstesMal = false;
+      setTimeout(() => { if (S.ansicht === 'start' && !document.querySelector('.schleier')) K.standFoto?.('kranich-start'); }, 2500);
       document.getElementById('startwunsch')?.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') aktionen['start-falten'](); });
       return;
     }
@@ -406,6 +407,7 @@
     }
     renderLeiste();
     zeigeSpeicherchip();
+    if (!bild) setTimeout(() => { if (S.ansicht === 'werkbank' && S.modus === 'entwurf' && !document.querySelector('.schleier') && seite()?.html) K.standFoto?.('kranich-arbeitsflaeche'); }, 4000);
   }
 
   function renderKopfKnoepfe() {

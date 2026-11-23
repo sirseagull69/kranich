@@ -4,6 +4,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 const rufe = (kanal) => (...args) => ipcRenderer.invoke(kanal, ...args);
 
 contextBridge.exposeInMainWorld('kranich', {
+  standFoto: rufe('stand:foto'),
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, id) => cb(id)),
   projekte: {
     liste: rufe('projekte:liste'),

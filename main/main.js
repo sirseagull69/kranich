@@ -98,11 +98,13 @@ async function pruefe(html, format) {
 // Bildschirmfotos vom aktuellen Stand der Familie (ui/stand), für Wünsche, die eine App nennen
 function standBilder(text) {
   const { standFuer } = require('../kern/familie');
+  const appDaten = app.getPath('appData');
   return standFuer(text).map((f) => {
-    const q = path.join(__dirname, '..', 'ui', 'stand', f);
-    if (!fs.existsSync(q)) return null;
+    const kandidaten = [path.join(appDaten, 'Kranich', 'stand', f), path.join(appDaten, 'Albatros', 'stand', f), path.join(appDaten, 'Selbst gfaltet', 'stand', f), path.join(__dirname, '..', 'ui', 'stand', f)]
+      .filter((q) => fs.existsSync(q)).sort((x, y) => fs.statSync(y).mtimeMs - fs.statSync(x).mtimeMs);
+    if (!kandidaten.length) return null;
     const z = path.join(os.tmpdir(), `kranich-stand-${Date.now()}-${f}`);
-    fs.copyFileSync(q, z); return z;
+    fs.copyFileSync(kandidaten[0], z); return z;
   }).filter(Boolean);
 }
 
@@ -125,6 +127,22 @@ function schreibeExport(ordner, name, endung, inhalt) {
   return datei;
 }
 
+
+// ---------- Stand-Fotos: die App fotografiert sich selbst (für Kranich) ----------
+const standZuletzt = {};
+function standFoto(name) {
+  if (!/^[a-z0-9-]{3,40}$/.test(name) || !fenster || fenster.isMinimized() || !fenster.isVisible()) return false;
+  if (Date.now() - (standZuletzt[name] || 0) < 30 * 60 * 1000) return false;
+  standZuletzt[name] = Date.now();
+  fenster.webContents.capturePage().then((bild) => {
+    const b = bild.getSize().width > 1280 ? bild.resize({ width: 1280 }) : bild;
+    const ordner = path.join(app.getPath('userData'), 'stand');
+    fs.mkdirSync(ordner, { recursive: true });
+    fs.writeFileSync(path.join(ordner, `${name}.jpg`), b.toJPEG(72));
+  }).catch(() => {});
+  return true;
+}
+
 function registriere() {
   // Projekte
   handle('projekte:liste', () => projekte.liste());
@@ -145,6 +163,7 @@ function registriere() {
   });
 
   // Einstellungen
+  handle('stand:foto', (name) => standFoto(String(name)));
   handle('einstellungen:lesen', () => einstellungen.fuerOberflaeche());
   handle('einstellungen:setzen', (neu) => { const r = einstellungen.setze(neu); heimdienstAnpassen(); return einstellungen.fuerOberflaeche(); });
   handle('heim:neuerCode', () => { einstellungen.setze({ heimEigenerCode: Heimdienst.neuerCode() }); heimdienstAnpassen(true); return einstellungen.fuerOberflaeche(); });
