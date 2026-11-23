@@ -1,0 +1,61 @@
+# Baut Albatros (Windows und Mac), Release albatros-v<version>.
+name: Albatros bauen
+
+on:
+  push:
+    branches: [main]
+    paths: ['albatros/**', '.github/workflows/albatros.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bauen:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            dateien: ausgabe/*.exe
+          - os: macos-latest
+            dateien: ausgabe/*.dmg
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: albatros
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm test
+      - run: npm run bauen
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Als Release ablegen
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="albatros-v$(node -p "require('./package.json').version")"
+          gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" --target "$GITHUB_SHA" --latest=false --title "Albatros ${VERSION#albatros-}" --notes "Albatros – Tabellen, einfach." || true
+          for versuch in 1 2 3; do
+            gh release upload "$VERSION" ${{ matrix.dateien }} --clobber && break
+            sleep 10
+          done
+      - name: Ins oeffentliche Download-Repo legen
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.DOWNLOAD_TOKEN }}
+        run: |
+          [ -z "$GH_TOKEN" ] && { echo "Kein DOWNLOAD_TOKEN"; exit 0; }
+          TAG="albatros-v$(node -p "require('./package.json').version")"
+          R=sirseagull69/selbst-gfaltet-downloads
+          gh api repos/$R/commits -q '.[0].sha' >/dev/null 2>&1 || gh api -X PUT repos/$R/contents/README.md -f message="Start" -f content="$(printf '# Selbst gfaltet - Downloads\n\nInstaller von Kranich, Albatros und dem Startfenster.\n' | base64 | tr -d '\n')" || true
+          gh release view "$TAG" -R $R >/dev/null 2>&1 || gh release create "$TAG" -R $R --title "Albatros ${TAG##*-v}" --notes "Albatros" || true
+          for versuch in 1 2 3; do
+            gh release upload "$TAG" -R $R ${{ matrix.dateien }} --clobber && break
+            sleep 10
+          done

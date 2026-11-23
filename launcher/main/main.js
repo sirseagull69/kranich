@@ -14,7 +14,7 @@ const lokal = () => process.env.LOCALAPPDATA || path.join(app.getPath('home'), '
 const APPS = [
   { id: 'origami', name: 'origami', aufgabe: 'Dein KI-Assistent', farbe: '#e8743b', hell: '#ffeadb', art: 'web' },
   { id: 'kranich', name: 'Kranich', aufgabe: 'Gestalten', farbe: '#7c5cd6', hell: '#ece6fd', art: 'programm', datei: 'Kranich', release: 'https://github.com/sirseagull69/kranich/releases/latest' },
-  { id: 'albatros', name: 'Albatros', aufgabe: 'Tabellen', farbe: '#2f8a55', hell: '#dcf0e3', art: 'programm', datei: 'Albatros', bald: true },
+  { id: 'albatros', name: 'Albatros', aufgabe: 'Tabellen', farbe: '#2f8a55', hell: '#dcf0e3', art: 'programm', datei: 'Albatros' },
   { id: 'schreiben', name: 'Schreibprogramm', aufgabe: 'Schreiben', farbe: '#c47f17', hell: '#f8ead2', art: 'programm', datei: 'Schreiben', bald: true },
 ];
 
@@ -57,6 +57,18 @@ function zuletzt() {
       } catch { /* kaputtes Projekt überspringen */ }
     }
   } catch { /* Kranich noch nie benutzt */ }
+  // Albatros-Tabellen
+  const tOrdner = path.join(app.getPath('appData'), 'Albatros', 'tabellen');
+  try {
+    for (const f of fs.readdirSync(tOrdner)) {
+      if (!/^[a-z0-9-]{6,40}\.json$/.test(f)) continue;
+      try {
+        const t = JSON.parse(fs.readFileSync(path.join(tOrdner, f), 'utf8'));
+        const n = Object.keys(t.blaetter?.[0]?.zellen || {}).length;
+        liste.push({ app: 'albatros', id: t.id, name: t.name, geaendert: t.geaendert, info: `Tabelle · ${n} Zellen${t.blaetter?.length > 1 ? ` · ${t.blaetter.length} Blätter` : ''}`, vorschau: '' });
+      } catch { /* kaputt */ }
+    }
+  } catch { /* Albatros noch nie benutzt */ }
   return liste.sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 12);
 }
 
