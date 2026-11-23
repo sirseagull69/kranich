@@ -63,17 +63,22 @@
     z.menue = leinwand.querySelector('.schnellmenue');
     z.plus = leinwand.querySelector('.board-dazu');
     z.karte = leinwand.querySelector('.kartenflaeche');
-    leinwand.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      if (e.ctrlKey) { zoom(e.deltaY < 0 ? 1.1 : 1 / 1.1, e); return; }
-      z.pan.x -= e.deltaX; z.pan.y -= e.deltaY; z.auto = false; lege();
-    }, { passive: false });
+    leinwand.addEventListener('wheel', (e) => rad(e, e.clientX, e.clientY), { passive: false });
     let zug = null;
+    // Leertaste gedrückt halten = überall verschieben (wie in Figma)
+    window.addEventListener('keydown', (e) => {
+      if (e.code !== 'Space' || e.repeat || !z.leinwand?.isConnected || /INPUT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
+      e.preventDefault(); z.leinwand.classList.add('greifbereit');
+    });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') z.leinwand?.classList.remove('greifbereit'); });
     leinwand.addEventListener('pointerdown', (e) => {
-      if (e.target !== leinwand && e.target !== z.welt) return;
+      const frei = e.target === leinwand || e.target === z.welt || e.target.classList?.contains('boardstatus') || e.target.closest?.('.boardleer');
+      const mitte = e.button === 1, leer = leinwand.classList.contains('greifbereit');
+      if (!frei && !mitte && !leer) return;
+      if (mitte || leer) e.preventDefault();
       zug = { x: e.clientX, y: e.clientY, px: z.pan.x, py: z.pan.y };
       leinwand.setPointerCapture(e.pointerId);
-      leinwand.style.cursor = 'grabbing';
+      leinwand.classList.add('zieht');
     });
     leinwand.addEventListener('pointermove', (e) => {
       if (!zug) return;
@@ -82,7 +87,7 @@
     const los = (e) => {
       if (!zug) return;
       const bewegt = Math.abs(e.clientX - zug.x) + Math.abs(e.clientY - zug.y) > 4;
-      zug = null; leinwand.style.cursor = '';
+      zug = null; leinwand.classList.remove('zieht');
       if (!bewegt) waehleEl(null);
     };
     leinwand.addEventListener('pointerup', los);
@@ -178,9 +183,9 @@
     });
     doc.addEventListener('mouseleave', () => { b.huelle.hidden = true; });
     doc.addEventListener('wheel', (e) => {
-      e.preventDefault();
-      if (e.ctrlKey) { zoom(e.deltaY < 0 ? 1.1 : 1 / 1.1); return; }
-      z.pan.x -= e.deltaX; z.pan.y -= e.deltaY; z.auto = false; lege();
+      // Mausposition aus dem Board in Bildschirm-Koordinaten umrechnen
+      const r = b.iframe.getBoundingClientRect();
+      rad(e, r.left + e.clientX * z.zoom, r.top + e.clientY * z.zoom);
     }, { passive: false });
     if (neu) { b.html = serialisiere(doc); z.cb.beiHtml?.(b.seite.id, b.html); }
     if (b.seite.id === z.aktiv) {
@@ -273,15 +278,41 @@
     return { x: x1, y: y1, b: x2 - x1, h: y2 - y1 };
   }
 
+  // Mausrad / Touchpad: Strg (oder Pinch) zoomt stufenlos, sonst verschieben
+  function rad(e, cx, cy) {
+    e.preventDefault();
+    const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY, dx = e.deltaMode === 1 ? e.deltaX * 16 : e.deltaX;
+    if (e.ctrlKey || e.metaKey) {
+      const r = z.leinwand.getBoundingClientRect();
+      zoom(Math.exp(-Math.max(-60, Math.min(60, dy)) * 0.006), { x: cx - r.left, y: cy - r.top });
+      return;
+    }
+    if (e.shiftKey && !dx) { z.pan.x -= dy; } else { z.pan.x -= dx; z.pan.y -= dy; }
+    z.auto = false; lege();
+  }
+
+  // Zeichnen gebündelt pro Bildschirm-Frame, Übersicht etwas seltener
+  let rahmenWartet = false, letzterZoom = null, karteZeit = 0, karteSpaeter = null;
   function lege() {
+    if (!z.leinwand || rahmenWartet) return;
+    rahmenWartet = true;
+    requestAnimationFrame(legeJetzt);
+  }
+  function legeJetzt() {
+    rahmenWartet = false;
     const L = z.leinwand;
     if (!L) return;
-    z.welt.style.transform = `translate(${z.pan.x}px, ${z.pan.y}px) scale(${z.zoom})`;
-    z.welt.style.setProperty('--gegenzoom', String(1 / z.zoom));
-    z.welt.style.setProperty('--zoom', String(z.zoom));
-    L.querySelector('.zoomwert').textContent = `${Math.round(z.zoom * 100)} %`;
+    z.welt.style.transform = `translate3d(${z.pan.x}px, ${z.pan.y}px, 0) scale(${z.zoom})`;
+    if (letzterZoom !== z.zoom) {
+      letzterZoom = z.zoom;
+      z.welt.style.setProperty('--gegenzoom', String(1 / z.zoom));
+      z.welt.style.setProperty('--zoom', String(z.zoom));
+      L.querySelector('.zoomwert').textContent = `${Math.round(z.zoom * 100)} %`;
+    }
     zeigeAuswahl();
-    zeichneKarte();
+    const jetzt = performance.now();
+    clearTimeout(karteSpaeter);
+    if (jetzt - karteZeit > 80) { karteZeit = jetzt; zeichneKarte(); } else karteSpaeter = setTimeout(zeichneKarte, 90);
   }
 
   function zeichneKarte() {
@@ -311,11 +342,10 @@
     lege();
   }
 
-  function zoom(faktor, e) {
+  function zoom(faktor, punkt) {
     const L = z.leinwand;
-    const r = L.getBoundingClientRect();
-    const mx = e ? e.clientX - r.left : L.clientWidth / 2, my = e ? e.clientY - r.top : L.clientHeight / 2;
-    const neu = Math.min(3, Math.max(0.05, z.zoom * faktor));
+    const mx = punkt ? punkt.x : L.clientWidth / 2, my = punkt ? punkt.y : L.clientHeight / 2;
+    const neu = Math.min(3, Math.max(0.03, z.zoom * faktor));
     z.pan.x = mx - ((mx - z.pan.x) * neu) / z.zoom;
     z.pan.y = my - ((my - z.pan.y) * neu) / z.zoom;
     z.zoom = neu; z.auto = false;
@@ -336,7 +366,20 @@
     if (status === 'fertig') setTimeout(() => { if (b.status === 'fertig') setzeStatus(id, null); }, 2500);
   }
 
-  window.Entwurf = {
+  // Prozent am laufenden Board (Schätzung nach Zeit und Schritt)
+  function setzeProzent(id, pct) {
+    const b = z.boards.get(id);
+    if (!b || !['laeuft', 'pruefen', 'repariert'].includes(b.status)) return;
+    const chip = b.statusEl.querySelector('.chip');
+    if (!chip) return;
+    const [text] = STATUS[b.status];
+    chip.textContent = `${text.replace(' …', '')} · ${pct} %`;
+    let bar = b.statusEl.querySelector('.prozentbalken');
+    if (!bar) { bar = document.createElement('div'); bar.className = 'prozentbalken'; bar.innerHTML = '<i></i>'; b.statusEl.appendChild(bar); }
+    bar.firstChild.style.width = `${pct}%`;
+  }
+
+  window.Entwurf = { setzeProzent,
     montiere, zeigeAlle, setzeAktiv, waehle, einpassen, zoom, vorbereiten, serialisiere, setzeStatus,
     get auswahl() { return z.auswahl; },
     zeigeBoard(id) {

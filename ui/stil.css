@@ -227,7 +227,7 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 .meldung{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:640px}
 
 /* ---------- Leinwand mit vielen Boards ---------- */
-.welt{position:absolute;left:0;top:0;transform-origin:0 0;--gegenzoom:1;--zoom:1}
+.welt{position:absolute;left:0;top:0;transform-origin:0 0;--gegenzoom:1;--zoom:1;will-change:transform}
 .board{position:absolute}
 .boardname{position:absolute;left:0;bottom:100%;margin:0;padding:0 0 6px;border:0;background:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;max-width:calc(var(--bb) * var(--zoom) * 1px);transform:scale(var(--gegenzoom));transform-origin:left bottom;font-size:12px;color:var(--leise);cursor:pointer}
 .board.aktiv .boardname{color:var(--facette)}
@@ -369,3 +369,11 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 
 .wunschfeld>div:last-child{flex-wrap:nowrap;min-width:0}
 .wunschfeld .btn-p{flex:none}
+.boardstatus .prozentbalken{width:60%;height:6px;background:#ece4d2;transform:scale(var(--gegenzoom));overflow:hidden}
+.boardstatus .prozentbalken i{display:block;height:100%;background:var(--kranich,#7c5cd6);transition:width .9s linear}
+.hinweisband .gesamtbalken{height:5px;background:#ece4d2;margin-top:6px;overflow:hidden}
+.hinweisband .gesamtbalken i{display:block;height:100%;background:#7c5cd6;transition:width .9s linear}
+.leinwand.greifbereit{cursor:grab}
+.leinwand.zieht{cursor:grabbing}
+.leinwand.zieht iframe,.leinwand.greifbereit iframe{pointer-events:none}
+.leinwand.zieht .welt *{user-select:none}

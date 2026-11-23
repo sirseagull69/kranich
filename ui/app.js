@@ -167,7 +167,7 @@
       // Bau läuft noch: dasselbe Projekt im Speicher weiterzeigen, nicht neu laden
       S.projekt = l.p; S.modus = 'entwurf'; S.seiteId = l.p.seiten[0]?.id;
       S.auswahl = null; S.varianten = null; S.mischen.clear();
-      S.kranich = { zustand: 'denkt', schritte: [], letzter: null, fehler: null, anpassen: l.jobs, titel: l.titel, meldung: l.meldung() };
+      S.kranich = { zustand: 'denkt', schritte: [], letzter: null, fehler: null, anpassen: l.jobs, titel: l.titel, meldung: l.meldung(), gesamt: 0 };
       S.ansicht = 'werkbank';
       renderWerkbank();
       AppBau.zeigeLauf();
@@ -334,7 +334,7 @@
     const k = S.kranich;
     let html = '';
     if (k.zustand === 'denkt') {
-      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.titel || (k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …'))}</b><span class="leise" style="font-size:13px">${esc(k.meldung)}</span></div>
+      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.titel || (k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …'))}</b><span class="leise bandmeldung" style="font-size:13px">${esc(k.meldung)}</span>${k.gesamt != null ? `<div class="gesamtbalken"><i style="width:${k.gesamt}%"></i></div>` : ''}</div>
         <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button></div>`;
     } else if (k.zustand === 'fehler') {
       html = `<div class="hinweisband paper fehler" role="alert">${figur('ruhend', 34)}<div style="display:flex;flex-direction:column"><b class="h">${esc(k.fehler?.nachricht || 'Kranich kommt gerade nicht an Claude ran')}</b>
@@ -394,7 +394,7 @@
       return;
     }
     const fortschritt = S.kranich.zustand === 'denkt' && S.kranich.anpassen
-      ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><b>${esc(S.kranich.titel || `Ich falte „${seite().name}“ in ${S.kranich.anpassen.length} weitere Größen`)}</b><div class="fortschritt">${S.kranich.anpassen.map((j) => `<div class="zeile"><span class="txt"><b class="h">${esc(j.format.name)}</b><span>${esc(j.notiz || j.format.mass || `${j.format.breite} × ${j.format.hoehe}`)}</span></span><span class="chip ${{ wartet: 'chip-grau', laeuft: 'chip-zart', repariert: 'chip-gelb', fertig: 'chip-gruen', fehler: 'chip-rot' }[j.zustand]}">${{ wartet: 'Wartet', laeuft: 'Läuft', repariert: 'Repariert', fertig: 'Fertig', fehler: 'Fehler' }[j.zustand]}</span></div>`).join('')}</div>
+      ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><b>${esc(S.kranich.titel || `Ich falte „${seite().name}“ in ${S.kranich.anpassen.length} weitere Größen`)}</b><div class="fortschritt">${S.kranich.anpassen.map((j) => `<div class="zeile"><span class="txt"><b class="h">${esc(j.format.name)}</b><span>${esc(j.notiz || j.format.mass || `${j.format.breite} × ${j.format.hoehe}`)}</span></span><span class="chip ${{ wartet: 'chip-grau', laeuft: 'chip-zart', repariert: 'chip-gelb', fertig: 'chip-gruen', fehler: 'chip-rot' }[j.zustand]}" data-job="${esc(j.board?.id || '')}">${j.zustand === 'laeuft' && j.prozent != null ? `${j.prozent} %` : { wartet: 'Wartet', laeuft: 'Läuft', repariert: 'Repariert', fertig: 'Fertig', fehler: 'Fehler' }[j.zustand]}</span></div>`).join('')}</div>
         <div class="reihe"><span class="leise" style="flex:1">${esc(S.kranich.meldung)}</span><button type="button" class="btn btn-s" data-aktion="abbrechen">Anhalten</button></div></div></div>` : '';
     el.innerHTML = chat.map((c, i) => {
       if (c.wer === 'ich') return `<div class="blase-ich">${esc(c.text)}</div>`;
@@ -455,12 +455,14 @@
   }
 
   // Selbstprüfung: Entwurf nachmessen und gefundene Fehler einmal reparieren lassen.
-  async function pruefeUndRepariere(board, html, nr, { status = true } = {}) {
+  async function pruefeUndRepariere(board, html, nr, { status = true, phase = () => {} } = {}) {
     const format = { id: board.format, breite: board.breite, hoehe: board.hoehe, druck: Boolean((S.formate.find((f) => f.id === board.format) || {}).druck) };
+    phase('pruefen');
     if (status) Entwurf.setzeStatus(board.id, 'pruefen');
     const p = await K.app.pruefen({ html, format });
     if (nr !== auftragNr || p?.fehler) return { html, gefunden: [], offen: [], repariert: false };
     if (!p.funde?.length) { board.pruefung = { gefunden: [], offen: [], zeit: new Date().toISOString() }; return { html, gefunden: [], offen: [], repariert: false }; }
+    phase('repariert');
     if (status) Entwurf.setzeStatus(board.id, 'repariert');
     const r = await K.app.reparieren({ html, probleme: p.funde, breite: board.breite, hoehe: board.hoehe });
     if (nr !== auftragNr || r?.fehler) { board.pruefung = { gefunden: p.funde, offen: p.funde, zeit: new Date().toISOString() }; return { html, gefunden: p.funde, offen: p.funde, repariert: false }; }

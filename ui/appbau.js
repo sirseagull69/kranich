@@ -207,16 +207,55 @@
     };
     let fertig = 0, repariert = 0, offenGesamt = 0;
     const boardJobs = jobs.filter((j) => j.board.id !== '__bausteine');
-    const meldung = () => (p.app.css ? `${fertig} von ${boardJobs.length} fertig · 2 gleichzeitig, ca. 1 Minute pro Board` : 'Erst die Bausteine (Farben, Schrift, Knöpfe), dann gehts los mit den Boards');
+    let schnitt = 70000; const dauern = [];
+    const meldung = () => {
+      if (!p.app.css) return 'Erst die Bausteine (Farben, Schrift, Knöpfe), dann gehts los mit den Boards';
+      const g = S.projekt === p && S.kranich.gesamt != null ? `${S.kranich.gesamt} % · ` : '';
+      const rest = boardJobs.length - fertig;
+      const min = Math.max(1, Math.round((rest * schnitt * 1.25) / 2 / 60000));
+      return `${g}${fertig} von ${boardJobs.length} fertig · noch ca. ${min} Min.`;
+    };
     const titel = `Ich baue „${plan.name}“: ${offen.length} Boards`;
     lauf = { p, nr, jobs, titel, meldung, laeuft: () => nr === App.auftragNr };
 
     sag({ wer: 'ich', text: `Falte alle Bildschirme von „${plan.name}“` });
-    kranich('denkt', { anpassen: jobs, titel, meldung: meldung() });
+    kranich('denkt', { anpassen: jobs, titel, meldung: meldung(), gesamt: 0 });
     for (const b of offen) status(b.id, 'wartet');
     if (hier()) Entwurf.einpassen();
 
-    const ende = () => { if (lauf?.nr === nr) lauf = null; };
+    // Prozent schätzen: Schreiben nach Zeit (Schnitt der fertigen Boards), dann Prüfen/Reparieren
+    const prozent = (j) => {
+      if (j.zustand === 'fertig' || j.zustand === 'repariert') return 100;
+      if (j.zustand !== 'laeuft' || !j.start) return 0;
+      if (j.phase === 'repariert') return 94;
+      if (j.phase === 'pruefen') return 88;
+      const t = Date.now() - j.start;
+      return Math.round(t < schnitt ? 3 + (t / schnitt) * 77 : Math.min(86, 80 + ((t - schnitt) / schnitt) * 6));
+    };
+    const tick = () => {
+      if (nr !== App.auftragNr) return;
+      let summe = 0;
+      for (const j of boardJobs) {
+        const pct = prozent(j); summe += pct;
+        if (j.zustand === 'laeuft') {
+          j.prozent = pct;
+          if (hier()) {
+            Entwurf.setzeProzent(j.board.id, pct);
+            const c = document.querySelector(`.fortschritt [data-job="${CSS.escape(j.board.id)}"]`);
+            if (c) c.textContent = `${pct} %`;
+          }
+        }
+      }
+      const gesamt = Math.round(summe / boardJobs.length);
+      if (S.projekt === p) {
+        S.kranich.gesamt = gesamt;
+        S.kranich.meldung = meldung();
+        const m = document.querySelector('.hinweisband .bandmeldung'); if (m) m.textContent = S.kranich.meldung;
+        const g = document.querySelector('.hinweisband .gesamtbalken i'); if (g) g.style.width = `${gesamt}%`;
+      }
+    };
+    const uhr = setInterval(tick, 1000);
+    const ende = () => { clearInterval(uhr); if (lauf?.nr === nr) lauf = null; if (S.projekt === p) S.kranich.gesamt = null; };
 
     // Bausteine zuerst
     if (!p.app.css) {
@@ -242,11 +281,12 @@
     // Boards, zwei gleichzeitig
     const eins = async (j) => {
       const b = j.board;
-      j.zustand = 'laeuft'; status(b.id, 'laeuft'); if (hier()) App.renderVerlauf();
+      j.zustand = 'laeuft'; j.start = Date.now(); j.phase = 'schreiben'; j.prozent = 3; status(b.id, 'laeuft'); if (hier()) App.renderVerlauf();
       const r = await K.app.board({ plan, board: { id: b.id, bildschirm: b.bildschirm, zustand: b.zustand, name: b.name, breite: b.breite, hoehe: b.hoehe }, css: p.app.css });
       if (nr !== App.auftragNr) return;
       if (r?.fehler) { j.zustand = 'fehler'; j.notiz = r.fehler.nachricht; status(b.id, 'fehler'); if (hier()) App.renderVerlauf(); return; }
-      const pr = await App.pruefeUndRepariere(b, r.html, nr, { status: hier() });
+      dauern.push(Date.now() - j.start); schnitt = dauern.reduce((a, x) => a + x, 0) / dauern.length;
+      const pr = await App.pruefeUndRepariere(b, r.html, nr, { status: hier(), phase: (ph) => { j.phase = ph; } });
       if (nr !== App.auftragNr) return;
       b.html = pr.html;
       b.verlauf = [{ html: pr.html, was: 'Aus dem Plan gefaltet', zeit: new Date().toISOString() }];
