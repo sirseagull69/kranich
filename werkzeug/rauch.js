@@ -38,7 +38,7 @@ app.whenReady().then(async () => {
     await pruefe('Start zeigt vier Karten', "document.querySelectorAll('.startkarte').length === 4");
 
     // Format wählen
-    await js("document.querySelector('.blattkarte .btn-p').click()");
+    await js("document.querySelector('.sk-neu').click()");
     await bisDa("document.querySelectorAll('.formatkarte').length >= 5");
     await pruefe('Formatauswahl zeigt Gruppen und App & Web', "document.querySelectorAll('.formatkarte').length === 5 && document.querySelectorAll('[data-aktion=\"format-gruppe\"]').length === 6");
     await js("document.querySelector('[data-aktion=\"format-gruppe\"][data-g=\"Druck\"]').click()");
@@ -170,7 +170,7 @@ app.whenReady().then(async () => {
     await js("App.zeigeStart()");
     await warte(800);
     await foto('12-start-mit-projekt');
-    await pruefe('Projekt in der Liste', "document.querySelectorAll('.projektkarte').length >= 1");
+    await pruefe('Projekt in der Liste', "document.querySelectorAll('.sk-zeile').length >= 1");
     await js("document.querySelector('[data-lasche=\"alle\"]').click()");
     await warte(400);
     await foto('12b-oeffnen');

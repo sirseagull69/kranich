@@ -44,7 +44,7 @@
 .blattsym i{position:absolute;right:0;top:0;width:18px;height:18px;background:var(--facette);clip-path:polygon(0 0,100% 100%,0 100%)}
 .plusrund{position:absolute;z-index:2;left:calc(50% + 14px);top:calc(50% + 6px);width:40px;height:40px;border-radius:50%;background:var(--pflaume);color:#fff;display:flex;align-items:center;justify-content:center}
 .kreis{position:absolute;right:46px;top:24px;width:20px;height:20px;border-radius:50%;background:var(--facette)}
-.pille{position:absolute;left:40px;top:58px;width:52px;height:28px;border-radius:9px;background:#a993ec}
+.blattknopf .pille{position:absolute;left:40px;top:58px;width:52px;height:28px;border-radius:9px;background:#a993ec}
 .mehrreihe{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
 .mehrkarte{border:0;padding:0;background:none;text-align:left;font:inherit;color:inherit;filter:drop-shadow(0 1px 1px rgba(30,40,70,.22))}
 .mehrkarte .card{display:flex;align-items:center;gap:14px;padding:10px 16px 10px 10px;transition:transform .15s}
