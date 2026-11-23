@@ -9,7 +9,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/",
+    "test": "node --test \"test/**/*.test.js\"",
     "rauchtest": "electron werkzeug/rauch.js",
     "bauen": "electron-builder --publish never",
     "freisteller": "esbuild werkzeug/freisteller-quelle.js --bundle --format=iife --outfile=ui/vendor/freisteller.js --minify --log-level=warning"
