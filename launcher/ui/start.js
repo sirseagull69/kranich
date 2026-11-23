@@ -61,7 +61,7 @@
         <div class="zeile2">
           <section class="karte frag" style="--hell:${origami?.hell}"><h2>${vogel('origami', 'denkt-nach', 30)}origami fragen</h2>
             <textarea id="frage" placeholder="Frag origami etwas, z. B. „Was steht heute an?“" aria-label="Frage an origami"></textarea>
-            <div class="reihe"><span class="leise" style="font-size:13px;flex:1">${origami?.status === 'bereit' ? 'Öffnet origami mit deiner Frage.' : 'Trag zuerst die Adresse von origami ein (Zahnrad oben rechts).'}</span><button type="button" class="btn" data-aktion="fragen">Fragen</button></div></section>
+            <div class="reihe"><span class="leise" style="font-size:13px;flex:1">${origami?.status === 'bereit' ? 'Öffnet origami mit deiner Frage.' : S.updates.origami?.installierbar ? 'Installier zuerst origami (Karte oben).' : 'Trag zuerst die Adresse von origami ein (Zahnrad oben rechts).'}</span><button type="button" class="btn" data-aktion="fragen" ${origami?.status === 'bereit' ? '' : 'disabled'}>Fragen</button></div></section>
           <section class="karte"><h2>Zuletzt bearbeitet</h2>
             <div class="liste">${S.zuletzt.length ? S.zuletzt.map((d) => { const a = S.apps.find((x) => x.id === d.app) || {}; return `<button type="button" class="datei" style="--hell:${a.hell}" data-datei="${esc(d.id)}" data-app="${esc(d.app)}"><span class="vor" ${d.vorschau ? `style="background-image:url('${d.vorschau}')"` : ''}></span><span class="txt"><b>${esc(d.name)}</b><span>${esc(a.name || '')} · ${esc(d.info)}</span></span><span class="wann">${esc(wann(d.geaendert))}</span></button>`; }).join('') : '<div class="leer">Noch nichts bearbeitet. Öffne oben einen Vogel und leg los.</div>'}</div></section>
         </div>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <path d="M262 96 H700 L928 324 V762 A166 166 0 0 1 762 928 H262 A166 166 0 0 1 96 762 V262 A166 166 0 0 1 262 96Z" fill="#e8743b"/>
+  <path d="M700 96 L928 324 H760 A60 60 0 0 1 700 264Z" fill="#c2410c"/>
+  <g transform="translate(150 190) scale(7)">
+    <polygon points="18,64 8,50 32,60" fill="#ffd9c2"/>
+    <polygon points="18,64 70,64 52,40" fill="#fff6ee"/>
+    <polygon points="36,51 61,52 40,12" fill="#ffc9a8"/>
+    <polygon points="70,64 86,40 78,62" fill="#ffd9c2"/>
+    <polygon points="86,40 96,45 84,47" fill="#2d1a10"/>
+    <polygon points="36,64 52,64 46,78" fill="#ffd9c2"/>
+  </g>
+</svg>

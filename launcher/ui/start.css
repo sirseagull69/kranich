@@ -44,6 +44,7 @@ main{flex:1;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-
 .reihe{display:flex;align-items:center;gap:8px}
 .btn{min-height:42px;padding:0 18px;border:0;border-radius:10px;background:#e8743b;color:#fff;font:700 15px 'Bricolage Grotesque',sans-serif}
 .btn:hover{filter:brightness(.95)}
+.btn:disabled{background:#d9d3c8;color:#fff;cursor:default;filter:none}
 .btn.q{background:transparent;color:var(--leise)}
 .btn.q:hover{background:rgba(29,39,66,.06)}
 .liste{display:flex;flex-direction:column}

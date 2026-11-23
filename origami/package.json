@@ -1,0 +1,64 @@
+{
+  "name": "origami",
+  "productName": "origami",
+  "version": "0.1.0",
+  "description": "origami – dein KI-Assistent aus der Familie Selbst gfaltet, als eigene App. Öffnet origami vom Heim-PC in einem eigenen Fenster.",
+  "author": "Nils Pohler",
+  "main": "main/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test test/*.test.js",
+    "bauen": "electron-builder --publish never"
+  },
+  "build": {
+    "appId": "de.selbstgfaltet.origami",
+    "productName": "origami",
+    "files": [
+      "main/**",
+      "kern/**",
+      "ui/**",
+      "bau/icon.png"
+    ],
+    "directories": {
+      "output": "ausgabe",
+      "buildResources": "bau"
+    },
+    "artifactName": "origami-${version}-${os}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "bau/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "shortcutName": "origami"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "bau/icon.png",
+      "identity": "-",
+      "category": "public.app-category.productivity"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8"
+  }
+}

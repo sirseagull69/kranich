@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:">
+<title>origami</title>
+<link rel="stylesheet" href="schrift/schrift.css">
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+<main class="blatt">
+  <div id="ori" class="ori"></div>
+  <span class="hand" id="gruss">Hallo, ich bin Ori.</span>
+  <h1 class="h" id="titel">Wo wohnt origami?</h1>
+  <p class="leise" id="text">Trag die Adresse von origami ein, also die Adresse deines Heim-PCs. Das machst du nur einmal.</p>
+  <form id="form">
+    <input id="adresse" class="feld" placeholder="http://192.168.0.20:3000" autocomplete="off" spellcheck="false" aria-label="Adresse von origami">
+    <div class="reihe">
+      <button type="button" class="btn zart" id="nochmal" hidden>Nochmal versuchen</button>
+      <button type="submit" class="btn" id="los">Los geht's</button>
+    </div>
+    <span class="fehler" id="fehler" role="alert"></span>
+  </form>
+  <p class="tipp leise">Tipp: <b>F5</b> lädt neu, <b>Strg + ,</b> ändert die Adresse.</p>
+</main>
+<script src="ori.js"></script>
+<script src="einrichten.js"></script>
+</body>
+</html>

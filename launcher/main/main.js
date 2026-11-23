@@ -12,7 +12,7 @@ const WIN = process.platform === 'win32';
 const lokal = () => process.env.LOCALAPPDATA || path.join(app.getPath('home'), 'AppData', 'Local');
 
 const APPS = [
-  { id: 'origami', name: 'origami', aufgabe: 'Dein KI-Assistent', farbe: '#e8743b', hell: '#ffeadb', art: 'web' },
+  { id: 'origami', name: 'origami', aufgabe: 'Dein KI-Assistent', farbe: '#e8743b', hell: '#ffeadb', art: 'programm', datei: 'origami', web: true },
   { id: 'kranich', name: 'Kranich', aufgabe: 'Gestalten', farbe: '#7c5cd6', hell: '#ece6fd', art: 'programm', datei: 'Kranich', release: 'https://github.com/sirseagull69/kranich/releases/latest' },
   { id: 'albatros', name: 'Albatros', aufgabe: 'Tabellen', farbe: '#2f8a55', hell: '#dcf0e3', art: 'programm', datei: 'Albatros' },
   { id: 'schreiben', name: 'Schreibprogramm', aufgabe: 'Schreiben', farbe: '#c47f17', hell: '#f8ead2', art: 'programm', datei: 'Schreiben', bald: true },
@@ -37,8 +37,9 @@ function standardPfad(a) {
 }
 function pfadVon(a) { return einst().pfade?.[a.id] || standardPfad(a); }
 function status(a) {
-  if (a.art === 'web') return einst().origamiAdresse ? 'bereit' : 'adresse';
-  return fs.existsSync(pfadVon(a)) ? 'bereit' : a.bald ? 'bald' : 'fehlt';
+  if (fs.existsSync(pfadVon(a))) return 'bereit';
+  if (a.web && einst().origamiAdresse) return 'bereit'; // App fehlt: origami im Browser öffnen
+  return a.bald ? 'bald' : 'fehlt';
 }
 
 // ---------- Zuletzt bearbeitet (aus den Projektordnern der Vögel) ----------
@@ -74,7 +75,7 @@ function zuletzt() {
 
 // ---------- Updates (aus dem öffentlichen Download-Repo) ----------
 const DOWNLOADS = 'https://api.github.com/repos/sirseagull69/selbst-gfaltet-downloads/releases?per_page=60';
-const PRAEFIX = { kranich: 'kranich-v', albatros: 'albatros-v', schreiben: 'schreiben-v', start: 'start-v' };
+const PRAEFIX = { origami: 'origami-v', kranich: 'kranich-v', albatros: 'albatros-v', schreiben: 'schreiben-v', start: 'start-v' };
 const neuer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b || '0').split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
 function passendeDatei(assets) {
   if (WIN) return assets.find((a) => /\.exe$/i.test(a.name));
@@ -161,14 +162,19 @@ async function ladeUndInstalliere(id, sender) {
 function starte(id, args = []) {
   const a = APPS.find((x) => x.id === id);
   if (!a) return { fehler: 'Unbekanntes Programm.' };
-  if (a.art === 'web') {
-    const adr = einst().origamiAdresse;
-    if (!adr) return { fehler: 'adresse' };
-    const frage = args.find((x) => x.startsWith('--frage='))?.slice(8);
-    shell.openExternal(frage ? `${adr}${adr.includes('?') ? '&' : '?'}frage=${encodeURIComponent(frage)}` : adr);
-    return { ok: true };
-  }
   const p = pfadVon(a);
+  if (a.web) {
+    const adr = einst().origamiAdresse;
+    if (fs.existsSync(p)) {
+      // origami-App: Adresse mitgeben, damit sie nicht nochmal gefragt wird
+      if (adr) args = [`--adresse=${adr}`, ...args.filter((x) => !x.startsWith('--adresse='))];
+    } else {
+      if (!adr) return { fehler: 'fehlt' };
+      const frage = args.find((x) => x.startsWith('--frage='))?.slice(8);
+      shell.openExternal(frage ? `${adr}${adr.includes('?') ? '&' : '?'}frage=${encodeURIComponent(frage)}` : adr);
+      return { ok: true };
+    }
+  }
   if (!fs.existsSync(p)) return { fehler: a.bald ? 'bald' : 'fehlt' };
   const kind = WIN ? spawn(p, args, { detached: true, stdio: 'ignore' }) : spawn('open', ['-a', p, '--args', ...args], { detached: true, stdio: 'ignore' });
   kind.on('error', () => {});

@@ -1,0 +1,21 @@
+/* origami – Einrichten. Papier der Familie, Akzent Orange. */
+:root{--grund:#fff6ee;--blatt:#fffdf9;--tinte:#1d2742;--leise:#5b6170;--rand:#efe1d3;--farbe:#e8743b;--falte:#c2410c}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--grund);background-image:radial-gradient(rgba(194,65,12,.12) 1px,transparent 1.3px);background-size:18px 18px;color:var(--tinte);font:15px/1.5 'Source Serif 4',Georgia,serif;display:flex;align-items:center;justify-content:center;padding:24px}
+.h{font-family:'Bricolage Grotesque','Segoe UI',sans-serif}
+.hand{font-family:'Caveat',cursive;color:var(--farbe);font-size:25px;display:block}
+.leise{color:var(--leise)}
+.blatt{background:var(--blatt);border-radius:18px;box-shadow:0 1px 2px rgba(60,30,10,.08),0 14px 34px rgba(60,30,10,.12);padding:34px 38px 26px;width:100%;max-width:480px;text-align:center}
+.ori{display:flex;justify-content:center;height:150px;margin-bottom:6px}
+h1{margin:2px 0 6px;font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+form{margin-top:18px;display:flex;flex-direction:column;gap:12px}
+.feld{font:15px 'Source Serif 4',Georgia,serif;padding:12px 14px;border:1.5px solid var(--rand);border-radius:12px;background:#fff;color:var(--tinte);outline:none;width:100%}
+.feld:focus{border-color:var(--farbe);box-shadow:0 0 0 3px rgba(232,116,59,.18)}
+.reihe{display:flex;gap:10px;justify-content:flex-end}
+.btn{font:700 15px 'Bricolage Grotesque',sans-serif;border:0;border-radius:12px;padding:11px 20px;background:var(--farbe);color:#fff;cursor:pointer}
+.btn:hover{background:var(--falte)}
+.btn.zart{background:#fbe7da;color:var(--falte)}
+.btn.zart:hover{background:#f7d6c1}
+.fehler{color:#b42318;font-size:14px;min-height:1em}
+.tipp{font-size:13px;margin:18px 0 0}
