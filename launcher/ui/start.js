@@ -151,7 +151,7 @@
     if (r?.fehler) { delete S.laedt[id]; render(); meldung(r.fehler); return; }
     S.laedt[id] = 100; render();
     meldung(r.mac ? 'Download fertig – zieh das Programm in den Programme-Ordner.' : id === 'start' ? 'Wird installiert, das Startfenster geht gleich neu auf.' : 'Wird installiert … (falls es offen ist: vorher schließen)');
-    if (id !== 'start') setTimeout(async () => { delete S.laedt[id]; await laden(); }, 9000);
+    if (id !== 'start') { setTimeout(async () => { delete S.laedt[id]; await laden(); }, 10000); setTimeout(() => laden(), 30000); }
   }
 
   app.addEventListener('click', (e) => {

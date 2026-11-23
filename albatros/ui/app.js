@@ -156,11 +156,12 @@
       </div>`;
     const fz = document.getElementById('formel');
     fz.addEventListener('focus', () => { S.bearbeiten = { a: Fo.adresse(S.anker.sp, S.anker.ze), ort: 'formel' }; });
+    fz.addEventListener('input', () => liveZeigen(Fo.adresse(S.anker.sp, S.anker.ze), fz.value));
     fz.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') { ev.preventDefault(); uebernehme(fz.value); fz.blur(); bewege(0, 1); }
-      if (ev.key === 'Escape') { S.bearbeiten = null; fz.blur(); zeigeAuswahl(); app.querySelector('.rasterscroll').focus(); }
+      if (ev.key === 'Enter') { ev.preventDefault(); S.bearbeiten = null; uebernehme(fz.value); fz.blur(); bewege(0, 1); }
+      if (ev.key === 'Escape') { S.bearbeiten = null; liveZurueck(); fz.blur(); zeigeAuswahl(); app.querySelector('.rasterscroll').focus(); }
     });
-    fz.addEventListener('blur', () => { if (S.bearbeiten?.ort === 'formel') S.bearbeiten = null; });
+    fz.addEventListener('blur', () => { if (S.bearbeiten?.ort === 'formel') { S.bearbeiten = null; if (S.live) uebernehme(fz.value, S.live.a); } });
     zeichneTabelle();
     zeichneHelfer();
     app.querySelector('.rasterscroll').focus();
@@ -274,7 +275,7 @@
     S.bearbeiten = { a: ad, ort: 'zelle', feld: f };
     f.focus(); f.setSelectionRange(f.value.length, f.value.length);
     const fz = document.getElementById('formel');
-    f.addEventListener('input', () => { fz.value = f.value; f.style.width = `${Math.max(td.offsetWidth, f.value.length * 8 + 20)}px`; });
+    f.addEventListener('input', () => { fz.value = f.value; liveZeigen(ad, f.value); f.style.width = `${Math.max(td.offsetWidth, f.value.length * 8 + 20)}px`; });
     f.addEventListener('keydown', (ev) => {
       if (ev.key === 'Enter') { ev.preventDefault(); beende(true); bewege(0, ev.shiftKey ? -1 : 1); }
       else if (ev.key === 'Tab') { ev.preventDefault(); beende(true); bewege(ev.shiftKey ? -1 : 1, 0); }
@@ -288,12 +289,36 @@
     S.bearbeiten = null;
     const wert = b.feld.value;
     b.feld.remove();
-    if (uebernehmen) uebernehme(wert, b.a);
+    if (uebernehmen) uebernehme(wert, b.a); else { liveZurueck(); }
     app.querySelector('.rasterscroll')?.focus({ preventScroll: true });
   }
+  // Live: Während du tippst, rechnet die Tabelle schon mit (ohne zu speichern)
+  function liveZeigen(ad, wert) {
+    if (!S.live || S.live.a !== ad) { if (S.live) liveZurueck(true); S.live = { a: ad, alt: blatt().zellen[ad] }; }
+    setze(ad, wert === '' ? null : wert);
+    S.werte = Fo.rechneAlles(blatt());
+    aktualisiereTexte();
+  }
+  function liveZurueck(still = false) {
+    if (!S.live) return;
+    setze(S.live.a, S.live.alt ?? null); S.live = null;
+    if (!still) { S.werte = Fo.rechneAlles(blatt()); aktualisiereTexte(); }
+  }
+  function aktualisiereTexte() {
+    const b = blatt();
+    app.querySelectorAll('.rasterscroll td[data-a]').forEach((td) => {
+      const a = td.dataset.a; const w = S.werte[a];
+      const t = Fo.zeige(w, b.formate[a]);
+      if (td.textContent !== t) td.textContent = t;
+      td.classList.toggle('zahl', typeof w === 'number');
+      td.classList.toggle('fehler', w instanceof Fo.Fehler);
+    });
+    zeigeStatus(); zeichneWerte();
+  }
   function uebernehme(wert, ad = Fo.adresse(S.anker.sp, S.anker.ze)) {
+    if (S.live && S.live.a === ad) { setze(ad, S.live.alt ?? null); S.live = null; }
     const alt = blatt().zellen[ad] ?? '';
-    if (String(wert) === String(alt)) { zeigeAuswahl(); return; }
+    if (String(wert) === String(alt)) { S.werte = Fo.rechneAlles(blatt()); aktualisiereTexte(); zeigeAuswahl(); return; }
     merke();
     setze(ad, wert.trim() === '' ? null : wert);
     // Euro-Zeichen getippt → als Euro zeigen

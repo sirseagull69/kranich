@@ -520,7 +520,7 @@
         <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button></div>`;
     } else if (k.zustand === 'fehler') {
       html = `<div class="hinweisband paper fehler" role="alert">${figur('ruhend', 34)}<div style="display:flex;flex-direction:column"><b class="h">${esc(k.fehler?.nachricht || 'Kranich kommt gerade nicht an Claude ran')}</b>
-        <span class="leise" style="font-size:13px">Dein Entwurf ist gespeichert, nichts geht verloren.${k.fehler?.details ? ` <span title="${esc(k.fehler.details)}" style="text-decoration:underline dotted">Was ist passiert?</span>` : ''}</span></div>
+        <span class="leise" style="font-size:13px">Dein Entwurf ist gespeichert, nichts geht verloren.${k.fehler?.details ? ` <button type="button" class="linkknopf" data-aktion="fehler-details">Was ist passiert?</button>` : ''}</span></div>
         <button type="button" class="btn btn-s btn-p" data-aktion="nochmal">Nochmal</button><button type="button" class="btn btn-s btn-q" data-aktion="fehler-weg" aria-label="Schließen">${sym('schliessen', 14)}</button></div>`;
     } else if (k.zustand === 'fertig' && k.variantenBereit) {
       html = `<div class="hinweisband paper">${figur('fertig', 34)}<div style="display:flex;flex-direction:column"><b class="h">3 Varianten bereit</b><span class="leise" style="font-size:13px">Ruhig, Mutig und Kompakt</span></div>
@@ -1098,6 +1098,15 @@
       setzeKranich('bereit', { anpassen: null }); renderKopfKnoepfe(); geaendert();
     },
     'fehler-weg': () => setzeKranich('bereit'),
+    'fehler-details': () => {
+      const f = S.kranich.fehler || {};
+      const d = document.createElement('div'); d.className = 'schleier';
+      d.innerHTML = `<div class="dialog paper schmal" role="dialog" aria-modal="true" style="width:min(640px,92vw);padding:20px 22px"><div class="reihe"><h2 class="h" style="flex:1;margin:0">Was ist passiert?</h2><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)}</button></div>
+        <p class="leise" style="margin:8px 0">${esc(f.nachricht || '')}</p><pre style="white-space:pre-wrap;word-break:break-word;max-height:50vh;overflow:auto;background:#f6f2ea;border-radius:8px;padding:12px;font:12.5px ui-monospace,Consolas,monospace">${esc(f.details || 'Keine Einzelheiten.')}</pre>
+        <div class="reihe" style="justify-content:flex-end;gap:8px;margin-top:10px"><button type="button" class="btn" data-kopie>Kopieren</button><button type="button" class="btn btn-p" data-zu>Schließen</button></div></div>`;
+      document.body.appendChild(d);
+      d.addEventListener('click', async (e) => { if (e.target === d || e.target.closest('[data-zu]')) d.remove(); if (e.target.closest('[data-kopie]')) { await navigator.clipboard.writeText(`${f.nachricht}\n\n${f.details}`); H.meldung('Kopiert – schick es Claude.'); } });
+    },
     'fertig-weg': () => setzeKranich('fertig', { variantenBereit: false }),
     'vorschlag': (el) => sendeEntwurf(el.dataset.text),
     'auswahl-weg': () => { Entwurf.waehle(null); },

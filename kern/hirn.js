@@ -95,7 +95,7 @@ function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm =
       if (/network|econn|enotfound|timed? ?out|overloaded|529|503/.test(roh)) {
         return reject(new HirnFehler('keine-verbindung', 'Kranich kommt gerade nicht an Claude ran.', roh.slice(0, 400)));
       }
-      reject(new HirnFehler('antwort', 'Claude hat keine brauchbare Antwort geschickt.', (daten?.result || fehler || aus).slice(0, 400)));
+      reject(new HirnFehler('antwort', 'Claude hat keine brauchbare Antwort geschickt.', `Programm: ${programm}\nEnde-Code: ${code}\n${daten?.result ? `Antwort: ${String(daten.result).slice(0, 600)}\n` : ''}${fehler ? `Fehlerausgabe: ${fehler.slice(0, 800)}\n` : ''}${aus && !daten ? `Ausgabe: ${aus.slice(0, 800)}` : ''}`));
     });
 
     kind.stdin.end(text, 'utf8');

@@ -29,8 +29,14 @@ app.whenReady().then(async () => {
   await foto('2-tabelle');
   // Tippen in Zelle
   await js("App.S.anker={sp:1,ze:6};App.S.ende={sp:1,ze:6}; document.querySelector('.rasterscroll').focus(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'T',bubbles:true}))"); await warte(200);
-  await js("const f=document.querySelector('.eingabefeld'); f.value='Test 12'; f.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))"); await warte(300);
+  await js("{const f=document.querySelector('.eingabefeld'); f.value='Test 12'; f.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))}"); await warte(300);
   await pruefe('Getippt', "App.S.t.blaetter[0].zellen.B7 === 'Test 12'");
+  // Live mitrechnen beim Tippen
+  await js("App.S.anker={sp:4,ze:4};App.S.ende={sp:4,ze:4}; document.querySelector('.rasterscroll').focus(); document.dispatchEvent(new KeyboardEvent('keydown',{key:'1',bubbles:true}))"); await warte(200);
+  await js("{const f=document.querySelector('.eingabefeld'); f.value='1000'; f.dispatchEvent(new Event('input',{bubbles:true}))}"); await warte(200);
+  await pruefe('Rechnet live mit', "document.querySelector('td[data-a=E8]').textContent.startsWith('1.')");
+  await js("{const f=document.querySelector('.eingabefeld'); f.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}))}"); await warte(200);
+  await pruefe('Escape nimmt live zurück', "App.S.t.blaetter[0].zellen.E5 === undefined && !document.querySelector('td[data-a=E8]').textContent.startsWith('1.')");
   await js("document.dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true}))"); await warte(300);
   await pruefe('Rückgängig', "App.S.t.blaetter[0].zellen.B7 === undefined");
   // Helfer fragen

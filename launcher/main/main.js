@@ -81,10 +81,24 @@ function passendeDatei(assets) {
   const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
   return assets.find((a) => a.name.endsWith(`${arch}.dmg`)) || assets.find((a) => /\.dmg$/i.test(a.name));
 }
-function installiert(id) {
+// Welche Version ist wirklich installiert? Aus der Programmdatei selbst
+// (Windows: Dateiversion der .exe, Mac: Info.plist), sonst aus version.json.
+const { execFile } = require('child_process');
+function dateiVersion(p) {
+  return new Promise((ok) => {
+    if (WIN) {
+      execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', `(Get-Item -LiteralPath '${p.replace(/'/g, "''")}').VersionInfo.ProductVersion`], { windowsHide: true, timeout: 8000 }, (f, aus) => ok(f ? null : (/(\d+\.\d+\.\d+)/.exec(String(aus)) || [])[1] || null));
+    } else {
+      try { const t = fs.readFileSync(path.join(p, 'Contents', 'Info.plist'), 'utf8'); ok((/<key>CFBundleShortVersionString<\/key>\s*<string>([^<]+)<\/string>/.exec(t) || [])[1] || null); } catch { ok(null); }
+    }
+  });
+}
+async function installiert(id) {
   if (id === 'start') return app.getVersion();
   const a = APPS.find((x) => x.id === id);
   if (!a || a.art !== 'programm' || !fs.existsSync(pfadVon(a))) return null;
+  const v = await dateiVersion(pfadVon(a));
+  if (v) return v;
   try { return JSON.parse(fs.readFileSync(path.join(app.getPath('appData'), a.datei, 'version.json'), 'utf8')).version || '0'; } catch { return '0'; }
 }
 let neueste = {};
@@ -105,7 +119,7 @@ async function pruefeUpdates() {
     }
     const aus = {};
     for (const id of Object.keys(PRAEFIX)) {
-      const hier = installiert(id), da = neueste[id];
+      const hier = await installiert(id), da = neueste[id];
       aus[id] = { installiert: hier, neu: da?.version || null, update: !!(da && hier && neuer(da.version, hier)), installierbar: !!(da && !hier) };
     }
     return aus;
