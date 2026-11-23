@@ -134,7 +134,7 @@ async function ladeUndInstalliere(id, sender) {
   await new Promise((ok) => aus.end(ok));
   if (schreibFehler) return { fehler: `Konnte den Download nicht speichern (${schreibFehler.code || schreibFehler.message}).` };
   if (WIN) {
-    const kind = spawn(ziel, ['/S', '--force-run'], { detached: true, stdio: 'ignore' });
+    const kind = spawn(ziel, id === 'start' ? ['/S', '--force-run'] : ['/S'], { detached: true, stdio: 'ignore' });
     kind.on('error', () => {}); kind.unref();
   } else {
     await shell.openPath(ziel);
