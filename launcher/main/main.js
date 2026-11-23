@@ -178,7 +178,7 @@ function starte(id, args = []) {
 }
 
 function registriere() {
-  ipcMain.handle('apps', () => APPS.map((a) => ({ ...a, status: status(a), pfad: a.art === 'programm' ? pfadVon(a) : '' })));
+  ipcMain.handle('apps', async () => Promise.all(APPS.map(async (a) => ({ ...a, status: status(a), pfad: a.art === 'programm' ? pfadVon(a) : '', version: a.art === 'programm' ? await installiert(a.id) : null }))));
   ipcMain.handle('zuletzt', () => zuletzt());
   ipcMain.handle('starte', (_e, id, args) => starte(id, Array.isArray(args) ? args.filter((x) => typeof x === 'string').slice(0, 4) : []));
   ipcMain.handle('einst', () => einst());

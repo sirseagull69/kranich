@@ -47,14 +47,14 @@
     else if (a.status === 'fehlt') los = '';
     const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : '<span class="papier"></span>';
     return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
-      <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}${u.installiert && u.installiert !== '0' ? ` · <span class="ver">Version ${esc(u.installiert)}</span>` : ''}</span>
+      <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}${(a.version || u.installiert) && (a.version || u.installiert) !== '0' ? ` · <span class="ver">Version ${esc(a.version || u.installiert)}</span>` : ''}</span>
       <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${los}</span></span></button>`;
   }
 
   function render() {
     const origami = S.apps.find((a) => a.id === 'origami');
     app.innerHTML = `<header><div class="marke"><img src="marke.svg" width="32" height="32" alt="" class="markenbild"><b class="h">Selbst gfaltet</b></div><div class="platz"></div>
-        ${S.updates.start?.installiert ? `<span class="ver" title="Version vom Startfenster">Startfenster ${esc(S.updates.start.installiert)}</span>` : ''}<button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></header>
+        ${S.version ? `<span class="ver" title="Version vom Startfenster">Startfenster ${esc(S.version)}</span>` : ''}<button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></header>
       <main>${(() => { const n = Object.entries(S.updates).filter(([id, u]) => u.update && id !== 'start').length + (S.updates.start?.update ? 1 : 0); return n >= 2 ? `<div class="band"><b class="h">${n} Updates da</b><span class="leise">Alles mit einem Klick, nacheinander.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-alle>Alles aktualisieren</button></div>` : ''; })()}${S.updates.start?.update && Object.values(S.updates).filter((u) => u.update).length < 2 ? `<div class="band"><b class="h">Neue Version vom Startfenster (${esc(S.updates.start.neu)})</b><span class="leise">Dauert nur ein paar Sekunden.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-update="start">${S.laedt.start != null ? `Lädt ${S.laedt.start} %` : 'Jetzt aktualisieren'}</button></div>` : ''}
         <div class="gruss"><span class="hand">${esc(gruss())} – welcher Vogel darf heute?</span><h1>Was machen wir heute?</h1></div>
         <div class="voegel">${S.apps.map(karte).join('')}</div>
@@ -176,7 +176,7 @@
   });
 
   async function laden() {
-    [S.apps, S.zuletzt] = await Promise.all([N.apps(), N.zuletzt()]);
+    [S.apps, S.zuletzt, S.version] = await Promise.all([N.apps(), N.zuletzt(), N.version()]);
     render();
     const u = await N.updates();
     if (u && !u.fehler) { S.updates = u; render(); }
