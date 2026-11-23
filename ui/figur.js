@@ -16,7 +16,8 @@
     return `<svg viewBox="0 0 100 100" width="${groesse}" height="${groesse}" role="img" aria-label="${NAMEN[h]}" style="display:block;flex:none">${SCHATTEN}${HALTUNG[h]}</svg>`;
   };
 
-  window.eselsohr = function eselsohr(groesse = 54, grund = '#f6f1e7') {
+  window.eselsohr = function eselsohr() { return ''; };
+  window.eselsohrAlt = function eselsohrAlt(groesse = 54, grund = '#f6f1e7') {
     return `<svg viewBox="0 0 100 100" width="${groesse}" height="${groesse}" aria-hidden="true" class="eselsohr"><polygon points="100,38 100,100 38,100" fill="${grund}"></polygon><polygon points="38,100 100,38 38,38" fill="#7c5cd6"></polygon><polygon points="38,100 38,38 69,69" fill="#4a2f9a"></polygon></svg>`;
   };
 

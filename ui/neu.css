@@ -360,3 +360,107 @@
 .leistenkopf .rundknopf[aria-pressed="true"]{background:var(--hauch);color:var(--facette)}
 .zumentwurf{justify-content:flex-start;margin:-4px 0 10px;padding:0 8px;color:var(--facette)}
 .werkzeugleiste{gap:4px!important}
+
+/* =========================================================
+   0.9 „ruhig“: weniger Rahmen, weniger Striche, mehr Luft
+   ========================================================= */
+:root{--rand:#ebe5d8;--radius:10px;--weich:0 1px 2px rgba(30,40,70,.05),0 4px 16px rgba(30,40,70,.06)}
+body{background-image:none!important;background-color:#f7f3ec!important}
+.k-kopf{border-bottom:1px solid var(--rand)!important;background:#fffdf9!important}
+.btn{border-radius:8px!important;border:1px solid var(--rand)!important;background:#fff!important;box-shadow:none!important}
+.btn:hover:not(:disabled){border-color:#d8cfbd!important}
+.btn-q{background:transparent!important;border-color:transparent!important}
+.btn-q:hover:not(:disabled){background:rgba(74,47,154,.06)!important}
+.btn-p{clip-path:none!important;background:var(--knopf)!important;border-color:var(--knopf)!important;color:#fff!important}
+.btn-p:hover:not(:disabled){background:var(--facette)!important}
+.btn[aria-pressed="true"]{border-color:var(--pflaume)!important;background:var(--hauch)!important}
+.btn-p.btn-gross{padding:0 20px!important}
+.feld,.suchfeld{border-radius:8px!important;border:1px solid var(--rand)!important}
+.feld:focus,.suchfeld:focus-within{outline:none;border-color:var(--pflaume)!important;box-shadow:0 0 0 3px rgba(124,92,214,.15)}
+.card{clip-path:none!important;border-radius:var(--radius)!important}
+.cardw{filter:none!important}
+.paper{box-shadow:var(--weich)!important;border-radius:var(--radius)}
+.fold{border-top:1px solid var(--rand)!important}
+.vf{border-radius:8px}
+.vf::before{border-width:1.5px!important;border-radius:4px;opacity:.8}
+.chip-rand{border-width:1px!important;border-color:var(--rand)!important}
+.k-abschnitt{color:#8a8578!important;letter-spacing:.06em!important}
+
+/* Start */
+#start .startkoerper{padding:36px 40px!important}
+.heldkarte{padding:30px 34px 28px!important;border:1px solid var(--rand)}
+.heldkarte .gruss{color:var(--leise);font:600 14px 'Bricolage Grotesque',sans-serif}
+.heldkarte h1{font-size:34px!important}
+.blattkarte{border:1px solid var(--rand)}
+.probier .btn{border-radius:999px!important;background:#faf8f3!important}
+.mehrkarte .card{border:1px solid var(--rand);box-shadow:none}
+.mehrkarte:hover .card{border-color:var(--hell);transform:none!important;box-shadow:var(--weich)}
+.zuletztkopf{border-bottom:0!important;margin-top:36px!important}
+.laschen.klein button{border:0!important;padding:0!important;font:800 19px 'Bricolage Grotesque',sans-serif!important;color:var(--tinte)!important;background:none!important}
+.projektkarte .card{border:1px solid var(--rand);box-shadow:none}
+.projektkarte:hover .card{transform:none!important;box-shadow:var(--weich);border-color:#ddd3c1}
+.projektkarte .vorschau{border-radius:6px}
+
+/* Spalten */
+.dreispalt .links,.dreispalt .rechts{border-color:var(--rand)!important;border-style:solid!important;border-width:0 1px 0 0!important}
+.dreispalt .rechts{border-width:0 0 0 1px!important;background:#fbf8f2!important}
+.navzeile{border-left:0!important;border-radius:8px;margin-right:10px;min-height:40px!important}
+.navzeile[aria-current="true"]{background:var(--hauch)!important}
+.auswahlkarte{border:1px solid var(--rand);box-shadow:none!important}
+.formatkarte .card{border:1px solid var(--rand)}
+.formatkarte[aria-pressed="true"] .card{outline:0!important;border-color:var(--pflaume);box-shadow:0 0 0 3px rgba(124,92,214,.15)}
+.formatkarte:hover .card,.projektkarte:hover .card{transform:none!important}
+
+/* Werkbank */
+.werkzeugleiste,.seitenleiste,.kranichleiste,.rechtsbild,.werkzeuge,.vlinks,.enav{border-style:solid!important;border-color:var(--rand)!important}
+.werkzeugleiste,.seitenleiste,.werkzeuge,.vlinks{border-width:0 1px 0 0!important}
+.kranichleiste,.rechtsbild{border-width:0 0 0 1px!important}
+.leistenkopf{border-bottom:1px solid var(--rand)!important}
+.rechtsbild .reglerkarte{border-bottom:1px solid var(--rand)!important}
+.schienenknopf{border-radius:8px!important}
+.schienenknopf[aria-pressed="true"]{box-shadow:none!important}
+.leinwand{background-image:radial-gradient(rgba(29,39,66,.07) 1px,transparent 1.3px)!important}
+.boardzeile{border-radius:8px!important}
+.boardzeile[aria-current="true"]{box-shadow:inset 0 0 0 1px var(--hell)!important;background:var(--hauch)!important}
+.boardgruppe.offen{border:0!important;background:transparent!important}
+.ansichtecke .uebersicht,.ansichtecke .ansichtleiste{border-radius:10px}
+.blase-ich{border-radius:14px 14px 4px 14px!important;clip-path:none!important}
+.wunschbox{border-radius:12px!important;border:1px solid var(--rand)!important;box-shadow:var(--weich)}
+.sendeknopf{border-radius:12px!important}
+.fortschritt .zeile{border:1px solid var(--rand)!important}
+.hinweisband{border-radius:12px}
+.vfuss{border-top:1px solid var(--rand)!important}
+.variante .card{border:1px solid var(--rand)}
+.variante.gewaehlt .card{outline:0!important;border-color:var(--pflaume);box-shadow:0 0 0 3px rgba(124,92,214,.15)}
+.wunschzitat{border-radius:8px;border:1px solid var(--rand)!important}
+
+/* Dialoge + Einstellungen schlicht */
+.dialog{border-radius:14px!important}
+.einstelldialog{width:min(620px,94vw)!important;height:auto!important;max-height:90vh;padding:22px 26px 20px!important;gap:6px!important;overflow:auto!important}
+.ekopfzeile{display:flex;align-items:center;margin-bottom:6px}
+.ekopfzeile h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.eliste{display:flex;flex-direction:column}
+.ezeile{display:flex;align-items:center;gap:18px;padding:14px 0;border-bottom:1px solid var(--rand)}
+.ezeile.hoch{align-items:flex-start;flex-direction:column;gap:8px}
+.ezeile.hoch textarea{width:100%;min-height:64px;resize:vertical}
+.etext{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.etext b{font:700 15px 'Bricolage Grotesque',sans-serif}
+.etext span{color:var(--leise);font-size:13px}
+.ezeile .feld{width:230px}
+.ezeile select.feld{width:160px}
+.zweifeld{display:flex;gap:6px;width:280px}
+.zweifeld .feld{flex:1;min-width:0;width:auto!important}
+.segment.wegwahl{display:flex;padding:3px;background:#f1ece2;border-radius:9px;gap:2px}
+.segment.wegwahl label{position:relative;cursor:pointer}
+.segment.wegwahl input{position:absolute;opacity:0}
+.segment.wegwahl span{display:block;padding:7px 12px;border-radius:7px;font:600 13.5px 'Bricolage Grotesque',sans-serif;color:var(--leise)}
+.segment.wegwahl input:checked + span{background:#fff;color:var(--facette);box-shadow:0 1px 2px rgba(30,40,70,.12)}
+.erweitert{border-bottom:1px solid var(--rand)}
+.erweitert summary{list-style:none;display:flex;align-items:center;gap:8px;padding:14px 0;cursor:pointer;font:700 15px 'Bricolage Grotesque',sans-serif;color:var(--leise)}
+.erweitert summary::-webkit-details-marker{display:none}
+.erweitert[open] summary svg{transform:rotate(90deg)}
+.erweitert .ezeile:last-child{border-bottom:0}
+.einstelldialog .dialogfuss{padding:16px 0 0!important;justify-content:flex-end}
+.schalter i{width:40px;height:24px;border-radius:12px}
+.schalter i::after{width:18px;height:18px}
+.schalter input:checked + i::after{left:19px}

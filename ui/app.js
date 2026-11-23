@@ -96,10 +96,9 @@
     if (l === 'start') {
       blatt = `<div class="startraster">
         <section class="paper heldkarte">
-          <span class="k-abschnitt">${esc(gruss())}</span>
+          <span class="gruss">${esc(gruss())}</span>
           <h1 class="h">Was soll heute entstehen?</h1>
           <span class="leise">Sag Kranich in einem Satz, was du brauchst. Den Rest faltet er.</span>
-          <span class="hand notiz">Ein Satz reicht!</span>
           <div class="heldeingabe"><input id="startwunsch" class="feld" placeholder="z. B. Ein Plakat für den Flohmarkt am Samstag, fröhlich und gut lesbar" aria-label="Was soll Kranich falten?">
             <button type="button" class="btn btn-q" data-aktion="anhang" title="Bild oder Skizze anhängen" aria-label="Bild anhängen">${sym('klammer', 18)}</button>
             <button type="button" class="btn btn-p btn-gross" data-aktion="start-falten">${figur('arbeitend', 18)} Entwerfen</button></div>
@@ -166,7 +165,7 @@
     return `<div class="dreispalt">
       <nav class="spalte links" aria-label="Ordner"><span class="k-abschnitt">Schnellzugriff</span>
         ${ORDNER.map(([k, t, ic]) => `<button type="button" class="navzeile" aria-current="${o === k}" data-aktion="oeffnen-ordner" data-o="${k}">${sym(ic, 17)}<span>${t}</span><b>${S.liste.filter(filter[k]).length}</b></button>`).join('')}
-        <div class="platz"></div><span class="hand notiz-unten">Ordner kommen bald ↓</span></nav>
+        </nav>
       <main class="spalte spmitte"><div class="spaltenkopf"><div><h1 class="h">Entwurf öffnen</h1><span class="leise">${liste.length} ${liste.length === 1 ? 'Entwurf' : 'Entwürfe'}</span></div><div class="platz"></div>
         <label class="suchfeld">${sym('suche', 16)}<input id="psuche" placeholder="Entwurf suchen …" aria-label="Entwurf suchen"></label></div>
         <div class="projektliste vier">${liste.map((p) => projektKarte(p).replace('class="projektkarte cardw"', `class="projektkarte cardw ${gew?.id === p.id ? 'gewaehlt' : ''}"`).replace('data-aktion="projekt-oeffnen"', 'data-aktion="projekt-waehlen"')).join('') || `<div class="leerhinweis">${figur('ruhend', 40)}<span>${q ? 'Nichts gefunden.' : 'Hier ist noch nichts.'}</span></div>`}</div></main>
@@ -222,7 +221,7 @@
       <nav class="spalte links" aria-label="Gruppen"><span class="k-abschnitt">Gruppen</span>
         ${(S.gruppen || []).map((g) => `<button type="button" class="navzeile" aria-current="${!q && gruppe === g}" data-aktion="format-gruppe" data-g="${esc(g)}">${sym(GRUPPEN_SYM[g] || 'box', 17)}<span>${esc(g)}</span><b>${S.formate.filter((x) => x.gruppe === g).length}</b></button>`).join('')}
         <button type="button" class="navzeile" aria-current="${!q && eigen}" data-aktion="format-gruppe" data-g="Eigen">${sym('lineal', 17)}<span>Eigene Maße</span></button>
-        <div class="platz"></div><span class="hand notiz-unten">Flyer, Visitenkarte?<br>Einfach eigene Maße!</span></nav>
+        </nav>
       <main class="spalte spmitte"><div class="spaltenkopf"><div><h1 class="h">${q ? 'Suche' : eigen ? 'Eigene Maße' : esc(gruppe)}</h1><span class="leise">${eigen ? 'Gib rechts Breite und Höhe ein – Kranich faltet jede Größe.' : `${liste.length} ${liste.length === 1 ? 'Format' : 'Formate'}${liste.some((x) => x.druck) ? ' · Druck in Millimetern' : ''}`}</span></div><div class="platz"></div>
           <label class="suchfeld">${sym('suche', 16)}<input id="fsuche" placeholder="Format suchen …" aria-label="Format suchen"></label></div>
         ${eigen ? `<div class="eigenhinweis vf">${figur('arbeitend', 80)}<span class="hand" style="font-size:26px">ich falt jede Größe</span></div>` : `<div class="formatgruppe"><div class="formatreihe">${liste.map((x) => `<button type="button" class="formatkarte cardw" aria-pressed="${x.id === f.id}" data-aktion="format-waehlen" data-id="${x.id}"><div class="card"><div class="fvor vf">${formatBild(x)}</div><span class="fname"><b class="h">${esc(x.name)}</b>${x.id === f.id ? '<span class="chip chip-voll">Gewählt</span>' : ''}</span><span class="m">${esc(massText(x))}</span></div></button>`).join('') || '<div class="leerhinweis">Kein Format passt. Nimm links „Eigene Maße“.</div>'}</div></div>`}
@@ -751,7 +750,6 @@
           <input class="feld" id="mischwunsch" placeholder="z. B. Kopf aus B, Liste aus A">
           <button type="button" class="btn" data-aktion="mischen" ${S.mischen.size >= 2 ? '' : 'disabled'}>${sym('mischen', 16)} Mischen (${S.mischen.size})</button>
           <div class="platz"></div>
-          <span class="hand notiz-unten">nichts dabei? einfach nochmal!</span>
           <button type="button" class="btn" data-aktion="noch-drei" ${S.variantenLaeuft ? 'disabled' : ''}>${sym('zurueck', 15)} Drei neue Fassungen</button>
         </aside>
         <main class="vmitte">
