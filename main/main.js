@@ -9,6 +9,7 @@ const path = require('node:path');
 const { Projekte } = require('../kern/projekte');
 const { Einstellungen } = require('../kern/einstellungen');
 const echtesHirn = require('../kern/hirn');
+const Heimdienst = require('../kern/heimdienst');
 // Für Rauchtest und Entwicklung ohne Konto: Claude vorspielen.
 const hirn = process.env.KRANICH_SPIELHIRN ? { ...echtesHirn, frage: require('../werkzeug/spielhirn').frage } : echtesHirn;
 const A = require('../kern/auftraege');
@@ -134,7 +135,8 @@ function registriere() {
 
   // Einstellungen
   handle('einstellungen:lesen', () => einstellungen.fuerOberflaeche());
-  handle('einstellungen:setzen', (neu) => einstellungen.setze(neu));
+  handle('einstellungen:setzen', (neu) => { const r = einstellungen.setze(neu); heimdienstAnpassen(); return einstellungen.fuerOberflaeche(); });
+  handle('heim:neuerCode', () => { einstellungen.setze({ heimEigenerCode: Heimdienst.neuerCode() }); heimdienstAnpassen(true); return einstellungen.fuerOberflaeche(); });
   handle('hirn:testen', async () => {
     const { text, weg } = await hirn.frage({ system: 'Antworte nur mit dem Wort OK.', auftrag: 'Bist du da?' }, einstellungen.alle());
     return { ok: /ok/i.test(text), weg };
@@ -309,12 +311,30 @@ function oeffneFenster() {
   return fenster;
 }
 
+// Heim-Dienst an/aus je nach Einstellung
+let heimServer = null;
+let heimStand = '';
+function heimdienstAnpassen(neu = false) {
+  const e = einstellungen.alle();
+  if (e.heimFreigabe && !e.heimEigenerCode) { einstellungen.setze({ heimEigenerCode: Heimdienst.neuerCode() }); return heimdienstAnpassen(true); }
+  const stand = e.heimFreigabe ? `${e.heimPort}|${e.heimEigenerCode}` : '';
+  if (stand === heimStand && !neu) return;
+  if (heimServer) { heimServer.close(); heimServer = null; }
+  heimStand = stand;
+  if (!stand) return;
+  try {
+    heimServer = Heimdienst.starte({ port: e.heimPort, code: e.heimEigenerCode, version: app.getVersion(), frageClaude: echtesHirn.frageClaude, einstellungen: () => einstellungen.alle() });
+    heimServer.on('error', () => { heimServer = null; heimStand = ''; });
+  } catch { heimServer = null; heimStand = ''; }
+}
+
 function start() {
   // Für das Startfenster: welche Version ist installiert?
   try { fs.mkdirSync(datenOrdner(), { recursive: true }); fs.writeFileSync(path.join(datenOrdner(), 'version.json'), JSON.stringify({ version: app.getVersion(), pfad: process.execPath })); } catch { /* egal */ }
   projekte = new Projekte(path.join(datenOrdner(), 'projekte'));
   einstellungen = new Einstellungen(path.join(datenOrdner(), 'einstellungen.json'));
   registriere();
+  heimdienstAnpassen();
   return oeffneFenster();
 }
 

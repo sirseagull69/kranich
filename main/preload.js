@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('kranich', {
     dateiLesen: rufe('projekte:dateiLesen'),
     vorschauAusHtml: rufe('projekte:vorschauAusHtml'),
   },
-  einstellungen: { lesen: rufe('einstellungen:lesen'), setzen: rufe('einstellungen:setzen') },
+  einstellungen: { lesen: rufe('einstellungen:lesen'), setzen: rufe('einstellungen:setzen'), neuerHeimCode: rufe('heim:neuerCode') },
   hirn: { testen: rufe('hirn:testen') },
   entwurf: rufe('kranich:entwurf'),
   varianten: rufe('kranich:varianten'),

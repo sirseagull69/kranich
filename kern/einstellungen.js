@@ -3,7 +3,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const STANDARD = {
-  weg: 'claude', // 'claude' | 'api'
+  weg: 'claude', // 'claude' | 'heim' | 'api'
+  heimAdresse: '', // z. B. http://mein-pc:4747 – Kranich auf dem Heim-PC
+  heimCode: '', // Kopplungscode vom Heim-PC
+  heimFreigabe: false, // dieser PC nimmt Aufträge von anderen Geräten an
+  heimPort: 4747,
+  heimEigenerCode: '',
   claudeProgramm: 'claude',
   claudeModell: 'opus',
   apiSchluessel: '',
@@ -33,15 +38,17 @@ class Einstellungen {
     const w = this.alle();
     w.apiSchluesselGesetzt = Boolean(w.apiSchluessel);
     delete w.apiSchluessel;
+    w.heimCodeGesetzt = Boolean(w.heimCode);
+    delete w.heimCode;
     return w;
   }
 
   setze(neu = {}) {
     for (const [k, v] of Object.entries(neu)) {
       if (!(k in STANDARD)) continue;
-      if (k === 'apiSchluessel' && !v) continue; // leer lassen heißt: behalten
+      if ((k === 'apiSchluessel' || k === 'heimCode') && !v) continue; // leer lassen heißt: behalten
       if (k === 'appOrdner') this.werte.appOrdner = { ...this.werte.appOrdner, ...v };
-      else this.werte[k] = typeof STANDARD[k] === 'boolean' ? Boolean(v) : v;
+      else this.werte[k] = typeof STANDARD[k] === 'boolean' ? Boolean(v) : typeof STANDARD[k] === 'number' ? (Number(v) || STANDARD[k]) : v;
     }
     fs.mkdirSync(path.dirname(this.datei), { recursive: true });
     fs.writeFileSync(this.datei, JSON.stringify(this.werte, null, 2), 'utf8');

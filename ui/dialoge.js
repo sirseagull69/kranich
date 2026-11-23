@@ -115,15 +115,17 @@
   // ---------- Einstellungen ----------
   async function einstellungen() {
     const e = await K.einstellungen.lesen();
-    const BER = [['allgemein', 'zahnrad', 'Allgemein'], ['look', 'farbe', 'Look'], ['pc', 'fenster', 'Modell auf dem PC'], ['ordner', 'ordner', 'App-Ordner']];
+    const BER = [['allgemein', 'zahnrad', 'Allgemein'], ['look', 'farbe', 'Look'], ['heim', 'haus', 'Heim-PC'], ['pc', 'fenster', 'Modell auf dem PC'], ['ordner', 'ordner', 'App-Ordner']];
     const d = oeffne(`<div class="eraster"><span class="klebe"></span>
       <nav class="enav2"><div class="enav-kopf">${figur('ruhend', 34)}<b class="h">Einstellungen</b></div>
         ${BER.map(([k, ic, t], i) => `<button type="button" data-bereich="${k}" aria-current="${i === 0}">${sym(ic, 16)}<span>${t}</span></button>`).join('')}</nav>
       <div class="einhalt2"><button type="button" class="btn btn-q rundknopf ezu" data-zu aria-label="Schließen">${sym('schliessen', 18)}</button>
         <section class="ebereich" data-b="allgemein"><h2 class="h"><mark>Allgemein</mark></h2>
-          <div class="ezeile"><div class="etext"><b>Wer denkt mit</b><span>Dein Claude-Konto auf diesem Rechner oder ein API-Schlüssel.</span></div>
-            <div class="segment wegwahl"><label><input type="radio" name="weg" value="claude" ${e.weg !== 'api' ? 'checked' : ''}><span>Claude-Konto</span></label><label><input type="radio" name="weg" value="api" ${e.weg === 'api' ? 'checked' : ''}><span>API-Schlüssel</span></label></div></div>
-          <div class="ezeile weg-claude"><div class="etext"><b>Modell</b><span>Opus ist am besten, Sonnet schneller.</span></div><select class="feld" id="e-modell">${['opus', 'sonnet', 'haiku'].map((m) => `<option ${e.claudeModell === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+          <div class="ezeile"><div class="etext"><b>Wer denkt mit</b><span>Claude auf diesem PC, über deinen Heim-PC oder mit API-Schlüssel.</span></div>
+            <div class="segment wegwahl"><label><input type="radio" name="weg" value="claude" ${e.weg !== 'api' && e.weg !== 'heim' ? 'checked' : ''}><span>Dieser PC</span></label><label><input type="radio" name="weg" value="heim" ${e.weg === 'heim' ? 'checked' : ''}><span>Heim-PC</span></label><label><input type="radio" name="weg" value="api" ${e.weg === 'api' ? 'checked' : ''}><span>API-Schlüssel</span></label></div></div>
+          <div class="ezeile weg-heim"><div class="etext"><b>Adresse vom Heim-PC</b><span>Steht auf dem Heim-PC unter Einstellungen → Heim-PC.</span></div><input class="feld" id="e-heimadr" value="${esc(e.heimAdresse)}" placeholder="http://mein-pc:4747"></div>
+          <div class="ezeile weg-heim"><div class="etext"><b>Kopplungscode</b><span>${e.heimCodeGesetzt ? 'Gespeichert – leer lassen zum Behalten.' : 'Vom Heim-PC kopieren.'} Ist der Heim-PC aus, nimmt Kranich das Claude Code hier, falls installiert.</span></div><input class="feld" id="e-heimcode" type="password" placeholder="Code"></div>
+          <div class="ezeile weg-modell"><div class="etext"><b>Modell</b><span>Opus ist am besten, Sonnet schneller.</span></div><select class="feld" id="e-modell">${['opus', 'sonnet', 'haiku'].map((m) => `<option ${e.claudeModell === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
           <div class="ezeile weg-api"><div class="etext"><b>API-Schlüssel</b><span>${e.apiSchluesselGesetzt ? 'Gespeichert – leer lassen zum Behalten.' : 'Beginnt mit sk-ant-'}</span></div><input class="feld" id="e-key" type="password" placeholder="sk-ant-…"></div>
           <div class="ezeile weg-api"><div class="etext"><b>Modell</b></div><input class="feld" id="e-apimodell" value="${esc(e.apiModell)}"></div>
           <div class="ezeile"><div class="etext"><b>Verbindung</b><span class="status">Noch nicht getestet.</span></div><button type="button" class="btn" data-testen>Testen</button></div>
@@ -131,6 +133,13 @@
         </section>
         <section class="ebereich" data-b="look" hidden><h2 class="h"><mark>Look</mark></h2>
           <div class="ezeile hoch"><div class="etext"><b>Eigene Look-Regeln</b><span>Kranich hält sich bei jedem Entwurf daran.</span></div><textarea class="feld" id="e-look" rows="5" placeholder="z. B. Hauptknöpfe immer rechts unten">${esc(e.lookHinweise)}</textarea></div>
+        </section>
+        <section class="ebereich" data-b="heim" hidden><h2 class="h"><mark>Heim-PC</mark></h2>
+          <p class="leise" style="margin:0 0 6px">Andere Geräte (z. B. dein Arbeits-Notebook) schicken ihre Aufträge an diesen PC. Hier erledigt Claude Code die Arbeit. Kranich muss dafür hier offen sein.</p>
+          <div class="ezeile"><div class="etext"><b>Diesen PC freigeben</b><span>Nur mit dem Kopplungscode kommt jemand rein.</span></div><label class="schalter"><input type="checkbox" id="e-heimfrei" ${e.heimFreigabe ? 'checked' : ''}><i></i></label></div>
+          <div class="ezeile"><div class="etext"><b>Port</b><span>Unter diesem Port ist Kranich erreichbar.</span></div><input class="feld" id="e-heimport" value="${esc(e.heimPort)}" style="width:110px"></div>
+          <div class="ezeile"><div class="etext"><b>Kopplungscode</b><span>Auf dem anderen Gerät eintragen.</span></div><div class="zweifeld"><input class="feld" id="e-eigencode" readonly value="${esc(e.heimEigenerCode || 'erscheint nach dem Speichern')}"><button type="button" class="btn btn-s" data-codekopie>Kopieren</button><button type="button" class="btn btn-s btn-q" data-codeneu>Neu</button></div></div>
+          <p class="leise" style="margin:8px 0 0;font-size:13px">Adresse fürs andere Gerät: <b>http://&lt;Name oder Adresse dieses PCs&gt;:${esc(e.heimPort)}</b> – derselbe Weg, über den du origami von unterwegs erreichst.</p>
         </section>
         <section class="ebereich" data-b="pc" hidden><h2 class="h"><mark>Modell auf dem PC</mark></h2>
           <div class="ezeile"><div class="etext"><b>Kleine Änderungen lokal</b><span>Wünsche an ein einzelnes Element gehen zuerst an Ollama. Fällt Claude aus, springt der PC ein.</span></div><label class="schalter"><input type="checkbox" id="e-lokal" ${e.lokalAn ? 'checked' : ''}><i></i></label></div>
@@ -153,8 +162,16 @@
       const weg = el.querySelector('input[name="weg"]:checked').value;
       el.querySelectorAll('.weg-claude').forEach((x) => { x.hidden = weg !== 'claude'; });
       el.querySelectorAll('.weg-api').forEach((x) => { x.hidden = weg !== 'api'; });
+      el.querySelectorAll('.weg-heim').forEach((x) => { x.hidden = weg !== 'heim'; });
+      el.querySelectorAll('.weg-modell').forEach((x) => { x.hidden = weg === 'api'; });
     };
     el.querySelectorAll('input[name="weg"]').forEach((r) => r.addEventListener('change', wegZeigen));
+    el.querySelector('#e-heimfrei').addEventListener('change', async () => {
+      await K.einstellungen.setzen({ heimFreigabe: el.querySelector('#e-heimfrei').checked, heimPort: Number(el.querySelector('#e-heimport').value) || 4747 });
+      const n = await K.einstellungen.lesen();
+      el.querySelector('#e-eigencode').value = n.heimEigenerCode || '';
+      H.meldung(n.heimFreigabe ? 'Dieser PC nimmt jetzt Aufträge an.' : 'Freigabe aus.');
+    });
     wegZeigen();
     const werte = () => ({
       weg: el.querySelector('input[name="weg"]:checked').value,
@@ -162,6 +179,10 @@
       claudeProgramm: el.querySelector('#e-prog').value.trim() || 'claude',
       apiSchluessel: el.querySelector('#e-key').value.trim(),
       apiModell: el.querySelector('#e-apimodell').value.trim(),
+      heimAdresse: el.querySelector('#e-heimadr').value.trim(),
+      heimCode: el.querySelector('#e-heimcode').value.trim(),
+      heimFreigabe: el.querySelector('#e-heimfrei').checked,
+      heimPort: Number(el.querySelector('#e-heimport').value) || 4747,
       lokalAn: el.querySelector('#e-lokal').checked,
       lokalModell: el.querySelector('#e-lokalmodell').value.trim(),
       lokalAdresse: el.querySelector('#e-lokaladr').value.trim(),
@@ -169,8 +190,10 @@
       appOrdner: Object.fromEntries([...el.querySelectorAll('[data-app]')].map((i) => [i.dataset.app, i.value.trim()])),
     });
     el.addEventListener('click', async (ev) => {
-      const t = ev.target.closest('[data-appwahl],[data-testen],[data-speichern]');
+      const t = ev.target.closest('[data-appwahl],[data-testen],[data-speichern],[data-codekopie],[data-codeneu]');
       if (!t) return;
+      if (t.hasAttribute('data-codekopie')) { await navigator.clipboard.writeText(el.querySelector('#e-eigencode').value); H.meldung('Code kopiert.'); return; }
+      if (t.hasAttribute('data-codeneu')) { if (!window.confirm('Neuen Code machen? Andere Geräte brauchen dann den neuen.')) return; const n = await K.einstellungen.neuerHeimCode(); el.querySelector('#e-eigencode').value = n.heimEigenerCode; return; }
       if (t.dataset.appwahl) {
         const o = await K.datei.ordnerWaehlen();
         if (o && !o.fehler) el.querySelector(`[data-app="${t.dataset.appwahl}"]`).value = o;
@@ -179,6 +202,7 @@
       const status = el.querySelector('.status');
       await K.einstellungen.setzen(werte());
       if (t.hasAttribute('data-speichern')) { d.zu(); H.meldung('Einstellungen gespeichert.'); return; }
+      const neu = await K.einstellungen.lesen(); if (neu.heimEigenerCode) el.querySelector('#e-eigencode').value = neu.heimEigenerCode;
       status.textContent = 'Frage Claude …';
       const r = await K.hirn.testen();
       status.textContent = r?.fehler ? `Klappt nicht: ${r.fehler.nachricht}` : r.ok ? 'Claude ist da. Alles bereit.' : 'Claude antwortet, aber anders als erwartet.';

@@ -146,6 +146,29 @@ async function frageLokal({ system, auftrag, bilder = [], modell = 'gemma4:26b',
   return daten.message?.content || '';
 }
 
+// Fragt Kranich auf dem Heim-PC (Heim-Dienst), der dort Claude Code benutzt.
+async function frageHeim({ system, auftrag, bilder = [], modell = 'opus', schnell = false, adresse, code, zeitlimitMs = 330000, _fetch = fetch }) {
+  if (!adresse) throw new HirnFehler('keine-verbindung', 'Keine Adresse vom Heim-PC eingetragen.');
+  const ziel = `${String(adresse).replace(/\/+$/, '')}/kranich/hirn`;
+  const daten = {
+    system, auftrag, modell, schnell,
+    bilder: bilder.map((b) => ({ endung: path.extname(b).slice(1).toLowerCase(), daten: fs.readFileSync(b).toString('base64') })),
+  };
+  const ab = new AbortController();
+  const uhr = setTimeout(() => ab.abort(), zeitlimitMs);
+  let antwort;
+  try {
+    antwort = await _fetch(ziel, { method: 'POST', headers: { 'content-type': 'application/json', 'x-kranich-code': code || '' }, body: JSON.stringify(daten), signal: ab.signal });
+  } catch (e) {
+    throw new HirnFehler('keine-verbindung', 'Der Heim-PC ist nicht erreichbar (aus, oder Kranich dort zu?).', e.message);
+  } finally { clearTimeout(uhr); }
+  if (antwort.status === 401) throw new HirnFehler('nicht-angemeldet', 'Der Kopplungscode passt nicht zum Heim-PC.');
+  if (!antwort.ok) throw new HirnFehler('keine-verbindung', `Der Heim-PC antwortet mit Fehler ${antwort.status}.`);
+  const r = await antwort.json();
+  if (r.fehler) throw new HirnFehler(r.fehler.art || 'antwort', `Heim-PC: ${r.fehler.nachricht}`);
+  return r.text || '';
+}
+
 // Wählt den Weg nach den Einstellungen. Bei "klein" (kleine Änderung) und
 // eingeschaltetem lokalem Modell wird zuerst lokal gefragt; scheitert Claude
 // an der Verbindung, springt das lokale Modell ein, wenn erlaubt.
@@ -161,6 +184,20 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
   if (klein && lokalErlaubt && !auftrag.bilder?.length) {
     try { return { text: await lokal(), weg: 'lokal' }; } catch { /* dann Claude */ }
   }
+  if (e.weg === 'heim') {
+    try {
+      return { text: await frageHeim({ ...auftrag, modell: e.claudeModell || 'opus', schnell, adresse: e.heimAdresse, code: e.heimCode }), weg: 'heim' };
+    } catch (heimFehler) {
+      if (heimFehler.art !== 'keine-verbindung' && heimFehler.art !== 'nicht-angemeldet') throw heimFehler;
+      // Heim-PC nicht da: Claude Code auf diesem Rechner versuchen
+      try {
+        return { text: await frageClaude({ ...auftrag, modell: schnell ? 'sonnet' : (e.claudeModell || 'opus'), programm: e.claudeProgramm || 'claude' }), weg: 'claude' };
+      } catch (f) {
+        if (f.art === 'nicht-installiert') throw heimFehler;
+        throw f;
+      }
+    }
+  }
   try {
     return { text: await gross(), weg: e.weg === 'api' ? 'api' : 'claude' };
   } catch (fehler) {
@@ -171,4 +208,4 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
   }
 }
 
-module.exports = { frage, frageClaude, frageApi, frageLokal, HirnFehler };
+module.exports = { frage, frageClaude, frageApi, frageLokal, frageHeim, HirnFehler };

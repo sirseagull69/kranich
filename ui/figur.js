@@ -65,6 +65,7 @@
 
   // Symbole aus dem Canvas (Strichzeichnungen, 24er Raster).
   const SYM = {
+    haus: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-6h4v6',
     haken: 'M5 12.5l4.5 4.5L19 7.5', zurueck: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3',
     varianten: 'M3 6h5v12H3zM10 6h5v12h-5zM17 6h4v12h-4z', export: 'M12 4v11M7 10l5 5 5-5M4 20h16',
     seite: 'M6 3h9l4 4v14H6zM15 3v4h4', plus: 'M12 5v14M5 12h14', box: 'M4 6h16v13H4z', text: 'M5 6V4h14v2M12 4v16M9 20h6',

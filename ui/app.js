@@ -121,7 +121,7 @@
     const l = S.startLasche;
     if (l === 'start') {
       const e = S.einstellungen || {};
-      const hirn = e.weg === 'api' ? 'API' : `Claude · ${e.claudeModell || 'opus'}`;
+      const hirn = e.weg === 'api' ? 'API' : e.weg === 'heim' ? `Heim-PC · ${e.claudeModell || 'opus'}` : `Claude · ${e.claudeModell || 'opus'}`;
       const KARTEN = [
         ['app', 'plant', 'Ganze App', 'Mit Plan, alle Bildschirme', '#ece6fd'],
         ['bild', 'bild', 'Bild bearbeiten', 'Freistellen, zuschneiden & Co.', '#f3eefe'],
