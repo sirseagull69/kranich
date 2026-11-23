@@ -41,14 +41,17 @@
   };
   const NAMEN = { still: 'Kranich', ruhend: 'Kranich ruhend', arbeitend: 'Kranich arbeitet', fertig: 'Kranich ist fertig', schlaeft: 'Kranich schläft', landet: 'Kranich landet' };
 
-  // Neue Animationen aus voegel.js; alte Namen werden übersetzt
-  const ALT = { ruhend: 'ruhezustand', arbeitend: 'faltet', fertig: 'fertig', schlaeft: 'schlaeft', landet: 'landet' };
-  const LEERLAUF = ['ruhezustand', 'ruhezustand-2', 'ruhezustand-3', 'ruhezustand-4', 'ruhezustand-5'];
+  // Animationen nach Ori (origami), übertragen auf Kranich und Albatros (voegel-ori.js)
+  const ALT = { ruhend: 'ruhezustand', arbeitend: 'denkt-nach', fertig: 'erledigt', schlaeft: 'offline-schlaeft', landet: 'start-landung', faltet: 'denkt-nach', baut: 'plant', groessen: 'folien', malt: 'bild', prueft: 'prueft' };
+  const LEERLAUF = ['ruhezustand', 'ruhezustand-2', 'ruhezustand-3', 'ruhezustand-4'];
+  window.vogelAnimationen = (vogel = 'kranich') => (window.VOEGEL_ORI?.[vogel] || []);
   window.figur = function figur(haltung = 'ruhend', groesse = 34, vogel = 'kranich') {
-    if (window.Voegel && haltung !== 'still') {
+    const liste = window.VOEGEL_ORI?.[vogel];
+    if (liste && haltung !== 'still') {
       let name = ALT[haltung] || haltung;
-      if (name === 'ruhezustand' && groesse >= 60) name = LEERLAUF[Math.floor(Math.random() * LEERLAUF.length)];
-      if (window.Voegel.ANIMATIONEN[vogel]?.some((a) => a.name === name)) return window.Voegel.svg(vogel, name, groesse);
+      if (name === 'ruhezustand') name = groesse >= 60 ? LEERLAUF[Math.floor(Math.random() * LEERLAUF.length)] : 'ruhezustand-3';
+      const a = liste.find((x) => x.name === name);
+      if (a) return a.svg.replace(/__G__/g, groesse).replace(' aria-hidden="true"', '').replace('<svg ', `<svg role="img" aria-label="${vogel === 'albatros' ? 'Albatros' : 'Kranich'}" `);
     }
     const h = HALTUNG[haltung] ? haltung : 'ruhend';
     const id = `kr${++zaehler}`;
