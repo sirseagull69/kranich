@@ -132,3 +132,67 @@
 .ef{min-width:0}
 .ef input{width:100%;padding:0}
 .ef2 .ef span{min-width:0;flex:none}
+
+/* ---------- Weitergeben ---------- */
+.dialog.weitergeben{width:min(1080px,95vw);padding:20px 22px!important}
+.wg-kopf{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.wg-kopf h2{margin:0;font-size:24px}
+.wg-raster{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:14px;align-items:stretch}
+.wg-karte{display:flex;flex-direction:column;gap:10px;background:#fff;border:1px solid #ece5d6;border-radius:12px;padding:14px;min-height:380px}
+.wg-karte h3{margin:0;font-size:17px;display:flex;align-items:center;gap:8px;color:var(--tinte)}
+.wg-nr{width:24px;height:24px;border-radius:50%;background:#ece6fd;color:#4a2f9a;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.wg-liste{display:flex;flex-direction:column;max-height:300px;overflow:auto;border:1px solid #f0eadf;border-radius:10px}
+.wg-board{display:flex;align-items:center;gap:10px;padding:9px 10px;border-bottom:1px solid #f3eee4;cursor:pointer;font-size:14.5px}
+.wg-board:last-child{border-bottom:0}
+.wg-board:hover{background:#faf8f3}
+.wg-board input{accent-color:#5b3fc4;width:16px;height:16px}
+.wg-board span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wg-board small{font:500 11px ui-monospace,Consolas,monospace;color:#9a9486}
+.wg-arten{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wg-art{display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:12px;border:1.5px solid #ece5d6;border-radius:12px;background:#fffdf9;text-align:left;color:#4a2f9a}
+.wg-art b{font-size:15px;color:var(--tinte)}
+.wg-art span{font-size:12.5px;color:var(--leise);line-height:1.35}
+.wg-art:hover{border-color:#cfc2f7}
+.wg-art[aria-pressed="true"]{border-color:#7c5cd6;background:#f5f1ff;box-shadow:0 0 0 3px rgba(124,92,214,.12)}
+.wg-zeile{display:flex;align-items:center;gap:12px;border-top:1.5px dashed #ece5d6;padding-top:10px}
+.wg-zeile>div:first-child{flex:1;display:flex;flex-direction:column}
+.wg-zeile .segment{display:inline-flex;background:#f3efe7;border-radius:10px;padding:3px}
+.wg-zeile .segment button{border:0;background:transparent;padding:6px 12px;border-radius:8px;font:700 13px 'Bricolage Grotesque',sans-serif;color:var(--leise)}
+.wg-zeile .segment button.an{background:#fff;color:#4a2f9a;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.wg-ziel{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:12px;border:1.5px solid #ece5d6;border-radius:12px;background:#fffdf9;text-align:left}
+.wg-ziel[aria-pressed="true"]{border-color:#7c5cd6;background:#f5f1ff}
+.wg-ziel .ordnertext{font-size:12.5px;word-break:break-all}
+.wg-ziel select{width:100%}
+@media (max-width:900px){.wg-raster{grid-template-columns:1fr}}
+
+/* ---------- Vorschau ---------- */
+.abspielen.neu{display:grid!important;grid-template-columns:240px minmax(0,1fr) 300px;grid-template-rows:auto 1fr;background:#f4f0e8!important;background-image:radial-gradient(rgba(29,39,66,.09) 1px,transparent 1.3px)!important;background-size:18px 18px!important}
+.abspielen.neu .abspielleiste{grid-column:1/-1;background:transparent!important;border:0!important;padding:14px 20px!important}
+.vs-links,.vs-rechts{margin:0 0 18px;background:#fffdf9;border-radius:10px;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);padding:14px;overflow:auto;display:flex;flex-direction:column;gap:6px;animation:hoch .5s var(--sanft) both}
+.vs-links{margin-left:18px}.vs-rechts{margin-right:18px}
+.vs-titel{font:700 11px 'Bricolage Grotesque',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#9a9486;margin:6px 0 2px}
+.vs-bs{display:flex;align-items:center;gap:10px;padding:8px;border:0;border-radius:8px;background:transparent;text-align:left;font:600 14px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.vs-bs i{width:22px;height:22px;border-radius:6px;background:#f1ece2;font:700 11.5px 'Bricolage Grotesque',sans-serif;font-style:normal;display:inline-flex;align-items:center;justify-content:center;color:var(--leise)}
+.vs-bs:hover{background:#f6f2ea}
+.vs-bs[aria-current="true"]{background:#ece6fd;color:#4a2f9a}
+.vs-bs[aria-current="true"] i{background:#7c5cd6;color:#fff}
+.vs-mitte{display:flex;flex-direction:column;align-items:center;gap:10px;min-width:0;padding:0 10px 18px}
+.vs-werkzeug{display:flex;align-items:center;gap:6px;background:#fffdf9;border-radius:10px;padding:5px;box-shadow:0 1px 2px rgba(30,40,70,.1),0 6px 16px rgba(30,40,70,.08)}
+.vs-werkzeug button{border:0;background:transparent;border-radius:8px;padding:7px 11px;font:700 13px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.vs-werkzeug button:hover:not(:disabled){background:#f3efe7}
+.vs-werkzeug button[aria-pressed="true"]{background:#ece6fd;color:#4a2f9a}
+.abspielen.neu .abspielbuehne{box-shadow:0 2px 6px rgba(0,0,0,.08),0 20px 50px rgba(30,40,70,.18);border-radius:6px;overflow:hidden;background:#fff}
+.vs-ziel{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #ece5d6;border-radius:9px;background:#fff;text-align:left;font-size:13.5px}
+.vs-ziel b{width:20px;height:20px;border-radius:50%;background:#7c5cd6;color:#fff;font:700 11px 'Bricolage Grotesque',sans-serif;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.vs-ziel span{flex:1;min-width:0}
+.vs-ziel em{font:700 12px 'Bricolage Grotesque',sans-serif;font-style:normal;color:#4a2f9a;white-space:nowrap}
+.vs-ziel:hover{border-color:#cfc2f7;background:#faf8ff}
+.vs-hinweis{border-left:3px solid #e8743b;background:#fff7f1;border-radius:0 9px 9px 0;padding:9px 10px;font-size:13px;line-height:1.4}
+.vs-hinweis b{color:#a5491b;font:700 13px 'Bricolage Grotesque',sans-serif;display:block}
+.schnellmenue{flex-wrap:wrap}
+.vs-links,.vs-rechts{align-self:start;max-height:calc(100vh - 90px)}
+/* Plan, Varianten: gleicher ruhiger Kopf wie überall */
+.k-kopf{background:transparent!important;border-bottom:0!important;box-shadow:none!important;animation:von-oben .55s var(--sanft) both}
+.plankarte{animation:hoch .5s var(--sanft) both}
+.plankarte:nth-child(2){animation-delay:.06s}.plankarte:nth-child(3){animation-delay:.12s}.plankarte:nth-child(4){animation-delay:.18s}.plankarte:nth-child(5){animation-delay:.24s}.plankarte:nth-child(n+6){animation-delay:.3s}
+.variantenkarte,.fassung{animation:hoch .55s var(--sanft) both}

@@ -260,11 +260,19 @@ app.whenReady().then(async () => {
     await js("App.aktionen['app-zur-leinwand']()");
     // Übergabe
     await js("App.aktionen['app-uebergabe']()");
-    await bisDa("!!document.querySelector('.baum')");
+    await bisDa("!!document.querySelector('.weitergeben')");
     await warte(300);
     await foto('21-uebergabe');
     await js("document.querySelector('[data-los]').click()");
-    await bisDa("!document.querySelector('.baum')", 8000);
+    await bisDa("!document.querySelector('.weitergeben')", 8000);
+    // Weitergeben als PDF-Mappe
+    await js("App.aktionen['app-uebergabe']()");
+    await bisDa("!!document.querySelector('.weitergeben')");
+    await js("document.querySelector('[data-art=mappe]').click()");
+    await warte(200);
+    await js("document.querySelector('[data-los]').click()");
+    await bisDa("!document.querySelector('.weitergeben')", 20000);
+    { const m = fs.readdirSync(path.join(app.getPath('documents'), 'Kranich')).find((f) => /mappe.*\.pdf$/.test(f)); console.log(m ? 'OK  ' : 'FEHL', 'PDF-Mappe gespeichert'); if (!m) fehler++; }
     const pk = path.join(app.getPath('documents'), 'Kranich', 'eule-paket');
     const ok = fs.existsSync(path.join(pk, 'plan.json')) && fs.readdirSync(path.join(pk, 'boards')).length === 5 && fs.existsSync(path.join(pk, 'bausteine.css'));
     console.log(ok ? 'OK  ' : 'FEHL', 'Paket mit 5 Boards, Bausteinen und Plan');

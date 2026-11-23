@@ -258,6 +258,8 @@
     const x = z.pan.x + (s.x + r.left + r.width) * z.zoom;
     const y = z.pan.y + (s.y + r.top) * z.zoom;
     z.menue.hidden = false;
+    const platz = z.leinwand.clientWidth - (z.leinwand.parentElement?.querySelector('.eigenschaften:not([hidden])') ? 296 : 0) - 16;
+    z.menue.style.maxWidth = `${Math.max(220, platz)}px`;
     const mb = z.menue.offsetWidth;
     const rechts = z.leinwand.clientWidth - (z.leinwand.parentElement?.querySelector('.eigenschaften:not([hidden])') ? 296 : 0);
     z.menue.style.left = `${Math.max(8, Math.min(rechts - mb - 8, x - mb))}px`;

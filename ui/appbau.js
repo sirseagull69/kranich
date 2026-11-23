@@ -408,102 +408,159 @@
     renderPruefung();
   }
 
-  // ---------- 5. Abspielen ----------
+  // ---------- 5. Vorschau (durchklicken) ----------
+  const ART_TEXT = { raus: 'ragt über den Rand', ueberlauf: 'Text passt nicht rein', klein: 'Schrift zu klein', kontrast: 'schwer lesbar', ziel: 'zu klein zum Antippen' };
   function abspielen(startId) {
     const p = S.projekt;
     const boards = p.seiten.filter((b) => b.html);
-    if (!boards.length) return;
+    if (!boards.length) { H.meldung('Noch kein Board mit Inhalt.'); return; }
     const bildschirme = boards.filter((b) => !b.zustand);
-    let aktuell = boards.find((b) => b.id === startId) || bildschirme[0] || boards[0];
+    const liste = bildschirme.length ? bildschirme : boards;
+    let aktuell = boards.find((b) => b.id === startId) || liste[0];
     const start = aktuell;
     const zurueck = [];
+    let flaechen = true;
+    let passend = true;
     const el = document.createElement('div');
-    el.className = 'abspielen';
-    el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-modal', 'true');
+    el.className = 'abspielen neu';
+    el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', 'Vorschau');
     document.body.appendChild(el);
+    const zielVon = (z) => boards.find((b) => b.id === z) || boards.find((b) => b.bildschirm === z && !b.zustand) || boards.find((b) => b.name === z);
+    const gehe = (b, merken = true) => { if (!b || b === aktuell) return; if (merken) zurueck.push(aktuell); aktuell = b; zeige(); };
     const zeige = () => {
-      const nrB = bildschirme.indexOf(aktuell);
-      el.innerHTML = `<div class="abspielleiste"><b class="h">${esc(p.name)}</b><span class="leise">/</span><b class="h">${esc(aktuell.name)}</b><span class="chip chip-gruen">Läuft</span>
-        <span class="leise" style="font-size:13px">${nrB >= 0 ? `Bildschirm ${nrB + 1} von ${bildschirme.length}` : 'Zustand'}</span><div class="platz"></div>
-        <button type="button" class="btn btn-s" data-a="zurueck" ${zurueck.length ? '' : 'disabled'}>${sym('zurueck', 14)} Zurück</button><button type="button" class="btn btn-s" data-a="neu">Neu starten</button><button type="button" class="btn btn-s btn-p" data-a="zu">${sym('schliessen', 14)} Schließen</button></div>
-        <div class="abspielbuehne"><iframe sandbox="allow-same-origin" title="${esc(aktuell.name)}" style="width:${aktuell.breite}px;height:${aktuell.hoehe}px"></iframe></div>
-        <div class="abspielhinweis leise">Gestrichelt umrandet = klickbar. Esc schließt.</div>`;
+      const nr = liste.indexOf(aktuell);
+      const plan = (p.app?.plan?.bildschirme || []).find((x) => x.id === (aktuell.bildschirm || aktuell.id));
+      const doc = new DOMParser().parseFromString(aktuell.html, 'text/html');
+      const ziele = [...doc.querySelectorAll('[data-ziel]')].map((x) => ({ text: (x.textContent || x.getAttribute('aria-label') || '').trim().replace(/\s+/g, ' ').slice(0, 40) || x.localName, ziel: x.dataset.ziel }));
+      const offen = aktuell.pruefung?.offen || [];
+      el.innerHTML = `<div class="abspielleiste"><b class="h">${esc(p.name)}</b><span class="leise">/</span><b class="h">${esc(aktuell.name)}</b><span class="chip chip-gruen">Vorschau</span><div class="platz"></div>
+          <button type="button" class="btn btn-s" data-a="zurueck" ${zurueck.length ? '' : 'disabled'}>${sym('zurueck', 14)} Zurück</button><button type="button" class="btn btn-s" data-a="neu">Von vorn</button><button type="button" class="btn btn-s" data-a="gestalten">Weiter gestalten</button><button type="button" class="btn btn-s btn-p" data-a="weitergeben">${sym('export', 14)} Weitergeben</button><button type="button" class="btn btn-s btn-q" data-a="zu" aria-label="Schließen">${sym('schliessen', 14)}</button></div>
+        <aside class="vs-links"><span class="vs-titel">Bildschirme</span>
+          ${liste.map((b, i) => `<button type="button" class="vs-bs" data-geh="${b.id}" aria-current="${b === aktuell || aktuell.bildschirm === b.id}"><i>${i + 1}</i><span>${esc(b.name)}</span></button>`).join('')}
+          ${boards.filter((b) => b.zustand && (b.bildschirm === (aktuell.bildschirm || aktuell.id))).length ? `<span class="vs-titel">Zustände</span>${boards.filter((b) => b.zustand && b.bildschirm === (aktuell.bildschirm || aktuell.id)).map((b) => `<button type="button" class="vs-bs" data-geh="${b.id}" aria-current="${b === aktuell}"><i>·</i><span>${esc(b.name.split(' · ')[1] || b.zustand)}</span></button>`).join('')}` : ''}
+          ${zurueck.length ? `<span class="vs-titel">Dein Weg</span><span class="leise" style="font-size:13px">${[...zurueck, aktuell].map((b) => esc(b.name)).join(' → ')}</span>` : ''}</aside>
+        <div class="vs-mitte"><div class="vs-werkzeug"><button type="button" data-a="flaechen" aria-pressed="${flaechen}" title="K">Klickflächen zeigen</button><button type="button" data-a="passend" aria-pressed="${passend}">${passend ? 'Eingepasst' : '100 %'}</button>
+            <button type="button" data-a="vorher" ${nr > 0 ? '' : 'disabled'} title="←">‹</button><b class="h" style="font-size:13px">${nr >= 0 ? `${nr + 1} von ${liste.length}` : 'Zustand'}</b><button type="button" data-a="nachher" ${nr >= 0 && nr < liste.length - 1 ? '' : 'disabled'} title="→">›</button></div>
+          <div class="abspielbuehne"><iframe sandbox="allow-same-origin" title="${esc(aktuell.name)}" style="width:${aktuell.breite}px;height:${aktuell.hoehe}px;transform-origin:0 0;border:0;display:block"></iframe></div>
+          <span class="leise" style="font-size:12.5px">Gestrichelt = klickbar · ← → blättern · K Klickflächen · Esc schließt</span></div>
+        <aside class="vs-rechts"><b class="h" style="font-size:19px">${esc(aktuell.name)}</b>${plan?.zweck ? `<span class="leise" style="font-size:13.5px">${esc(plan.zweck)}</span>` : ''}
+          <div class="reihe" style="flex-wrap:wrap;gap:6px;margin:4px 0"><span class="chip ${offen.length ? 'chip-gelb' : 'chip-gruen'}">${offen.length ? `${offen.length} offen` : 'Geprüft'}</span><span class="chip chip-rand">${ziele.length} Klickflächen</span></div>
+          <span class="vs-titel">Wohin führt was?</span>
+          ${ziele.length ? ziele.map((z, i) => { const zb = zielVon(z.ziel); return `<button type="button" class="vs-ziel" ${zb ? `data-geh="${zb.id}"` : 'disabled'}><b>${i + 1}</b><span>${esc(z.text)}</span><em>→ ${esc(zb?.name || 'fehlt noch')}</em></button>`; }).join('') : '<span class="leise" style="font-size:13px">Auf diesem Bildschirm führt nichts weiter.</span>'}
+          ${offen.length ? `<span class="vs-titel">Kranich fällt auf</span>${offen.slice(0, 3).map((f) => `<div class="vs-hinweis"><b>${esc(f.name || 'Element')}</b>${esc(ART_TEXT[f.art] || f.art)}${f.wert ? ` (${esc(f.wert)})` : ''}</div>`).join('')}` : ''}</aside>`;
       const buehne = el.querySelector('.abspielbuehne');
       const f = buehne.querySelector('iframe');
-      const z = Math.min(1, (window.innerWidth - 80) / aktuell.breite, (window.innerHeight - 140) / aktuell.hoehe);
+      const platzB = el.querySelector('.vs-mitte').clientWidth - 20; const platzH = window.innerHeight - 170;
+      const z = passend ? Math.min(1, platzB / aktuell.breite, platzH / aktuell.hoehe) : 1;
       f.style.transform = `scale(${z})`;
       buehne.style.width = `${aktuell.breite * z}px`; buehne.style.height = `${aktuell.hoehe * z}px`;
-      f.srcdoc = Entwurf.vorbereiten(aktuell.html).replace(/<head[^>]*>/i, (m) => `${m}<style data-kranich-intern>[data-ziel]{outline:2px dashed rgba(124,92,214,.75)!important;outline-offset:3px;cursor:pointer!important}</style>`);
+      if (!passend) buehne.style.overflow = 'auto';
+      const umriss = flaechen ? '[data-ziel]{outline:2px dashed rgba(124,92,214,.8)!important;outline-offset:3px;cursor:pointer!important}' : '[data-ziel]{cursor:pointer!important}';
+      f.srcdoc = Entwurf.vorbereiten(aktuell.html).replace(/<head[^>]*>/i, (m) => `${m}<style data-kranich-intern>${umriss}</style>`);
       f.addEventListener('load', () => {
-        const doc = f.contentDocument;
-        doc.addEventListener('click', (e) => {
+        f.contentDocument.addEventListener('click', (e) => {
           e.preventDefault();
-          const t = e.target.closest?.('[data-ziel]');
-          if (!t) return;
-          const ziel = boards.find((b) => b.id === t.dataset.ziel) || boards.find((b) => b.bildschirm === t.dataset.ziel && !b.zustand);
+          const t = e.target.closest?.('[data-ziel]'); if (!t) return;
+          const ziel = zielVon(t.dataset.ziel);
           if (!ziel) { H.meldung(`„${t.dataset.ziel}“ ist noch nicht gefaltet.`, { art: 'fehler' }); return; }
-          zurueck.push(aktuell); aktuell = ziel; zeige();
+          gehe(ziel);
         }, true);
       });
     };
+    const zu = () => { el.remove(); document.removeEventListener('keydown', taste); };
     el.addEventListener('click', (e) => {
+      const g = e.target.closest('[data-geh]'); if (g) { gehe(boards.find((b) => b.id === g.dataset.geh)); return; }
       const a = e.target.closest('[data-a]')?.dataset.a;
-      if (a === 'zu') el.remove();
+      const nr = liste.indexOf(aktuell);
+      if (a === 'zu') zu();
       if (a === 'neu') { zurueck.length = 0; aktuell = start; zeige(); }
       if (a === 'zurueck' && zurueck.length) { aktuell = zurueck.pop(); zeige(); }
+      if (a === 'flaechen') { flaechen = !flaechen; zeige(); }
+      if (a === 'passend') { passend = !passend; zeige(); }
+      if (a === 'vorher' && nr > 0) gehe(liste[nr - 1]);
+      if (a === 'nachher' && nr < liste.length - 1) gehe(liste[nr + 1]);
+      if (a === 'gestalten') { zu(); App.waehleBoard(aktuell.id); Entwurf.zeigeBoard?.(aktuell.id); }
+      if (a === 'weitergeben') { zu(); uebergabe(); }
     });
-    const taste = (e) => { if (e.key === 'Escape') { el.remove(); document.removeEventListener('keydown', taste); } };
+    const taste = (e) => {
+      if (e.key === 'Escape') zu();
+      if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) return;
+      const nr = liste.indexOf(aktuell);
+      if (e.key === 'ArrowLeft' && nr > 0) gehe(liste[nr - 1]);
+      if (e.key === 'ArrowRight' && nr >= 0 && nr < liste.length - 1) gehe(liste[nr + 1]);
+      if (e.key.toLowerCase() === 'k') { flaechen = !flaechen; zeige(); }
+    };
     document.addEventListener('keydown', taste);
     zeige();
     return el;
   }
 
-  // ---------- 6. Übergabe ----------
+  // ---------- 6. Weitergeben ----------
   async function uebergabe() {
     const p = S.projekt;
-    const boards = p.seiten.filter((b) => b.html);
-    if (!boards.length) return;
+    const alle = p.seiten.filter((b) => b.html);
+    if (!alle.length) { H.meldung('Noch kein Board mit Inhalt.'); return; }
     const e = await K.einstellungen.lesen();
     const standard = await K.export.standardOrdner();
-    const zust = boards.filter((b) => b.zustand).length;
-    const w = { ziel: 'speichern', ordner: '', app: 'albatros' };
     const name = p.app?.plan?.name || p.name;
-    const sl = name.toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'kranich';
+    const w = { art: p.app?.plan ? 'paket' : 'bilder', faktor: 2, ziel: 'speichern', ordner: '', app: 'albatros', gewaehlt: new Set(alle.map((b) => b.id)) };
+    const ARTEN = [
+      ['paket', 'Paket für die App', 'Boards, Bausteine, Plan – für Claude Code', 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10'],
+      ['bilder', 'Bilder', 'PNG, ein Bild pro Board', 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4'],
+      ['mappe', 'Mappe', 'PDF, alles in einer Datei', 'M6 3h9l4 4v14H6zM15 3v4h4M9 13h6M9 17h6'],
+      ['code', 'Code', 'HTML pro Board zum Weiterbauen', 'M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14'],
+    ];
     const s = document.createElement('div');
     s.className = 'schleier';
-    s.innerHTML = `<div class="dialog paper schmal" role="dialog" aria-modal="true" style="width:min(820px,94vw)">
-      <div class="dialogkopf">${figur('fertig', 56)}<div style="display:flex;flex-direction:column"><h2 class="h">Paket für die App</h2><span class="hand" style="font-size:20px">alles zusammengefaltet für „${esc(name)}“</span></div><div class="platz"></div><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
-      <div class="exportkoerper"><div style="flex:1;display:flex;flex-direction:column;gap:8px"><span class="lbl">Was drin ist</span>
-        ${[[`${boards.length} Boards`, `${boards.length - zust} Bildschirme${zust ? ` und ${zust} Zustände` : ''}`], ['Bausteine', p.app?.css ? 'Farben, Schriften, Knöpfe, Karten, Kopfzeile' : 'keine (kein App-Plan)'], ['Plan', p.app?.plan ? 'Ein Satz Zweck pro Bildschirm' : 'nur die Boards'], ['Abläufe', `${p.app?.plan?.ablaeufe?.length || 0} Klickwege mit Knopfnamen`]].map(([t, x]) => `<div class="reihe" style="gap:10px;padding:8px 10px;background:#fff;border:1px solid #ece4d2"><span style="color:#17663a">${sym('haken', 16)}</span><div style="display:flex;flex-direction:column"><b class="h">${t}</b><span class="leise" style="font-size:13px">${x}</span></div></div>`).join('')}</div>
-        <div style="flex:1;display:flex;flex-direction:column;gap:8px"><span class="lbl">So sieht das Paket aus</span>
-          <pre class="baum">${esc(`${sl}-paket/\n├─ boards/        ${boards.length} Dateien\n├─ bausteine.css\n├─ plan.json\n└─ LIESMICH.md`)}</pre>
-          <span class="lbl">Ziel-Ordner</span>
-          <div class="ziel" role="radio" tabindex="0" data-ziel="speichern" aria-checked="true"><div class="zk"><b class="h">Speichern</b><div class="platz"></div><button type="button" class="btn btn-s" data-ordner>Ordner wählen</button></div><span class="leise ordnertext" style="font-size:12.5px">${esc(standard)}</span></div>
-          <div class="ziel" role="radio" tabindex="0" data-ziel="app" aria-checked="false"><div class="zk"><b class="h">In ein App-Projekt</b><div class="platz"></div><select class="feld" id="pk-app">${[['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schreibprogramm']].map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></div></div>
-          <label class="reihe leise" style="gap:8px;font-size:13px"><input type="checkbox" disabled> origami Bescheid geben (kommt, sobald origami angebunden ist)</label></div></div>
-      <div class="dialogfuss"><span class="leise status" style="flex:1">${boards.length + 3} Dateien</span><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-los>${figur('arbeitend', 18)} Paket falten</button></div>
-      ${eselsohr(54, 'rgba(0,0,0,0)')}</div>`;
+    const zeichne = () => {
+      const n = w.gewaehlt.size;
+      s.innerHTML = `<div class="dialog paper weitergeben" role="dialog" aria-modal="true" aria-label="Weitergeben">
+        <div class="wg-kopf">${figur('fertig', 48)}<div><h2 class="h">Weitergeben</h2><span class="hand" style="font-size:20px">„${esc(name)}“ – ${alle.length} Boards</span></div><div class="platz"></div><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
+        <div class="wg-raster">
+          <section class="wg-karte"><h3 class="h"><span class="wg-nr">1</span> Was soll mit?</h3>
+            <div class="reihe"><span class="leise" style="font-size:13px;flex:1">${n} von ${alle.length} gewählt</span><button type="button" class="btn btn-s btn-q" data-alle>${n === alle.length ? 'Keine' : 'Alle wählen'}</button></div>
+            <div class="wg-liste">${alle.map((b) => `<label class="wg-board"><input type="checkbox" data-board="${b.id}" ${w.gewaehlt.has(b.id) ? 'checked' : ''}><span>${esc(b.name)}</span><small>${b.zustand ? esc(b.zustand) : `${b.breite}×${b.hoehe}`}</small></label>`).join('')}</div></section>
+          <section class="wg-karte"><h3 class="h"><span class="wg-nr">2</span> Als was?</h3>
+            <div class="wg-arten">${ARTEN.map(([k, t, x, d]) => `<button type="button" class="wg-art" aria-pressed="${w.art === k}" data-art="${k}" ${k === 'paket' && !p.app?.plan && false ? 'disabled' : ''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg><b class="h">${t}</b><span>${x}</span></button>`).join('')}</div>
+            ${w.art === 'bilder' ? `<div class="wg-zeile"><div><b class="h">Größe</b><span class="leise">2× ist scharf auf neuen Handys</span></div><div class="segment">${[1, 2, 3].map((f) => `<button type="button" class="${w.faktor === f ? 'an' : ''}" data-faktor="${f}">${f}×</button>`).join('')}</div></div>` : ''}
+          </section>
+          <section class="wg-karte"><h3 class="h"><span class="wg-nr">3</span> Wohin?</h3>
+            <button type="button" class="wg-ziel" aria-pressed="${w.ziel !== 'app'}" data-ziel="speichern"><b class="h">Ordner</b><span class="leise ordnertext">${esc(w.ordner || standard)}</span><span class="btn btn-s" data-ordner>Anderer Ordner</span></button>
+            <button type="button" class="wg-ziel" aria-pressed="${w.ziel === 'app'}" data-ziel="app"><b class="h">In ein App-Projekt</b><select class="feld" id="wg-app">${[['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schreibprogramm']].map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></button>
+            <div class="platz"></div>
+            <span class="leise status" style="font-size:13px"></span>
+            <button type="button" class="btn btn-p btn-gross" data-los ${n ? '' : 'disabled'}>${sym('export', 16)} ${n} ${n === 1 ? 'Board' : 'Boards'} ${{ paket: 'als Paket', bilder: 'als Bilder', mappe: 'als PDF', code: 'als Code' }[w.art]} speichern</button>
+          </section>
+        </div></div>`;
+    };
+    zeichne();
     document.body.appendChild(s);
-    const zeige = () => s.querySelectorAll('[data-ziel]').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.ziel === (w.ziel === 'ordner' ? 'speichern' : w.ziel))));
-    s.querySelector('#pk-app').addEventListener('change', (ev) => { w.app = ev.target.value; w.ziel = 'app'; zeige(); });
+    s.addEventListener('change', (ev) => {
+      if (ev.target.dataset.board) { if (ev.target.checked) w.gewaehlt.add(ev.target.dataset.board); else w.gewaehlt.delete(ev.target.dataset.board); zeichne(); }
+      if (ev.target.id === 'wg-app') { w.app = ev.target.value; w.ziel = 'app'; zeichne(); }
+    });
     s.addEventListener('click', async (ev) => {
-      if (ev.target === s || ev.target.closest('[data-zu]')) { s.remove(); return; }
-      if (ev.target.closest('[data-ordner]')) {
-        const o = await K.datei.ordnerWaehlen();
-        if (o && !o.fehler) { w.ordner = o; w.ziel = 'ordner'; s.querySelector('.ordnertext').textContent = o; }
-        zeige(); return;
-      }
-      const z = ev.target.closest('[data-ziel]');
-      if (z && !ev.target.closest('select,button')) { w.ziel = z.dataset.ziel === 'speichern' && w.ordner ? 'ordner' : z.dataset.ziel; zeige(); return; }
-      if (ev.target.closest('[data-los]')) {
-        s.querySelector('.status').textContent = 'Kranich faltet das Paket …';
-        const r = await K.export.paket({ name, boards: boards.map((b) => ({ id: b.id, name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand })), css: p.app?.css || '', plan: p.app?.plan || null, ziel: w.ziel, app: w.app, ordner: w.ordner });
-        if (r?.fehler) { s.querySelector('.status').textContent = r.fehler.nachricht; return; }
+      const t = ev.target;
+      if (t === s || t.closest('[data-zu]')) { s.remove(); return; }
+      if (t.closest('[data-alle]')) { if (w.gewaehlt.size === alle.length) w.gewaehlt.clear(); else alle.forEach((b) => w.gewaehlt.add(b.id)); zeichne(); return; }
+      if (t.closest('[data-art]')) { w.art = t.closest('[data-art]').dataset.art; zeichne(); return; }
+      if (t.closest('[data-faktor]')) { w.faktor = Number(t.closest('[data-faktor]').dataset.faktor); zeichne(); return; }
+      if (t.closest('[data-ordner]')) { const o = await K.datei.ordnerWaehlen(); if (o && !o.fehler) { w.ordner = o; w.ziel = 'ordner'; } zeichne(); return; }
+      if (t.closest('select')) return;
+      const z = t.closest('[data-ziel]'); if (z) { w.ziel = z.dataset.ziel === 'app' ? 'app' : (w.ordner ? 'ordner' : 'speichern'); zeichne(); return; }
+      if (t.closest('[data-los]')) {
+        const boards = alle.filter((b) => w.gewaehlt.has(b.id)).map((b) => ({ id: b.id, name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand }));
+        const st = s.querySelector('.status'); st.textContent = 'Kranich faltet zusammen …';
+        s.querySelector('[data-los]').disabled = true;
+        const r = w.art === 'paket'
+          ? await K.export.paket({ name, boards, css: p.app?.css || '', plan: p.app?.plan || null, ziel: w.ziel, app: w.app, ordner: w.ordner })
+          : await K.export.sammlung({ name, boards, art: w.art, faktor: w.faktor, ziel: w.ziel, app: w.app, ordner: w.ordner });
+        if (r?.fehler) { st.textContent = r.fehler.nachricht; s.querySelector('[data-los]').disabled = false; return; }
         s.remove();
-        H.meldung(`Paket gefaltet: ${r.datei}`, { knopf: 'Im Ordner zeigen', aktion: () => K.datei.zeigen(r.datei), dauer: 9000 });
+        H.meldung(`Gespeichert: ${r.datei}`, { knopf: 'Im Ordner zeigen', aktion: () => K.datei.zeigen(r.datei), dauer: 9000 });
       }
     });
+    s.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s.remove(); });
   }
 
   // ---------- Aktionen ----------

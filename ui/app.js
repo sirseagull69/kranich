@@ -351,7 +351,7 @@
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     const leer = !seite()?.html;
     return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
-      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
+      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
 
@@ -1260,6 +1260,7 @@
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); S.startLasche = 'neu'; if (S.ansicht === 'start') renderStart(); else aktionen['zum-start']().then(() => { S.startLasche = 'neu'; renderStart(); }); return; }
     if (S.ansicht !== 'werkbank') return;
+    if (document.querySelector('.schleier, .abspielen')) return;
     const tippt = /input|textarea/i.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !tippt) { e.preventDefault(); aktionen.rueckgaengig(); }
     if (S.modus === 'bild' && !tippt) {
