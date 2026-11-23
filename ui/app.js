@@ -114,7 +114,7 @@
       ['Früher', liste.filter((p) => new Date(p.geaendert).toDateString() !== heute)],
     ].filter(([, l]) => l.length);
     if (!gruppen.length) return `<span class="leise" style="padding:4px 8px;font-size:13.5px">${q ? 'Nichts gefunden.' : 'Noch keine Entwürfe.'}</span>`;
-    return gruppen.map(([t, l]) => `<span class="sk-titel hand">${t}</span>${l.slice(0, 12).map((p) => `<button type="button" class="sk-zeile" data-aktion="projekt-oeffnen" data-id="${p.id}" title="${esc(p.name)}"><i class="punkt ${p.art === 'bild' ? 'gelb' : p.app ? 'gruen' : 'lila'}"></i><span>${esc(p.name)}</span></button>`).join('')}`).join('');
+    return gruppen.map(([t, l]) => `<span class="sk-titel hand">${t}</span>${l.slice(0, 12).map((p) => `<button type="button" class="sk-zeile" data-aktion="projekt-oeffnen" data-id="${p.id}" title="${esc(p.name)}"><i class="punkt ${p.art === 'bild' ? 'gelb' : p.app ? 'gruen' : 'lila'}"></i><span>${esc(p.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen" aria-label="Projekt löschen" data-aktion="projekt-weg-liste" data-id="${p.id}">${sym('muell', 13)}</span></button>`).join('')}`).join('');
   }
 
   function renderStart() {
@@ -347,7 +347,7 @@
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     const leer = !seite()?.html;
     return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
-      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer]])}
+      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
 
@@ -453,7 +453,7 @@
     const st = x.html ? (x.pruefung?.offen?.length ? ['gelb', `${x.pruefung.offen.length} offen`] : ['gruen', 'fertig']) : ['leer', 'leer'];
     const name = klein ? (x.name.split(' · ')[1] || x.name) : x.name;
     return `<button type="button" class="boardzeile ${klein ? 'klein' : ''}" aria-current="${aktiv}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} · ${st[1]} – Doppelklick zum Umbenennen">
-      <i class="punkt ${st[0]}"></i><span class="bz-name">${esc(name)}</span>${klein ? '' : `<small>${esc(x.mass || `${x.breite}×${x.hoehe}`)}</small>`}${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`;
+      <i class="punkt ${st[0]}"></i><span class="bz-name">${esc(name)}</span>${klein ? '' : `<small>${esc(x.mass || `${x.breite}×${x.hoehe}`)}</small>`}${!klein ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`;
   }
 
   function renderSeitenleiste() {
@@ -481,7 +481,7 @@
     nav.innerHTML = `<span class="sk-titel hand">Boards <small>${fertig}/${alle.length}</small></span>
       <div class="seitenlaschen">${liste}</div>
       <span class="sk-titel hand">Ebenen <small>${esc(s.name)}</small></span>
-      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
+      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
       <button type="button" class="versteckt" data-aktion="board-dazu" tabindex="-1" aria-hidden="true"></button>`;
     nav.querySelector('.boardzeile[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
   }
@@ -577,7 +577,7 @@
     if (!el || !S.projekt) return;
     const alt = el.querySelector('textarea')?.value || '';
     const auswahlChip = S.modus === 'entwurf' && S.auswahl
-      ? `<span class="chip chip-zart" style="align-self:flex-start">Auswahl: ${esc(S.auswahl.name)}<button type="button" style="border:0;background:transparent;color:inherit;font:inherit;padding:0 0 0 4px" data-aktion="auswahl-weg">Entfernen</button></span>`
+      ? `<span class="chip chip-zart" style="align-self:flex-start">Auswahl: ${esc(S.auswahl.name)}<button type="button" style="border:0;background:transparent;color:inherit;font:inherit;padding:0 0 0 4px" data-aktion="auswahl-weg">Abwählen</button><button type="button" style="border:0;background:transparent;color:#c0392b;font:inherit;padding:0 0 0 8px" data-aktion="ebene-weg" data-k="${esc(S.auswahl.k)}">Löschen</button></span>`
       : S.modus === 'bild' && Bild.z.auswahl ? '<span class="chip chip-zart" style="align-self:flex-start">Auswahl im Bild wird mitgeschickt</span>' : '';
     const denkt = S.kranich.zustand === 'denkt';
     el.innerHTML = `${auswahlChip}
@@ -606,6 +606,23 @@
   }
 
   // ---------- Entwurf: Aufträge ----------
+  // Ein Element (Ebene) aus dem Board entfernen – Strg+Z holt es zurück
+  function loescheEbene(k) {
+    const s = seite();
+    if (!s?.html || !k) return;
+    const doc = new DOMParser().parseFromString(s.html, 'text/html');
+    const el = doc.querySelector(`[data-k="${CSS.escape(k)}"]`);
+    if (!el || el === doc.body) return;
+    const name = S.auswahl?.k === k ? S.auswahl.name : (S.ebenen.find((x) => x.k === k)?.name || 'Element');
+    el.remove();
+    neueFassung(`<!doctype html>\n${doc.documentElement.outerHTML}`, `Gelöscht: ${name}`);
+    S.auswahl = null;
+    Entwurf.waehle(null);
+    Entwurf.zeigeAlle(S.projekt.seiten, s.id);
+    renderSeitenleiste(); renderKopfKnoepfe(); renderWunschfeld(); renderVerlauf(); geaendert();
+    H.meldung(`„${name}“ gelöscht. Strg+Z holt es zurück.`);
+  }
+
   function neueFassung(html, was) {
     const s = seite();
     s.verlauf = (s.verlauf || []).slice(0, (s.stand ?? -1) + 1);
@@ -984,7 +1001,7 @@
       const format = S.startLasche === 'neu' ? S.formate.find((x) => x.id === (S.neuFormat || 'web')) : undefined;
       return neuesProjekt('entwurf', { wunsch, anhang, format });
     },
-    'projekt-oeffnen': (el) => oeffne(el.dataset.id),
+    'projekt-oeffnen': (el, e) => { if (e?.target?.closest('[data-aktion="projekt-weg-liste"]')) return; oeffne(el.dataset.id); },
     'projekt-weg': async (el) => {
       const p = S.liste.find((x) => x.id === el.dataset.id);
       if (!p || !window.confirm(`„${p.name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
@@ -1044,7 +1061,23 @@
     'fertig-weg': () => setzeKranich('fertig', { variantenBereit: false }),
     'vorschlag': (el) => sendeEntwurf(el.dataset.text),
     'auswahl-weg': () => { Entwurf.waehle(null); },
-    'ebene': (el) => Entwurf.waehle(el.dataset.k),
+    'ebene': (el, e) => { if (e?.target?.closest('[data-aktion="ebene-weg"]')) return; Entwurf.waehle(el.dataset.k); },
+    'ebene-weg': (el) => loescheEbene(el.dataset.k),
+    'projekt-loeschen': async () => {
+      const p = S.projekt;
+      if (!p || !window.confirm(`„${p.name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+      await K.projekte.loeschen(p.id);
+      S.projekt = null;
+      zeigeStart();
+      H.meldung('Projekt gelöscht.');
+    },
+    'projekt-weg-liste': async (el) => {
+      const name = el.closest('.sk-zeile')?.title || 'Projekt';
+      if (!window.confirm(`„${name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+      await K.projekte.loeschen(el.dataset.id);
+      renderStart();
+      H.meldung('Projekt gelöscht.');
+    },
     'seite': (el, e) => {
       if (e?.target?.closest('[data-aktion="board-weg"]')) return;
       waehleBoard(el.dataset.id);
@@ -1052,7 +1085,13 @@
     },
     'board-weg': async (el) => {
       const b = S.projekt.seiten.find((x) => x.id === el.dataset.id);
-      if (!b || S.projekt.seiten.length < 2) return;
+      if (!b) return;
+      if (S.projekt.seiten.length < 2) {
+        if (!b.html || !window.confirm(`Board „${b.name}“ leeren? Strg+Z holt den Inhalt zurück.`)) return;
+        S.seiteId = b.id; neueFassung('', 'Board geleert');
+        Entwurf.zeigeAlle(S.projekt.seiten, b.id); zeigeBoards(); renderKopfKnoepfe(); renderVerlauf(); geaendert();
+        return;
+      }
       if (b.html && !window.confirm(`Board „${b.name}“ löschen?`)) return;
       S.projekt.seiten = S.projekt.seiten.filter((x) => x.id !== b.id);
       if (S.seiteId === b.id) S.seiteId = S.projekt.seiten[0].id;
@@ -1098,6 +1137,7 @@
     },
     'schnell-origami': () => sendeEntwurf('Pass das an den Look von origami an (Hausfarbe von origami, Papier-Details der Familie).'),
     'schnell-frei': () => document.getElementById('wunsch')?.focus(),
+    'schnell-loeschen': () => { if (S.auswahl?.k) loescheEbene(S.auswahl.k); },
     'varianten': async () => {
       const s = seite();
       if (!s.html && !S.variantenWunsch) { H.meldung('Schreib Kranich erst, was du willst – dann faltet er drei Richtungen.'); document.getElementById('wunsch')?.focus(); return; }
@@ -1188,6 +1228,7 @@
       if (e.key === 'Escape') { Bild.zuschnittAbbrechen(); Bild.auswahlAufheben(); renderWerkzeugOptionen(); }
     }
     if (S.modus === 'entwurf' && e.key === 'Escape' && !tippt) Entwurf.waehle(null);
+    if (S.modus === 'entwurf' && (e.key === 'Delete' || e.key === 'Backspace') && !tippt && S.auswahl?.k) { e.preventDefault(); loescheEbene(S.auswahl.k); }
   });
 
   window.addEventListener('beforeunload', () => { speichernSpaeter.sofort(); });

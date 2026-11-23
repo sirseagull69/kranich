@@ -176,3 +176,9 @@ mark{background:linear-gradient(transparent 55%,var(--marker) 55%,var(--marker) 
 .planliste.raster{flex:none!important;align-items:start;align-content:start;overflow:visible!important}
 .plankarte.neu{min-height:110px!important;align-self:stretch}
 .chatfigur{display:flex;margin-right:-4px}
+/* Löschen: Mülleimer erscheint beim Drüberfahren */
+.sk-zeile .loesch,.ebenen button .loesch,#werkbank .boardzeile .loesch{margin-left:auto;opacity:0;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;flex:none;border-radius:6px;color:var(--leise);background:transparent!important}
+.sk-zeile:hover .loesch,.ebenen button:hover .loesch,.ebenen button[aria-current="true"] .loesch,#werkbank .boardzeile:hover .loesch{opacity:.75}
+.sk-zeile .loesch:hover,.ebenen button .loesch:hover,#werkbank .boardzeile .loesch:hover{opacity:1;color:#c0392b;background:#fbe9e7!important}
+.ebenen button{display:flex;align-items:center}
+.ebenen button>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

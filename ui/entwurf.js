@@ -52,7 +52,7 @@
         <button type="button" class="btn btn-s btn-q" data-aktion="schnell-farbe"><span aria-hidden="true" style="width:12px;height:12px;border-radius:50%;background:#7c5cd6"></span>Farbe</button>
         <button type="button" class="btn btn-s btn-q" data-aktion="schnell-origami">${figur('ruhend', 18)} Wie in origami</button>
         <span class="strich" aria-hidden="true"></span>
-        <button type="button" class="btn btn-s btn-q" style="color:#4a2f9a" data-aktion="schnell-frei">Freier Wunsch…</button>
+        <button type="button" class="btn btn-s btn-q" style="color:#4a2f9a" data-aktion="schnell-frei">Freier Wunsch…</button><button type="button" class="btn btn-s btn-q" style="color:#c0392b" data-aktion="schnell-loeschen" title="Löschen (Entf)">Löschen</button>
       </div>
       <button type="button" class="btn btn-p btn-gross board-hinzu" data-aktion="board-dazu">${sym('plus', 16, 2.4)} Board hinzufügen</button>
       <div class="ansichtecke">
