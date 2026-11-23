@@ -212,7 +212,7 @@
       if (!p.app.css) return 'Erst die Bausteine (Farben, Schrift, Knöpfe), dann gehts los mit den Boards';
       const g = S.projekt === p && S.kranich.gesamt != null ? `${S.kranich.gesamt} % · ` : '';
       const rest = boardJobs.length - fertig;
-      const min = Math.max(1, Math.round((rest * schnitt * 1.25) / 2 / 60000));
+      const min = Math.max(1, Math.round((rest * schnitt * 1.25) / 4 / 60000));
       return `${g}${fertig} von ${boardJobs.length} fertig · noch ca. ${min} Min.`;
     };
     const titel = `Ich baue „${plan.name}“: ${offen.length} Boards`;
@@ -278,7 +278,7 @@
       if (hier()) { App.renderVerlauf(); App.renderMitte(); }
     }
 
-    // Boards, zwei gleichzeitig
+    // Boards, vier gleichzeitig
     const eins = async (j) => {
       const b = j.board;
       j.zustand = 'laeuft'; j.start = Date.now(); j.phase = 'schreiben'; j.prozent = 3; status(b.id, 'laeuft'); if (hier()) App.renderVerlauf();
@@ -307,7 +307,7 @@
     };
     const warteschlange = [...boardJobs];
     const arbeiter = async () => { while (warteschlange.length && nr === App.auftragNr) await eins(warteschlange.shift()); };
-    await Promise.all([arbeiter(), arbeiter()]);
+    await Promise.all([arbeiter(), arbeiter(), arbeiter(), arbeiter()]);
     ende();
     if (nr !== App.auftragNr) return;
     const schief = boardJobs.filter((j) => j.zustand === 'fehler');

@@ -149,13 +149,14 @@ async function frageLokal({ system, auftrag, bilder = [], modell = 'gemma4:26b',
 // Wählt den Weg nach den Einstellungen. Bei "klein" (kleine Änderung) und
 // eingeschaltetem lokalem Modell wird zuerst lokal gefragt; scheitert Claude
 // an der Verbindung, springt das lokale Modell ein, wenn erlaubt.
-async function frage(auftrag, einstellungen = {}, { klein = false } = {}) {
+// "schnell": Sonnet statt Opus – für Zustands-Boards und Reparaturen.
+async function frage(auftrag, einstellungen = {}, { klein = false, schnell = false } = {}) {
   const e = einstellungen;
   const lokalErlaubt = Boolean(e.lokalAn);
   const lokal = () => frageLokal({ ...auftrag, modell: e.lokalModell || 'gemma4:26b', adresse: e.lokalAdresse || 'http://127.0.0.1:11434' });
   const gross = () => (e.weg === 'api'
-    ? frageApi({ ...auftrag, modell: e.apiModell || 'claude-opus-5-5', schluessel: e.apiSchluessel })
-    : frageClaude({ ...auftrag, modell: e.claudeModell || 'opus', programm: e.claudeProgramm || 'claude' }));
+    ? frageApi({ ...auftrag, modell: schnell ? 'claude-sonnet-5-5' : (e.apiModell || 'claude-opus-5-5'), schluessel: e.apiSchluessel })
+    : frageClaude({ ...auftrag, modell: schnell ? 'sonnet' : (e.claudeModell || 'opus'), programm: e.claudeProgramm || 'claude' }));
 
   if (klein && lokalErlaubt && !auftrag.bilder?.length) {
     try { return { text: await lokal(), weg: 'lokal' }; } catch { /* dann Claude */ }

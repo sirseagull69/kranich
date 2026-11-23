@@ -195,13 +195,15 @@ function registriere() {
   });
   handle('kranich:appBoard', async ({ plan, board, css }) => {
     const e = einstellungen.alle();
-    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: AP.auftragAppBoard({ plan, board, css }) }, e);
+    // Hauptbildschirme mit Opus, Zustände (leer, lädt, fehler …) mit dem schnelleren Sonnet
+    const schnell = Boolean(board.zustand) && board.zustand !== 'fertig';
+    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: AP.auftragAppBoard({ plan, board, css }) }, e, { schnell });
     return A.leseEntwurf(text);
   });
   handle('kranich:pruefen', async ({ html, format: f }) => ({ funde: await pruefe(html, typeof f === 'string' ? formatVon(f) : f) }));
   handle('kranich:reparieren', async ({ html, probleme, breite, hoehe }) => {
     const e = einstellungen.alle();
-    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: PR.auftragReparieren({ html, probleme, breite, hoehe }) }, e);
+    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: PR.auftragReparieren({ html, probleme, breite, hoehe }) }, e, { schnell: true });
     return A.leseEntwurf(text);
   });
 
