@@ -28,8 +28,10 @@
   const sym = (n, g = 16, f = 'currentColor') => `<svg width="${g}" height="${g}" viewBox="0 0 24 24" fill="none" stroke="${f}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n] || ''}</svg>`;
   // Der gefaltete Specht (gleiche Familie wie Ori, Kranich, Albatros) mit allen Animationen aus voegel.js
   const VOGEL_ART = { klopft: 'pc-check', nickt: 'erledigt', schief: 'ratlos', schuettelt: 'sicher', denkt: 'denkt-nach', winkt: 'winkt' };
-  const specht = (g = 44, klasse = '') => {
-    const svg = window.VOGEL?.[VOGEL_ART[klasse] || 'ruhezustand-3'] || window.VOGEL?.ruhezustand || '';
+  const specht = (g = 44, klasse = '', dunkel = false) => {
+    let svg = window.VOGEL?.[VOGEL_ART[klasse] || 'ruhezustand-3'] || window.VOGEL?.ruhezustand || '';
+    // Auf dem nachtblauen Feld: dunkler Kopf wird hell, sonst verschwindet er
+    if (dunkel) svg = svg.replace(/#1d2742/gi, '#fbe9e5').replace(/#2d1a10/gi, '#fbe9e5');
     return `<span class="specht ${klasse}" role="img" aria-label="Specht" style="display:inline-flex;width:${g}px;height:${g}px">${svg.replace(/__G__/g, g)}</span>`;
   };
   const wann = (iso) => {
@@ -120,7 +122,7 @@
       ? `<div class="gespraech" aria-live="polite">${verlauf.map(nachricht).join('')}${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}</div>`
       : `<div class="fr-in"><div><h1>${keinWissen() ? 'Hallo, ich bin Specht.' : 'Was ist los<br>in der IT?'}</h1>
           ${keinWissen() ? '<p class="fr-text">Lade einmal deine Wissens-Datei, dann kenne ich eure Server.</p><button type="button" class="btn haupt" data-a="wissen-laden">Wissens-Datei laden</button>' : `<div class="bsp">${vorschlaege.slice(0, 3).map((t) => `<button type="button" data-a="vorschlag" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>`}</div>
-          <span class="vogel">${specht(150, S.denkt ? 'denkt' : 'winkt')}</span></div>
+          <span class="vogel">${specht(150, S.denkt ? 'denkt' : 'winkt', true)}</span></div>
           ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt"><i></i><i></i><i></i></span></div></div>` : ''}`;
     return `<section class="k frage" aria-label="Specht fragen">${kopfz}${inhalt}
       <div class="eing"><textarea id="frage" rows="1" placeholder="${verlauf.length ? 'Nachfragen …' : 'Beschreib\'s in einem Satz …'}" aria-label="Deine Frage an Specht"></textarea><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></section>`;
