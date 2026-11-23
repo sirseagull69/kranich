@@ -45,3 +45,33 @@
 .kl-leer{display:flex;align-items:center;gap:12px;padding:10px 6px}
 @media (max-width:1000px){.kl-karten{grid-template-columns:repeat(2,minmax(0,1fr))}.kl-zeile2{grid-template-columns:1fr}}
 .kl-karte .leise,.kl-idee small{font-family:'Source Serif 4',serif}
+
+/* ---------- Werkbank im klaren Look ---------- */
+#werkbank.wb{display:flex!important;flex-direction:column;padding:0!important;gap:0}
+.wb-kopf{padding:14px 22px 12px;gap:8px}
+.wb-kopf .kl-marke{gap:4px;color:var(--leise)}
+.wb-kopf .kl-marke b{font-size:19px;color:var(--tinte)}
+.wb-trenner{width:1px;height:26px;background:#e3dccd;margin:0 6px}
+.wb-projekt{padding:0 4px;min-width:0}
+.wb-projekt b{font-size:17px!important;color:var(--tinte)!important}
+.wb-projekt small{font-size:12.5px;color:var(--leise)}
+.wb-projekt .boardmass{font:500 11.5px ui-monospace,Consolas,monospace}
+.wb-kopf .knopfreihe{gap:6px}
+.wb-raster{flex:1;min-height:0;display:grid;grid-template-columns:250px minmax(0,1fr) 360px;gap:16px;padding:0 22px 22px}
+.wb-links{padding:12px 10px!important;gap:10px;min-height:0}
+.wb-neu{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;border:0;border-radius:10px;background:#ece6fd;color:#4a2f9a;font:700 14.5px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.wb-neu:hover{background:#ddd2fb}
+.wb-links .sk-mitte{flex:1;min-height:0;overflow:auto;margin:0 -4px;padding:0 4px}
+.wb-links .sk-titel{font:700 11.5px 'Bricolage Grotesque',sans-serif!important;text-transform:uppercase;letter-spacing:.06em;color:#9a9486!important;padding:12px 8px 4px;display:flex;gap:6px}
+.wb-links .sk-titel small{font:inherit;letter-spacing:0;text-transform:none}
+.wb-bild{justify-content:flex-start;border-top:1px solid #eee7da;border-radius:0;padding-top:10px;min-height:44px}
+#werkbank.wb .boardzeile[aria-current="true"],#werkbank.wb .ebenen button[aria-current="true"]{background:#f3eefe!important}
+#werkbank.wb .boardzeile[aria-current="true"] .bz-name,#werkbank.wb .ebenen button[aria-current="true"] span{background:none!important;color:#4a2f9a!important;font-weight:600}
+.wb-mitte{min-width:0;min-height:0;display:flex;flex-direction:column}
+.wb-mitte .leinwandrahmen{margin-top:0;border-radius:6px}
+.wb .chatspalte{padding:12px 14px!important;min-height:0;background:#fffdf9!important}
+.wb .chatspalte .blattkopf{border-bottom:1px solid #eee7da;padding:0 0 10px}
+.wb .chatspalte .blattkopf b{font-size:16px}
+.wb .chatspalte .pille{border:0;background:#f0f7f2;font-size:12px}
+.wb .chatspalte .eingabekarte{box-shadow:none!important;border:1px solid #eee7da;border-radius:10px!important}
+.wb .chatspalte .eingabekarte .klebe,.wb .klebe{display:none}

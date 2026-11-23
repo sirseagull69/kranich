@@ -364,20 +364,23 @@
         <nav class="werkzeuge" aria-label="Werkzeuge"></nav>
         <main class="leinwand paper" aria-label="Leinwand"></main>
         <div class="rechtsbild"><div class="paper reglerkarte" id="regler"></div><aside class="kranichleiste" aria-label="Kranich"></aside></div>
-      </div></section>` : `<section class="ansicht papier" id="werkbank">
-      <aside class="seitenkarte"><span class="klebe"></span>
-        <button type="button" class="sk-marke" data-aktion="zum-start" title="Alle Entwürfe">${sym('links', 18)}${figur('ruhend', 34)}<span class="h">Kranich</span></button>
-        <div class="sk-projekt"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><small>${p.seiten.length} ${p.seiten.length === 1 ? 'Board' : 'Boards'} · <span class="speicherchip">gespeichert</span></small></div>
-        <button type="button" class="sk-neu" data-aktion="board-dazu">${sym('plus', 16, 2.4)}<span>Board hinzufügen</span></button>
-        <nav class="seitenleiste sk-mitte" aria-label="Boards und Ebenen"></nav>
-        <div class="sk-fuss"><div class="reihe"><button type="button" class="btn btn-q" data-aktion="modus" data-modus="bild">${sym('bild', 16)} Bild bearbeiten</button><div class="platz"></div>
-          <button type="button" class="btn btn-q rundknopf" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></div></div>
-      </aside>
-      <main class="hauptblatt leinwandspalte">
-        <header class="blattkopf"><b class="h boardtitel">${esc(seite()?.name || '')}</b><span class="pille leise boardmass">${esc(seite()?.mass || `${seite()?.breite} × ${seite()?.hoehe}`)}</span><div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div></header>
-        <div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main></div>
-      </main>
-      <aside class="kranichleiste chatspalte" aria-label="Kranich"></aside></section>`;
+      </div></section>` : `<section class="ansicht klar wb" id="werkbank">
+      <header class="kl-kopf wb-kopf">
+        <button type="button" class="kl-marke" data-aktion="zum-start" title="Alle Entwürfe">${sym('links', 18)}${figur('ruhend', 30)}<b class="h">Kranich</b></button>
+        <span class="wb-trenner"></span>
+        <div class="sk-projekt wb-projekt"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><small><span class="boardtitel">${esc(seite()?.name || '')}</span> · <span class="boardmass">${esc(seite()?.mass || `${seite()?.breite} × ${seite()?.hoehe}`)}</span> · <span class="speicherchip">gespeichert</span></small></div>
+        <div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div>
+        <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
+      </header>
+      <div class="wb-raster">
+        <aside class="kl-blatt wb-links">
+          <button type="button" class="wb-neu" data-aktion="board-dazu">${sym('plus', 16, 2.4)}<span>Board hinzufügen</span></button>
+          <nav class="seitenleiste sk-mitte" aria-label="Boards und Ebenen"></nav>
+          <button type="button" class="kl-leise wb-bild" data-aktion="modus" data-modus="bild">${sym('bild', 16)} Bild bearbeiten</button>
+        </aside>
+        <main class="wb-mitte leinwandspalte"><div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main></div></main>
+        <aside class="kl-blatt kranichleiste chatspalte" aria-label="Kranich"></aside>
+      </div></section>`;
     const leinwand = app.querySelector('.leinwand');
     leinwand.addEventListener('dragover', (e) => e.preventDefault());
     leinwand.addEventListener('drop', beimAblegen);
