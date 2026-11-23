@@ -400,16 +400,16 @@
   function schiene() {
     const s = seite();
     const offen = s?.pruefung?.offen?.length || 0;
-    const k = (aktion, ic, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 19)}</button>`;
-    return `${k('werkzeug-zeiger', 'zeiger', 'Auswählen', `aria-pressed="${!S.hand}"`)}
-      ${k('werkzeug-hand', 'hand', 'Verschieben (Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
+    const k = (aktion, ic, wort, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 19)}<span>${wort}</span></button>`;
+    return `${k('werkzeug-zeiger', 'zeiger', 'Wählen', 'Auswählen: Element anklicken, dann Kranich sagen, was sich ändern soll', `aria-pressed="${!S.hand}"`)}
+      ${k('werkzeug-hand', 'hand', 'Hand', 'Hand: Leinwand verschieben (geht auch mit gedrückter Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
       <span class="schienenfalz"></span>
-      ${k('panel', 'ebenen', 'Boards und Ebenen', `aria-pressed="${!S.panelZu}"`)}
-      ${k('board-dazu', 'plus', 'Board hinzufügen')}
-      ${k('app-pruefung', 'haken', 'Selbstprüfung', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
-      ${k('alle-groessen', 'mischen', 'Alle Größen', s?.html && !S.projekt?.app?.plan ? '' : 'disabled')}
+      ${k('panel', 'ebenen', 'Boards', 'Liste der Boards und Ebenen ein- oder ausblenden', `aria-pressed="${!S.panelZu}"`)}
+      ${k('board-dazu', 'plus', 'Neu', 'Neues Board in einem anderen Format dazulegen')}
+      ${k('app-pruefung', 'haken', 'Prüfen', 'Selbstprüfung: Kranich misst das Board nach (Lesbarkeit, Überstand, zu kleine Knöpfe)', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
+      ${k('alle-groessen', 'mischen', 'Größen', 'Alle Größen: dieses Board in weitere Formate falten (Story, Flyer …)', s?.html && !S.projekt?.app?.plan ? '' : 'disabled')}
       <div class="platz"></div>
-      ${k('modus', 'bild', 'Bild bearbeiten', 'data-modus="bild"')}`;
+      ${k('modus', 'bild', 'Bild', 'Zur Bildbearbeitung wechseln', 'data-modus="bild"')}`;
   }
 
   function boardZeile(x, aktiv, mehrere, klein) {

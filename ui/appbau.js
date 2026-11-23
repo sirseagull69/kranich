@@ -319,7 +319,7 @@
       chips: [repariert || offenGesamt ? `Selbstprüfung: ${[repariert ? `${repariert} repariert` : '', offenGesamt ? `${offenGesamt} offen` : ''].filter(Boolean).join(', ')}` : 'Selbstprüfung ohne Befund'],
     });
     kranich(schief.length === boardJobs.length ? 'fehler' : 'fertig', { anpassen: null, titel: null, fehler: schief.length === boardJobs.length ? { nachricht: schief[0].notiz } : null });
-    sichern();
+    if (S.projekt === p) App.geaendert(); else sichern();
     if (S.projekt !== p) H.meldung(`„${plan.name}“ ist fertig gefaltet.`);
   }
 

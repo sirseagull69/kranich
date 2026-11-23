@@ -38,6 +38,7 @@
   };
 
   function montiere(leinwand, cb) {
+    letzterZoom = null;
     z.leinwand = leinwand;
     z.cb = cb || {};
     z.boards = new Map();

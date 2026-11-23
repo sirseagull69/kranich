@@ -337,3 +337,7 @@
 .werkzeuge .schritte button{flex-direction:row!important;width:100%!important;min-height:32px!important;align-items:center!important;justify-content:space-between!important;border-radius:0!important;font:400 13px 'Source Serif 4',serif!important;background:transparent!important;box-shadow:none!important;padding:4px 10px!important}
 .werkzeuge .schritte button[aria-current="true"]{background:var(--hauch)!important;color:var(--facette)!important;font-weight:600!important}
 .boardname{max-width:max(calc(var(--bb) * var(--zoom) * 1px), 190px)!important}
+.werkzeugleiste{width:66px!important}
+.schienenknopf{width:58px!important;height:52px!important;flex-direction:column;gap:3px}
+.schienenknopf span{font:600 10.5px 'Bricolage Grotesque',sans-serif;line-height:1}
+.schienenzahl{margin-top:-18px!important;margin-left:30px!important}
