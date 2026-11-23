@@ -39,7 +39,7 @@ test('Aufträge enthalten Wunsch, Fläche, Auswahl und Look', () => {
   const a = A.auftragAendern({ html: HTML, wunsch: 'größer', auswahl: { k: 'k1', name: 'Titel' }, breite: 800, hoehe: 600 });
   assert.match(a, /data-k="k1"/);
   assert.match(a, /800 × 600/);
-  assert.match(A.auftragNeu({ wunsch: 'Login', app: 'Erledigt' }), /Erledigt/);
+  assert.match(A.auftragNeu({ wunsch: 'Login', app: 'origami', format: { name: 'Story', regeln: '250 px frei' } }), /Story\. 250 px frei/);
   assert.match(A.auftragVariante({ html: '', wunsch: 'x', richtung: A.RICHTUNGEN[1], breite: 1, hoehe: 1 }), /Mutig/);
   assert.equal(A.RICHTUNGEN.length, 3);
 });
@@ -95,12 +95,12 @@ test('Projekte anlegen, speichern, auflisten, Dateien, löschen', () => {
 test('Einstellungen geben den Schlüssel nie heraus und behalten ihn bei leerer Eingabe', () => {
   const datei = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'kr-e-')), 'e.json');
   const e = new Einstellungen(datei);
-  e.setze({ apiSchluessel: 'sk-geheim', weg: 'api', unbekannt: 1, appOrdner: { erledigt: 'C:/x' } });
+  e.setze({ apiSchluessel: 'sk-geheim', weg: 'api', unbekannt: 1, appOrdner: { eule: 'C:/x' } });
   const o = e.setze({ apiSchluessel: '' });
   assert.equal(o.apiSchluessel, undefined);
   assert.equal(o.apiSchluesselGesetzt, true);
   assert.equal(new Einstellungen(datei).alle().apiSchluessel, 'sk-geheim');
-  assert.equal(o.appOrdner.erledigt, 'C:/x');
+  assert.equal(o.appOrdner.eule, 'C:/x');
   assert.equal(o.appOrdner.origami, '');
   assert.equal(o.unbekannt, undefined);
 });
@@ -118,7 +118,7 @@ test('Export entfernt interne Marken, baut SVG und sichere Dateinamen', () => {
 
 test('Look der Familie nennt alle Apps', () => {
   const t = lookText();
-  for (const n of ['Kranich', 'origami', 'Erledigt']) assert.match(t, new RegExp(n));
+  for (const n of ['Kranich', 'origami', 'Eule', 'Elster']) assert.match(t, new RegExp(n));
 });
 
 function falschesKind({ ausgabe = '', fehler = '', code = 0, enoent = false }) {
@@ -174,4 +174,34 @@ test('frageApi und frageLokal sprechen die richtigen Adressen an', async () => {
   const l = await hirn.frageLokal({ system: 'S', auftrag: 'A', _fetch: async (url) => { aufruf = url; return { ok: true, json: async () => ({ message: { content: 'lokal' } }) }; } });
   assert.equal(l, 'lokal');
   assert.match(aufruf, /11434\/api\/chat/);
+});
+
+const F = require('../kern/formate');
+const { platzDaneben, ordneAn } = require('../kern/projekte');
+
+test('Formate: alle Gruppen, Druck in mm umgerechnet, eigenes Format geprüft', () => {
+  for (const g of F.GRUPPEN) assert.ok(F.FORMATE.some((f) => f.gruppe === g), g);
+  const a5 = F.format('a5');
+  assert.equal(a5.breite, 559); assert.equal(a5.hoehe, 794);
+  assert.equal(F.massText(a5), '148 × 210 mm');
+  assert.equal(F.massText(F.format('post')), '1080 × 1080');
+  assert.equal(F.eigenesFormat(100, 50, 'mm').breite, 378);
+  assert.throws(() => F.eigenesFormat(10, 10), /zwischen 40/);
+  assert.throws(() => F.eigenesFormat(0, 10), /größer als 0/);
+});
+
+test('Boards: Platz daneben und alte Projekte anordnen', () => {
+  const s = [{ x: 0, y: 0, breite: 1080 }, { x: 1200, y: 0, breite: 1080 }];
+  assert.deepEqual(platzDaneben(s, s[0]), { x: 2400, y: 0 });
+  assert.deepEqual(platzDaneben([], null), { x: 0, y: 0 });
+  const p = ordneAn({ seiten: [{ breite: 1440 }, { breite: 390 }] });
+  assert.equal(p.seiten[0].x, 0); assert.equal(p.seiten[1].x, 1560); assert.equal(p.seiten[1].format, 'web');
+});
+
+test('Auftrag Anpassen nennt Ziel, Regeln und Textwunsch', () => {
+  const a = A.auftragAnpassen({ html: HTML, von: { name: 'Post', breite: 1080, hoehe: 1080 }, nach: F.format('story'), texteAnpassen: false });
+  assert.match(a, /Ziel: 1080 × 1920 px/);
+  assert.match(a, /250 px frei/);
+  assert.match(a, /wörtlich gleich/);
+  assert.match(a, /data-k="k1"/);
 });

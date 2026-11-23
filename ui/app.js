@@ -11,7 +11,7 @@
     leisteLasche: 'kranich', anhang: null,
     kranich: { zustand: 'bereit', schritte: [], letzter: null, fehler: null, meldung: '' },
     varianten: null, variantenWunsch: '', mischen: new Set(), variantenLaeuft: false,
-    speichert: false, einstellungen: {},
+    speichert: false, einstellungen: {}, formate: [], gruppen: [], neuFormat: 'web', formatSuche: '', eigenEinheit: 'px',
   };
   window.S = S;
 
@@ -53,6 +53,7 @@
   async function zeigeStart() {
     S.ansicht = 'start';
     S.projekt = null;
+    app.innerHTML = '';
     const liste = await K.projekte.liste();
     S.liste = Array.isArray(liste) ? liste : [];
     for (const p of S.liste) {
@@ -62,15 +63,6 @@
     }
     renderStart();
   }
-
-  const VORLAGEN = [
-    { titel: 'Login-Seite für Erledigt', wunsch: 'Login-Seite für die App Erledigt, ruhig und hell, mit E-Mail, Passwort und „Angemeldet bleiben“.', app: 'Erledigt' },
-    { titel: 'Einstellungen für origami', wunsch: 'Einstellungsseite für origami mit Bereichen Modell, Gedächtnis, Verbindungen und Aussehen.', app: 'origami' },
-    { titel: 'Startseite selbstgfaltet.de', wunsch: 'Startseite für selbstgfaltet.de, die die Apps der origami-Familie vorstellt, mit Download-Knöpfen.' },
-    { titel: 'Leerer Zustand', wunsch: 'Leerer Zustand einer Liste: freundlicher Hinweis, kleine Papier-Illustration, ein Knopf zum Anfangen.' },
-    { titel: 'Dialog „Wirklich löschen?“', wunsch: 'Bestätigungsdialog zum Löschen im Papier-Look, mit klarer Warnung und zwei Knöpfen.', breite: 640, hoehe: 400 },
-    { titel: 'Handy-Ansicht Aufgabenliste', wunsch: 'Handy-Ansicht einer Aufgabenliste für Erledigt mit Reitern unten.', breite: 390, hoehe: 844, app: 'Erledigt' },
-  ];
 
   function karteNeu(art, titel, text, bild) {
     return `<button type="button" class="startkarte cardw" data-aktion="neu" data-art="${art}"><div class="card">
@@ -112,17 +104,57 @@
     } else if (l === 'alle') {
       blatt = `<h1 class="h" style="margin:0;font-size:30px;font-weight:800">Alle Projekte</h1><div class="projektliste" style="grid-template-columns:repeat(4,1fr)">${projekteHtml}</div>`;
     } else {
-      blatt = `<div style="display:flex;align-items:baseline;gap:14px"><h1 class="h" style="margin:0;font-size:30px;font-weight:800">Vorlagen der Familie</h1><span class="hand" style="font-size:22px">einmal klicken, Kranich faltet los</span></div>
-        <div class="projektliste" style="grid-template-columns:repeat(3,1fr)">${VORLAGEN.map((v, i) => `<button type="button" class="projektkarte cardw" data-aktion="vorlage" data-i="${i}"><div class="card" style="padding:16px;gap:6px"><span class="h" style="font-weight:800;font-size:16px">${esc(v.titel)}</span><span class="leise" style="font-size:13px">${esc(v.wunsch)}</span><span class="chip chip-zart" style="align-self:flex-start">${v.breite || 1440} × ${v.hoehe || 900}${v.app ? ` · ${esc(v.app)}` : ''}</span></div></button>`).join('')}</div>`;
+      blatt = renderFormate();
     }
     app.innerHTML = `<section class="ansicht" id="start">
       <header class="kopf"><div class="marke">${figur('ruhend', 34)}<span class="h">Kranich</span></div><span class="leise" style="font-size:13px">aus der origami-Familie</span><div class="platz"></div>
         <button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="alle">${sym('ordner', 16)} Öffnen…</button>
         <button type="button" class="btn btn-q" data-aktion="einstellungen">${sym('zahnrad', 16)} Einstellungen</button>
         <span class="avatar h" aria-label="Angemeldet als Nils">NP</span></header>
-      <div class="laschen" role="tablist">${[['start', 'Start'], ['alle', 'Alle Projekte'], ['vorlagen', 'Vorlagen der Familie']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${l === k}" data-aktion="lasche" data-lasche="${k}">${t}</button>`).join('')}</div>
+      <div class="laschen" role="tablist">${[['start', 'Start'], ['neu', 'Neu'], ['alle', 'Alle Projekte']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${l === k}" data-aktion="lasche" data-lasche="${k}">${t}</button>`).join('')}</div>
       <section class="paper startblatt">${blatt}${eselsohr(54, '#f6f1e7')}</section></section>`;
     document.getElementById('startwunsch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') aktionen['start-falten'](); });
+    const suche = document.getElementById('fsuche');
+    if (suche) {
+      suche.value = S.formatSuche || '';
+      suche.addEventListener('input', () => { S.formatSuche = suche.value; const pos = suche.selectionStart; renderStart(); const n = document.getElementById('fsuche'); n.focus(); n.setSelectionRange(pos, pos); });
+    }
+  }
+
+  // ---------- Formate ----------
+  function formatSymbol(f, max = 50) {
+    const v = Math.min(max / f.breite, max / f.hoehe);
+    return `<span class="formatsymbol" aria-hidden="true" style="width:${Math.max(6, Math.round(f.breite * v))}px;height:${Math.max(6, Math.round(f.hoehe * v))}px"></span>`;
+  }
+  const massText = (f) => f.mass || `${f.breite} × ${f.hoehe}`;
+
+  function formatKarten(aktivId, aktion = 'format-waehlen') {
+    const q = (S.formatSuche || '').trim().toLowerCase();
+    const passt = (f) => !q || `${f.name} ${f.gruppe} ${massText(f)}`.toLowerCase().includes(q) || (q === 'a4' && f.druck);
+    const gruppen = (S.gruppen || []).map((g) => {
+      const liste = S.formate.filter((f) => f.gruppe === g && passt(f));
+      if (!liste.length) return '';
+      return `<div class="formatgruppe ${liste.length > 4 ? 'breit' : ''}"><span class="lbl">${esc(g)}</span><div class="formatreihe" ${liste.length > 4 ? 'style="grid-template-columns:repeat(5,minmax(0,1fr))"' : ''}>${liste.map((f) => `<button type="button" class="formatkarte cardw" aria-pressed="${f.id === aktivId}" data-aktion="${aktion}" data-id="${f.id}"><div class="card"><div class="fvor">${formatSymbol(f)}</div><b>${esc(f.name)}</b><span class="m">${esc(massText(f))}</span></div></button>`).join('')}</div></div>`;
+    }).join('');
+    return gruppen || '<div class="leerhinweis">Kein Format passt. Leg unten rechts eine eigene Größe an.</div>';
+  }
+
+  function renderFormate() {
+    const f = S.formate.find((x) => x.id === S.neuFormat) || S.formate.find((x) => x.id === 'web');
+    return `<div class="formatkopf"><div style="display:flex;flex-direction:column"><h1 class="h">Was gestalten wir?</h1><span class="hand" style="font-size:21px">such dir ein Blatt aus</span></div><div class="platz"></div>
+        <div style="display:flex;flex-direction:column;gap:3px;width:340px"><label for="fsuche" class="lbl">Format suchen</label><input id="fsuche" class="feld" placeholder="z. B. „Story“ oder „A4“"></div></div>
+      <div class="formatkoerper"><div class="formatgruppen">${formatKarten(f.id)}</div>
+        <div class="paper eigenekarte cardw"><b class="h" style="font-size:17px">Eigene Größe</b><span class="leise" style="font-size:13px">Wenn nichts davon passt.</span>
+          <div class="reihe"><label class="reihe" style="gap:4px">Breite <input class="feld" id="eigen-b" type="number" value="1200"></label></div>
+          <div class="reihe"><label class="reihe" style="gap:4px">Höhe <input class="feld" id="eigen-h" type="number" value="800"></label></div>
+          <div class="segment" role="group" aria-label="Einheit"><button type="button" aria-pressed="${S.eigenEinheit !== 'mm'}" data-aktion="einheit" data-e="px">Pixel</button><button type="button" aria-pressed="${S.eigenEinheit === 'mm'}" data-aktion="einheit" data-e="mm">Millimeter</button></div>
+          <button type="button" class="btn btn-p" data-aktion="eigen-anlegen">Anlegen</button>
+          <span class="hand" style="font-size:20px">ich falt jede Größe</span></div></div>
+      <div class="falteingabe">${figur('ruhend', 30)}<span class="chip chip-zart">${esc(f.name)} · ${esc(massText(f))}</span><input id="startwunsch" placeholder="Was soll Kranich falten?" aria-label="Was soll Kranich falten?">
+        ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
+        <button type="button" class="btn btn-q" data-aktion="anhang">${sym('klammer', 16)} Bild anhängen</button>
+        <button type="button" class="btn" data-aktion="leer-anlegen">Leer anlegen</button>
+        <button type="button" class="btn btn-p" data-aktion="start-falten">${figur('arbeitend', 18)} Falten</button></div>`;
   }
 
   // ---------- Projekt öffnen ----------
@@ -141,10 +173,11 @@
     renderWerkbank();
   }
 
-  async function neuesProjekt(art, { wunsch, anhang, breite, hoehe, app: appName } = {}) {
-    const p = await K.projekte.anlegen({ art: art === 'bild' ? 'bild' : 'entwurf' });
+  async function neuesProjekt(art, { wunsch, anhang, format, app: appName } = {}) {
+    const f = format || S.formate.find((x) => x.id === 'web');
+    const p = await K.projekte.anlegen({ art: art === 'bild' ? 'bild' : 'entwurf', format: f });
     if (p?.fehler) { H.meldung(p.fehler.nachricht, { art: 'fehler' }); return; }
-    if (breite) { p.seiten[0].breite = breite; p.seiten[0].hoehe = hoehe; await K.projekte.speichern(p); }
+    if (f.mass && p.seiten[0]) { p.seiten[0].mass = f.mass; await K.projekte.speichern(p); }
     await oeffne(p.id);
     if (art === 'bild') {
       const b = anhang || await K.datei.bildWaehlen();
@@ -179,6 +212,7 @@
   function kopfKnoepfe() {
     const kannZurueck = S.modus === 'bild' ? Bild.z.stand > 0 : (seite()?.stand || 0) > 0;
     return `<button type="button" class="btn btn-q" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'}>${sym('zurueck', 16)} Rückgängig</button>
+      ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="alle-groessen" ${seite()?.html ? '' : 'disabled title="Erst etwas aufs Board falten"'}>${sym('mischen', 16)} Alle Größen</button>`}
       <button type="button" class="btn" data-aktion="varianten" ${S.modus === 'bild' ? 'disabled title="Varianten gibt es im Entwurf"' : ''}>${sym('varianten', 16)} Varianten</button>
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
@@ -203,9 +237,10 @@
       Entwurf.montiere(leinwand, {
         beiAuswahl: (a) => { S.auswahl = a; renderSeitenleiste(); renderWunschfeld(); },
         beiEbenen: (l) => { S.ebenen = l; renderSeitenleiste(); },
-        beiHtml: (html) => { const s = seite(); s.html = html; if (s.verlauf?.[s.stand]) s.verlauf[s.stand].html = html; speichernSpaeter(); },
+        beiBoard: (id) => waehleBoard(id),
+        beiHtml: (id, html) => { const s = S.projekt?.seiten.find((x) => x.id === id); if (!s) return; s.html = html; if (s.verlauf?.[s.stand]) s.verlauf[s.stand].html = html; speichernSpaeter(); },
       });
-      zeigeSeite();
+      zeigeBoards();
     }
     renderLeiste();
     zeigeSpeicherchip();
@@ -213,44 +248,70 @@
 
   function renderKopfKnoepfe() {
     const r = app.querySelector('.kopf .reihe');
-    if (r && S.ansicht === 'werkbank') r.innerHTML = kopfKnoepfe();
+    if (r && S.ansicht === 'werkbank' && S.projekt) r.innerHTML = kopfKnoepfe();
   }
 
-  function zeigeSeite() {
-    const s = seite();
-    S.auswahl = null;
-    Entwurf.zeige(s.html, s.breite, s.hoehe, s.name);
-    if (!s.html) S.ebenen = [];
+  function zeigeBoards() {
+    Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
     renderSeitenleiste();
     renderMitte();
   }
 
+  function waehleBoard(id) {
+    if (S.seiteId === id) return;
+    S.seiteId = id;
+    S.auswahl = null;
+    Entwurf.setzeAktiv(id);
+    renderSeitenleiste(); renderKopfKnoepfe(); renderWunschfeld(); renderVerlauf(); renderMitte();
+    const t = app.querySelector('.titel span');
+    if (t) t.textContent = `/ ${seite().name}`;
+  }
+
+  // Neues Board rechts in der Reihe des Ankers; wird die Reihe zu breit,
+  // beginnt darunter eine neue Reihe.
+  const REIHE_MAX = 4400;
+  function platzDaneben(anker, breite = 0) {
+    const alle = S.projekt.seiten;
+    const reihe = alle.filter((x) => Math.abs(x.y - anker.y) < 1);
+    const x = Math.max(...reihe.map((r) => r.x + r.breite)) + 120;
+    const links = Math.min(...alle.map((r) => r.x));
+    if (x + breite - links <= REIHE_MAX) return { x, y: anker.y };
+    const unten = Math.max(...alle.map((r) => r.y + r.hoehe)) + 200;
+    return { x: links, y: unten };
+  }
+
+  function neuesBoard(f, { anker = seite(), html = '', ort } = {}) {
+    const p = ort || platzDaneben(S.projekt.seiten[S.projekt.seiten.length - 1].y > anker.y ? S.projekt.seiten[S.projekt.seiten.length - 1] : anker, f.breite);
+    const b = { id: `s${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, name: f.name, format: f.id, mass: f.mass, breite: f.breite, hoehe: f.hoehe, x: p.x, y: p.y, html, verlauf: [], stand: -1 };
+    S.projekt.seiten.push(b);
+    return b;
+  }
+
   function renderSeitenleiste() {
     const nav = app.querySelector('.seitenleiste');
-    if (!nav) return;
+    if (!nav || !S.projekt) return;
     const s = seite();
-    nav.innerHTML = `<span class="lbl" style="padding:0 0 2px 2px">Seiten</span>
-      <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="Doppelklick zum Umbenennen">${sym('seite', 15)}<span>${esc(x.name)}</span></button>`).join('')}</div>
-      <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="seite-neu">${sym('plus', 14)} Neue Seite</button>
+    const mehrere = S.projekt.seiten.length > 1;
+    nav.innerHTML = `<span class="lbl" style="padding:0 0 2px 2px">Boards</span>
+      <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="Doppelklick zum Umbenennen">${formatSymbol(x, 16)}<span>${esc(x.name)}</span>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`).join('')}</div>
+      <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="board-dazu">${sym('plus', 14)} Board dazu</button>
       <div class="fold" style="margin:14px 16px 10px 0"></div>
-      <span class="lbl" style="padding:0 0 4px 2px">Ebenen</span>
+      <span class="lbl" style="padding:0 0 4px 2px">Ebenen · ${esc(s.name)}</span>
       <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 16}px">${sym(['button', 'a', 'input'].includes(e.tag) ? 'box' : /^h\d|p|label$/.test(e.tag) ? 'text' : ['ul', 'ol', 'nav', 'table'].includes(e.tag) ? 'liste' : 'box', 14)}<span>${esc(e.name)}</span></button>`).join('') : '<span class="leise" style="font-size:13px;padding:0 4px">Noch leer</span>'}</div>`;
   }
 
   // Overlays auf der Entwurfsleinwand: leer, denkt, fertig, Fehler
   function renderMitte() {
     const L = app.querySelector('.leinwand');
-    if (!L || S.modus !== 'entwurf') return;
+    if (!L || S.modus !== 'entwurf' || !S.projekt) return;
     L.querySelector('.mitte')?.remove();
     L.querySelector('.hinweisband')?.remove();
     const s = seite();
     const k = S.kranich;
     let html = '';
     if (k.zustand === 'denkt') {
-      html = `<div class="mitte" style="background:rgba(255,253,248,.55)"><div class="paper zustandskarte">
-        <div style="display:flex;align-items:center;gap:16px"><div class="faltblatt"></div><div><h2 class="h">Kranich faltet deinen Entwurf …</h2><span class="leise">${esc(k.meldung)}</span></div></div>
-        <div class="schritte">${k.schritte.map((x) => `<div class="schritt ${x.z}"><span class="punkt">${x.z === 'fertig' ? sym('haken', 11, 3) : ''}</span>${esc(x.t)}</div>`).join('')}</div>
-        <button type="button" class="btn btn-s" style="align-self:flex-start" data-aktion="abbrechen">Abbrechen</button>${eselsohr(36, '#ffffff')}</div></div>`;
+      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …')}</b><span class="leise" style="font-size:13px">${esc(k.meldung)}</span></div>
+        <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button></div>`;
     } else if (k.zustand === 'fehler') {
       html = `<div class="hinweisband paper fehler" role="alert">${figur('ruhend', 34)}<div style="display:flex;flex-direction:column"><b class="h">${esc(k.fehler?.nachricht || 'Kranich kommt gerade nicht an Claude ran')}</b>
         <span class="leise" style="font-size:13px">Dein Entwurf ist gespeichert, nichts geht verloren.${k.fehler?.details ? ` <span title="${esc(k.fehler.details)}" style="text-decoration:underline dotted">Was ist passiert?</span>` : ''}</span></div>
@@ -258,7 +319,7 @@
     } else if (k.zustand === 'fertig' && k.variantenBereit) {
       html = `<div class="hinweisband paper">${figur('fertig', 34)}<div style="display:flex;flex-direction:column"><b class="h">3 Varianten bereit</b><span class="leise" style="font-size:13px">Ruhig, Mutig und Kompakt</span></div>
         <button type="button" class="btn btn-s btn-p" data-aktion="varianten-zeigen">Ansehen</button><button type="button" class="btn btn-s btn-q" data-aktion="fertig-weg">Später</button></div>`;
-    } else if (!s.html) {
+    } else if (!s.html && S.projekt.seiten.length === 1) {
       html = `<div class="mitte"><div class="paper leerkarte">${figur('ruhend', 90)}<h2 class="h">Beschreib, was du willst</h2>
         <span class="leise">Schreib rechts an Kranich oder zieh ein Bild hier rein. Zum Beispiel:</span>
         <div class="vorschlaege">${['Login-Seite', 'Einstellungen', 'Startseite für eine App'].map((t) => `<button type="button" class="btn btn-s" data-aktion="vorschlag" data-text="${t}">${t}</button>`).join('')}<button type="button" class="btn btn-s" data-aktion="anhang">${sym('klammer', 14)} Aus einem Screenshot</button></div>
@@ -277,7 +338,7 @@
 
   function renderLeiste() {
     const aside = app.querySelector('.kranichleiste');
-    if (!aside) return;
+    if (!aside || !S.projekt) return;
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
     aside.innerHTML = `<div class="leistenlaschen" role="tablist"><button type="button" role="tab" aria-selected="${!verlaufAn}" data-aktion="leiste" data-lasche="kranich">Kranich</button><button type="button" role="tab" aria-selected="${verlaufAn}" data-aktion="leiste" data-lasche="verlauf">Verlauf</button></div>
@@ -293,7 +354,7 @@
 
   function renderVerlauf() {
     const el = app.querySelector('.kranichleiste .verlauf');
-    if (!el) return;
+    if (!el || !S.projekt) return;
     if (S.leisteLasche === 'verlauf') {
       if (S.modus === 'bild') {
         el.innerHTML = Bild.z.verlauf.map((v, i) => `<button type="button" class="btn btn-s ${i === Bild.z.stand ? 'btn-p' : ''}" style="justify-content:flex-start" data-aktion="bild-springe" data-i="${i}">Schritt ${i + 1} · ${esc(v.was)}</button>`).reverse().join('') || '<div class="leer-verlauf">Noch keine Schritte.</div>';
@@ -308,6 +369,9 @@
       el.innerHTML = `<div class="leer-verlauf">${figur('ruhend', 44)}<b class="h">Noch nichts gefaltet</b><span>Dein erster Wunsch landet hier.${S.modus === 'bild' ? ' Zum Beispiel: „Hintergrund weg und auf 1080 × 1080“.' : ''}</span></div>`;
       return;
     }
+    const fortschritt = S.kranich.zustand === 'denkt' && S.kranich.anpassen
+      ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><b>Ich falte „${esc(seite().name)}“ in ${S.kranich.anpassen.length} weitere Größen</b><div class="fortschritt">${S.kranich.anpassen.map((j) => `<div class="zeile"><span class="txt"><b class="h">${esc(j.format.name)}</b><span>${esc(j.format.mass || `${j.format.breite} × ${j.format.hoehe}`)}</span></span><span class="chip ${{ wartet: 'chip-grau', laeuft: 'chip-zart', fertig: 'chip-gruen', fehler: 'chip-rot' }[j.zustand]}">${{ wartet: 'Wartet', laeuft: 'Läuft', fertig: 'Fertig', fehler: 'Fehler' }[j.zustand]}</span></div>`).join('')}</div>
+        <div class="reihe"><span class="leise" style="flex:1">${esc(S.kranich.meldung)}</span><button type="button" class="btn btn-s" data-aktion="abbrechen">Anhalten</button></div></div></div>` : '';
     el.innerHTML = chat.map((c, i) => {
       if (c.wer === 'ich') return `<div class="blase-ich">${esc(c.text)}</div>`;
       const letzte = i === chat.length - 1;
@@ -318,13 +382,13 @@
         ${letzte && c.fehler ? '<div class="reihe"><button type="button" class="btn btn-s" data-aktion="nochmal">Nochmal</button></div>' : ''}
         ${letzte && !c.fehler && c.rueckgaengig ? `<div class="reihe"><button type="button" class="btn btn-s" data-aktion="rueckgaengig">${sym('zurueck', 14)} Rückgängig</button>${c.varianten ? '<button type="button" class="btn btn-s" data-aktion="varianten-zeigen">Varianten ansehen</button>' : ''}</div>` : ''}
       </div></div>`;
-    }).join('') + (S.kranich.zustand === 'denkt' ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><div class="reihe" style="gap:10px"><span class="punkte" aria-hidden="true"><i></i><i></i><i></i></span><span class="leise">${esc(S.kranich.meldung || 'Ich falte …')}</span></div></div></div>` : '');
+    }).join('') + fortschritt + (S.kranich.zustand === 'denkt' && !S.kranich.anpassen ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><div class="reihe" style="gap:10px"><span class="punkte" aria-hidden="true"><i></i><i></i><i></i></span><span class="leise">${esc(S.kranich.meldung || 'Ich falte …')}</span></div></div></div>` : '');
     el.scrollTop = el.scrollHeight;
   }
 
   function renderWunschfeld() {
     const el = app.querySelector('.kranichleiste .wunschfeld');
-    if (!el) return;
+    if (!el || !S.projekt) return;
     const alt = el.querySelector('textarea')?.value || '';
     const auswahlChip = S.modus === 'entwurf' && S.auswahl
       ? `<span class="chip chip-zart" style="align-self:flex-start">Auswahl: ${esc(S.auswahl.name)}<button type="button" style="border:0;background:transparent;color:inherit;font:inherit;padding:0 0 0 4px" data-aktion="auswahl-weg">Entfernen</button></span>`
@@ -369,6 +433,7 @@
   let auftragNr = 0;
   async function sendeEntwurf(wunsch, { auswahl = S.auswahl, app: appName } = {}) {
     const s = seite();
+    if (auswahl && auswahl.board && auswahl.board !== s.id) auswahl = null;
     const anhang = S.anhang;
     if (!wunsch && !anhang) return;
     const nr = ++auftragNr;
@@ -380,10 +445,12 @@
       { t: anhang ? 'Claude liest das Bild und faltet' : 'Claude faltet den Entwurf', z: 'laeuft' },
       { t: 'Entwurf prüfen und einsetzen', z: 'offen' },
     ];
-    setzeKranich('denkt', { schritte, meldung: auswahl ? `Ich falte „${auswahl.name}“ neu …` : 'Ich falte …', variantenBereit: false });
+    setzeKranich('denkt', { schritte, meldung: auswahl ? `Ich falte „${auswahl.name}“ neu …` : `${s.name} · ${s.mass || `${s.breite} × ${s.hoehe}`}`, variantenBereit: false, anpassen: null });
     renderKopfKnoepfe();
-    const r = await K.entwurf({ wunsch, html: anhang ? '' : s.html, auswahl: anhang ? null : auswahl, breite: s.breite, hoehe: s.hoehe, bild: anhang?.dataUrl, app: appName });
+    Entwurf.setzeStatus(s.id, 'laeuft');
+    const r = await K.entwurf({ wunsch, html: anhang ? '' : s.html, auswahl: anhang ? null : auswahl, breite: s.breite, hoehe: s.hoehe, bild: anhang?.dataUrl, app: appName, format: s.format });
     if (nr !== auftragNr) return; // abgebrochen
+    Entwurf.setzeStatus(s.id, r?.fehler ? null : 'fertig');
     if (r?.fehler) {
       chat({ wer: 'kranich', fehler: true, titel: r.fehler.art === 'nicht-installiert' || r.fehler.art === 'nicht-angemeldet' ? 'Claude ist nicht bereit' : 'Keine Verbindung zu Claude', text: `${r.fehler.nachricht} Dein Wunsch ist gemerkt. Ich versuch es, sobald du „Nochmal“ drückst.` });
       setzeKranich('fehler', { fehler: r.fehler });
@@ -396,9 +463,58 @@
     if (r.weg === 'lokal') chips.push('mit dem Modell auf deinem PC');
     chat({ wer: 'kranich', text: r.notiz || 'Fertig, schau mal.', chips, rueckgaengig: true });
     setzeKranich('fertig', { fehler: null });
-    Entwurf.zeige(s.html, s.breite, s.hoehe, s.name);
+    Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
     renderSeitenleiste(); renderKopfKnoepfe();
     S.variantenWunsch = wunsch;
+    geaendert();
+  }
+
+  // „Alle Größen“: neue Boards anlegen und nacheinander falten.
+  async function falteGroessen(quelle, { formate, texteAnpassen, daneben }) {
+    const nr = ++auftragNr;
+    let ort = null;
+    if (!daneben) {
+      const unten = Math.max(...S.projekt.seiten.map((x) => x.y + x.hoehe)) + 200;
+      ort = { x: quelle.x, y: unten };
+    }
+    const jobs = formate.map((f) => {
+      const b = neuesBoard(f, { anker: quelle, ort: ort ? { ...ort } : null });
+      if (ort) ort.x += f.breite + 120;
+      return { board: b, format: f, zustand: 'wartet' };
+    });
+    chat({ wer: 'ich', text: `Mach daraus auch ${formate.map((f) => f.name).join(', ')}` });
+    setzeKranich('denkt', { anpassen: jobs, meldung: `0 von ${jobs.length}` });
+    zeigeBoards();
+    for (const j of jobs) Entwurf.setzeStatus(j.board.id, 'wartet');
+    Entwurf.einpassen();
+    geaendert({ vorschau: false });
+    let fertig = 0;
+    for (const j of jobs) {
+      if (nr !== auftragNr) return;
+      j.zustand = 'laeuft';
+      Entwurf.setzeStatus(j.board.id, 'laeuft');
+      renderVerlauf();
+      const von = { name: quelle.name, breite: quelle.breite, hoehe: quelle.hoehe };
+      const r = await K.anpassen({ html: quelle.html, von, nach: j.format, texteAnpassen });
+      if (nr !== auftragNr) return;
+      if (r?.fehler) {
+        j.zustand = 'fehler'; j.fehler = r.fehler.nachricht;
+        Entwurf.setzeStatus(j.board.id, 'fehler');
+      } else {
+        j.zustand = 'fertig'; fertig++;
+        j.board.verlauf = [{ html: r.html, was: `Aus „${quelle.name}“ gefaltet`, zeit: new Date().toISOString() }];
+        j.board.stand = 0; j.board.html = r.html;
+        Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
+        Entwurf.setzeStatus(j.board.id, 'fertig');
+      }
+      S.kranich.meldung = `${fertig} von ${jobs.length}`;
+      renderVerlauf(); renderMitte();
+      geaendert({ vorschau: false });
+    }
+    const schief = jobs.filter((j) => j.zustand === 'fehler');
+    chat({ wer: 'kranich', fehler: schief.length === jobs.length, titel: 'Das hat nicht geklappt', text: schief.length ? `${fertig} von ${jobs.length} Größen sind fertig. Nicht geklappt: ${schief.map((j) => j.format.name).join(', ')} (${schief[0].fehler})` : `Fertig: ${jobs.length} weitere Größen, alle aus „${quelle.name}“.`, chips: jobs.filter((j) => j.zustand === 'fertig').map((j) => j.format.name) });
+    setzeKranich(schief.length === jobs.length ? 'fehler' : 'fertig', { anpassen: null, fehler: schief.length === jobs.length ? { nachricht: schief[0].fehler } : null });
+    renderSeitenleiste(); renderKopfKnoepfe();
     geaendert();
   }
 
@@ -578,16 +694,26 @@
   const aktionen = {
     'lasche': (el) => { S.startLasche = el.dataset.lasche; renderStart(); },
     'neu': (el) => {
+      if (el.dataset.art === 'entwurf') { S.startLasche = 'neu'; renderStart(); return; }
       if (el.dataset.art === 'ausbild') return aktionen.anhang(null, { danach: (b) => neuesProjekt('entwurf', { anhang: b }) });
       return neuesProjekt(el.dataset.art);
     },
-    'vorlage': (el) => { const v = VORLAGEN[Number(el.dataset.i)]; return neuesProjekt('entwurf', { wunsch: v.wunsch, breite: v.breite, hoehe: v.hoehe, app: v.app }); },
+    'format-waehlen': (el) => { S.neuFormat = el.dataset.id; const w = document.getElementById('startwunsch')?.value; renderStart(); if (w) document.getElementById('startwunsch').value = w; },
+    'einheit': (el) => { S.eigenEinheit = el.dataset.e; const b = document.getElementById('eigen-b').value, h = document.getElementById('eigen-h').value; renderStart(); document.getElementById('eigen-b').value = b; document.getElementById('eigen-h').value = h; },
+    'eigen-anlegen': async () => {
+      const f = await K.formate.eigen(document.getElementById('eigen-b').value, document.getElementById('eigen-h').value, S.eigenEinheit || 'px');
+      if (f?.fehler) { H.meldung(f.fehler.nachricht, { art: 'fehler' }); return; }
+      const wunsch = document.getElementById('startwunsch')?.value.trim();
+      return neuesProjekt('entwurf', { format: f, wunsch, anhang: S.anhang });
+    },
+    'leer-anlegen': () => neuesProjekt('entwurf', { format: S.formate.find((x) => x.id === (S.neuFormat || 'web')) }),
     'start-falten': () => {
       const wunsch = document.getElementById('startwunsch')?.value.trim();
       const anhang = S.anhang;
       if (!wunsch && !anhang) { document.getElementById('startwunsch')?.focus(); return; }
       S.anhang = null;
-      return neuesProjekt('entwurf', { wunsch, anhang });
+      const format = S.startLasche === 'neu' ? S.formate.find((x) => x.id === (S.neuFormat || 'web')) : undefined;
+      return neuesProjekt('entwurf', { wunsch, anhang, format });
     },
     'projekt-oeffnen': (el) => oeffne(el.dataset.id),
     'projekt-weg': async (el) => {
@@ -596,7 +722,7 @@
       await K.projekte.loeschen(p.id);
       zeigeStart();
     },
-    'zum-start': async () => { await speichernSpaeter.sofort(); zeigeStart(); },
+    'zum-start': async () => { await speichernSpaeter.sofort(); S.startLasche = 'start'; zeigeStart(); },
     'einstellungen': () => Dialoge.einstellungen(),
     'anhang': async (_el, { danach } = {}) => {
       const b = await K.datei.bildWaehlen();
@@ -635,35 +761,59 @@
       S.anhang = l.anhang;
       return sendeEntwurf(l.wunsch, { auswahl: l.auswahl, app: l.app });
     },
-    'abbrechen': () => { auftragNr++; chat({ wer: 'kranich', text: 'Okay, abgebrochen.' }); setzeKranich('bereit'); renderKopfKnoepfe(); },
+    'abbrechen': () => {
+      auftragNr++;
+      for (const x of S.projekt.seiten) Entwurf.setzeStatus(x.id, null);
+      chat({ wer: 'kranich', text: S.kranich.anpassen ? 'Okay, angehalten. Was schon fertig war, bleibt liegen.' : 'Okay, abgebrochen.' });
+      setzeKranich('bereit', { anpassen: null }); renderKopfKnoepfe(); geaendert();
+    },
     'fehler-weg': () => setzeKranich('bereit'),
     'fertig-weg': () => setzeKranich('fertig', { variantenBereit: false }),
     'vorschlag': (el) => sendeEntwurf(el.dataset.text),
     'auswahl-weg': () => { Entwurf.waehle(null); },
     'ebene': (el) => Entwurf.waehle(el.dataset.k),
-    'seite': (el) => {
-      if (S.seiteId === el.dataset.id) return;
-      S.seiteId = el.dataset.id;
-      renderWerkbank();
+    'seite': (el, e) => {
+      if (e?.target?.closest('[data-aktion="board-weg"]')) return;
+      waehleBoard(el.dataset.id);
+      Entwurf.zeigeBoard(el.dataset.id);
     },
-    'seite-neu': () => {
-      const s = seite();
-      const neu = { id: `s${Date.now().toString(36)}`, name: `Seite ${S.projekt.seiten.length + 1}`, breite: s.breite, hoehe: s.hoehe, html: '', verlauf: [] };
-      S.projekt.seiten.push(neu); S.seiteId = neu.id;
-      renderWerkbank(); geaendert({ vorschau: false });
+    'board-weg': async (el) => {
+      const b = S.projekt.seiten.find((x) => x.id === el.dataset.id);
+      if (!b || S.projekt.seiten.length < 2) return;
+      if (b.html && !window.confirm(`Board „${b.name}“ löschen?`)) return;
+      S.projekt.seiten = S.projekt.seiten.filter((x) => x.id !== b.id);
+      if (S.seiteId === b.id) S.seiteId = S.projekt.seiten[0].id;
+      zeigeBoards(); renderKopfKnoepfe(); geaendert();
+    },
+    'board-dazu': async () => {
+      const f = await Dialoge.formatWaehlen(S.formate, S.gruppen, formatKarten);
+      if (!f) return;
+      const b = neuesBoard(f);
+      S.seiteId = b.id; S.auswahl = null;
+      zeigeBoards(); renderKopfKnoepfe(); renderWunschfeld();
+      Entwurf.zeigeBoard(b.id);
+      geaendert({ vorschau: false });
+      H.meldung(`${f.name} liegt auf der Leinwand. Schreib Kranich, was drauf soll, oder nimm „Alle Größen“ vom fertigen Board.`);
+    },
+    'alle-groessen': async () => {
+      const quelle = seite();
+      if (!quelle.html) return;
+      const wahl = await Dialoge.alleGroessen({ quelle, formate: S.formate, vorhanden: S.projekt.seiten.map((x) => x.format) });
+      if (!wahl) return;
+      return falteGroessen(quelle, wahl);
     },
     'rueckgaengig': () => {
       if (S.modus === 'bild') { Bild.springe(Bild.z.stand - 1); return; }
       const s = seite();
       if (!s.stand) return;
       s.stand -= 1; s.html = s.verlauf[s.stand].html;
-      Entwurf.zeige(s.html, s.breite, s.hoehe, s.name);
+      Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
       renderKopfKnoepfe(); renderVerlauf(); geaendert();
     },
     'entwurf-springe': (el) => {
       const s = seite(); const i = Number(el.dataset.i);
       s.stand = i; s.html = s.verlauf[i].html;
-      Entwurf.zeige(s.html, s.breite, s.hoehe, s.name);
+      Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
       renderKopfKnoepfe(); renderVerlauf(); geaendert();
     },
     'zoom-minus': () => Entwurf.zoom(1 / 1.2), 'zoom-plus': () => Entwurf.zoom(1.2), 'zoom-einpassen': () => Entwurf.einpassen(),
@@ -740,17 +890,17 @@
     const el = e.target.closest('[data-aktion]');
     if (!el || el.disabled) return;
     const fn = aktionen[el.dataset.aktion];
-    if (fn) Promise.resolve(fn(el)).catch((f) => H.meldung(f.message || String(f), { art: 'fehler' }));
+    if (fn) Promise.resolve(fn(el, e)).catch((f) => H.meldung(f.message || String(f), { art: 'fehler' }));
   });
   app.addEventListener('dblclick', (e) => {
     const el = e.target.closest('[data-aktion="seite"]');
     if (!el) return;
     const s = S.projekt.seiten.find((x) => x.id === el.dataset.id);
-    const span = el.querySelector('span');
+    const span = el.querySelector('span:not(.loesch):not(.formatsymbol)');
     const feld = document.createElement('input');
     feld.value = s.name; feld.style.width = '100%';
     span.replaceWith(feld); feld.focus(); feld.select();
-    feld.addEventListener('blur', () => { s.name = feld.value.trim().slice(0, 40) || s.name; renderSeitenleiste(); geaendert({ vorschau: false }); }, { once: true });
+    feld.addEventListener('blur', () => { s.name = feld.value.trim().slice(0, 40) || s.name; zeigeBoards(); geaendert({ vorschau: false }); }, { once: true });
     feld.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') feld.blur(); });
   });
 
@@ -772,6 +922,8 @@
 
   (async () => {
     S.einstellungen = await K.einstellungen.lesen();
+    const fl = await K.formate.liste();
+    S.formate = fl.formate || []; S.gruppen = fl.gruppen || [];
     zeigeStart();
   })();
 })();

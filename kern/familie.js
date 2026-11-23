@@ -6,7 +6,8 @@
 const APPS = {
   kranich: { name: 'Kranich', farbe: '#7c5cd6', facette: '#4a2f9a', hell: '#d6caf9', aufgabe: 'Entwerfen und Bilder bearbeiten' },
   origami: { name: 'origami', farbe: '#e8743b', facette: '#b4521f', hell: '#f8d3bd', aufgabe: 'KI-Assistent, steckt als Copilot in jeder App' },
-  erledigt: { name: 'Erledigt', farbe: '#2f8f5b', facette: '#1d6b40', hell: '#cdebd8', aufgabe: 'Aufgaben' },
+  eule: { name: 'Eule', farbe: '#c47f17', facette: '#8a5512', hell: '#f3dcb2', aufgabe: 'Schreiben (statt Word)' },
+  elster: { name: 'Elster', farbe: '#1f7a74', facette: '#135450', hell: '#dcefec', aufgabe: 'Rechnen und Tabellen (statt Excel)' },
 };
 
 const GRUNDLOOK = `
@@ -30,7 +31,7 @@ function appListe() {
 }
 
 function lookText(eigeneHinweise = '') {
-  let text = `${GRUNDLOOK}\n\nAPPS DER FAMILIE\n${appListe()}`;
+  let text = `${GRUNDLOOK}\n\nAPPS DER FAMILIE (Sammlung „Selbst gfaltet“)\n${appListe()}`;
   if (eigeneHinweise && eigeneHinweise.trim()) text += `\n\nEIGENE HINWEISE VON NILS\n${eigeneHinweise.trim()}`;
   return text;
 }

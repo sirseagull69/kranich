@@ -13,6 +13,7 @@ const echtesHirn = require('../kern/hirn');
 const hirn = process.env.KRANICH_SPIELHIRN ? { ...echtesHirn, frage: require('../werkzeug/spielhirn').frage } : echtesHirn;
 const A = require('../kern/auftraege');
 const { htmlFuerApp, svgAusHtml, dateiname } = require('../kern/export');
+const { FORMATE, GRUPPEN, format: formatVon, eigenesFormat } = require('../kern/formate');
 
 let fenster = null;
 let projekte;
@@ -116,7 +117,7 @@ function registriere() {
   });
 
   // Kranich – Entwürfe
-  handle('kranich:entwurf', async ({ wunsch, html, auswahl, breite, hoehe, bild, app: appName }) => {
+  handle('kranich:entwurf', async ({ wunsch, html, auswahl, breite, hoehe, bild, app: appName, format: formatId }) => {
     const e = einstellungen.alle();
     const system = A.systemEntwurf(e);
     let auftrag;
@@ -127,7 +128,7 @@ function registriere() {
     } else if (html) {
       auftrag = A.auftragAendern({ html, wunsch, auswahl, breite, hoehe });
     } else {
-      auftrag = A.auftragNeu({ wunsch, breite, hoehe, app: appName });
+      auftrag = A.auftragNeu({ wunsch, breite, hoehe, app: appName, format: formatVon(formatId) });
     }
     try {
       const klein = Boolean(html && auswahl && wunsch.length < 80);
@@ -136,6 +137,15 @@ function registriere() {
     } finally {
       for (const b of bilder) fs.rm(b, { force: true }, () => {});
     }
+  });
+
+  handle('formate:liste', () => ({ formate: FORMATE, gruppen: GRUPPEN }));
+  handle('formate:eigen', (b, h, einheit) => eigenesFormat(b, h, einheit));
+
+  handle('kranich:anpassen', async ({ html, von, nach, texteAnpassen }) => {
+    const e = einstellungen.alle();
+    const { text, weg } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: A.auftragAnpassen({ html, von, nach, texteAnpassen }) }, e);
+    return { ...A.leseEntwurf(text), weg };
   });
 
   handle('kranich:varianten', async ({ html, wunsch, breite, hoehe }) => {

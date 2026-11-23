@@ -13,7 +13,7 @@ const STANDARD = {
   lokalAdresse: 'http://127.0.0.1:11434',
   lookHinweise: '',
   exportOrdner: '',
-  appOrdner: { erledigt: '', origami: '', kranich: '' },
+  appOrdner: { origami: '', kranich: '', eule: '', elster: '' },
 };
 
 class Einstellungen {

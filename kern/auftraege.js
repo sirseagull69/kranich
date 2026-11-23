@@ -29,8 +29,8 @@ Danach nur das HTML in einem Block \`\`\`html … \`\`\`.
 ${lookText(einstellungen.lookHinweise)}`;
 }
 
-function auftragNeu({ wunsch, breite = 1440, hoehe = 900, app = '' }) {
-  return `Neuer Entwurf.
+function auftragNeu({ wunsch, breite = 1440, hoehe = 900, app = '', format }) {
+  return `Neuer Entwurf.${format ? `\nFormat: ${format.name}.${format.regeln ? ` ${format.regeln}` : ''}` : ''}
 Fläche: ${breite} × ${hoehe} px.${app ? `\nFür die App: ${app}.` : ''}
 Wunsch von Nils: ${wunsch}`;
 }
@@ -59,6 +59,20 @@ Wunsch von Nils: ${wunsch || 'Mach es schöner.'}
 Inhalt und Zweck bleiben gleich, nur Aufbau und Wirkung ändern sich.
 
 ${basis}`;
+}
+
+// Überträgt einen Entwurf in ein anderes Format („Alle Größen“).
+function auftragAnpassen({ html, von, nach, texteAnpassen = true }) {
+  return `Übertrage diesen Entwurf in ein anderes Format. Gleicher Look, gleiche Farben, gleiche Bildsprache –
+aber der Aufbau wird für das neue Format neu gedacht, nicht nur skaliert.
+Von: ${von.name} (${von.breite} × ${von.hoehe} px)
+Nach: ${nach.name}. Ziel: ${nach.breite} × ${nach.hoehe} px.${nach.regeln ? `\nRegeln für dieses Format: ${nach.regeln}` : ''}
+${texteAnpassen ? 'Texte darfst du ans Format anpassen: kürzen, wo wenig Platz ist; ergänzen (z. B. Adresse, Ablauf), wo mehr Platz ist – aber nur mit Inhalten, die schon im Entwurf stehen oder sich eindeutig daraus ergeben.' : 'Die Texte bleiben wörtlich gleich.'}
+
+ENTWURF:
+\`\`\`html
+${html}
+\`\`\``;
 }
 
 function auftragAusBild({ wunsch, breite = 1440, hoehe = 900 }) {
@@ -190,6 +204,6 @@ function beschreibeSchritt(s) {
 }
 
 module.exports = {
-  RICHTUNGEN, systemEntwurf, auftragNeu, auftragAendern, auftragVariante, auftragAusBild, leseEntwurf,
+  RICHTUNGEN, systemEntwurf, auftragNeu, auftragAendern, auftragVariante, auftragAnpassen, auftragAusBild, leseEntwurf,
   BILD_SCHRITTE, systemBild, auftragBild, pruefePlan, lesePlan, beschreibeSchritt,
 };

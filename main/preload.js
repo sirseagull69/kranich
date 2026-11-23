@@ -18,6 +18,8 @@ contextBridge.exposeInMainWorld('kranich', {
   hirn: { testen: rufe('hirn:testen') },
   entwurf: rufe('kranich:entwurf'),
   varianten: rufe('kranich:varianten'),
+  anpassen: rufe('kranich:anpassen'),
+  formate: { liste: rufe('formate:liste'), eigen: rufe('formate:eigen') },
   bildPlan: rufe('kranich:bild'),
   datei: {
     bildWaehlen: rufe('datei:bildWaehlen'),

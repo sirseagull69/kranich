@@ -15,7 +15,7 @@
     return { el: s, zu };
   }
 
-  const APPS = [['erledigt', 'Erledigt'], ['origami', 'origami'], ['kranich', 'Kranich']];
+  const APPS = [['origami', 'origami'], ['kranich', 'Kranich'], ['eule', 'Eule'], ['elster', 'Elster']];
 
   // ---------- Exportieren ----------
   async function exportieren({ projekt, modus, seite }) {
@@ -25,7 +25,7 @@
     const e = await K.einstellungen.lesen();
     const basisB = bild ? Bild.z.breite : seite.breite;
     const basisH = bild ? Bild.z.hoehe : seite.hoehe;
-    const w = { format: 'png', faktor: 1, breite: basisB, hoehe: basisH, halten: true, ziel: 'speichern', ordner: '', app: 'erledigt' };
+    const w = { format: 'png', faktor: 1, breite: basisB, hoehe: basisH, halten: true, ziel: 'speichern', ordner: '', app: 'origami' };
     const standard = await K.export.standardOrdner();
     const formate = bild
       ? [['png', 'PNG', 'Bild mit durchsichtigem Hintergrund'], ['jpg', 'JPG', 'Kleines Bild, ohne Durchsicht'], ['svg', 'SVG', 'Bild in einer SVG-Hülle (bleibt Pixelbild)']]
@@ -40,7 +40,7 @@
           <label class="reihe" style="gap:6px;font-size:13px"><input type="checkbox" id="ex-halten" checked> Seitenverhältnis halten</label></div>
         <div class="einstellzeile"><span class="lbl">Ziel</span>
           <div class="ziel" role="radio" tabindex="0" data-ziel="speichern" aria-checked="true"><div class="zk"><b class="h">Speichern</b><div class="platz"></div><button type="button" class="btn btn-s" data-ordner>Ordner wählen</button></div><span class="leise ordnertext" style="font-size:12.5px">${esc(standard)}</span></div>
-          <div class="ziel" role="radio" tabindex="0" data-ziel="app" aria-checked="false"><div class="zk"><b class="h">In App-Projekt der Familie</b><div class="platz"></div><select class="feld" id="ex-app">${APPS.map(([k, t]) => `<option value="${k}">${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></div><span class="leise" style="font-size:12.5px">Schreibt direkt ins Projekt, in den Unterordner „kranich“. Ordner stellst du in den Einstellungen ein.</span></div></div>
+          <div class="ziel" role="radio" tabindex="0" data-ziel="app" aria-checked="false"><div class="zk"><b class="h">In App-Projekt der Familie</b><div class="platz"></div><select class="feld" id="ex-app">${APPS.map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></div><span class="leise" style="font-size:12.5px">Schreibt direkt ins Projekt, in den Unterordner „kranich“. Ordner stellst du in den Einstellungen ein.</span></div></div>
       </div></div>
       <div class="dialogfuss"><span class="leise status" style="flex:1"></span><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-los>${figur('arbeitend', 18)} Falten &amp; speichern</button></div>`);
     const el = d.el;
@@ -128,7 +128,7 @@
         <div class="reihe"><input class="feld" id="e-lokalmodell" value="${esc(e.lokalModell)}" style="width:180px" aria-label="Lokales Modell"><input class="feld" id="e-lokaladr" value="${esc(e.lokalAdresse)}" style="flex:1" aria-label="Adresse von Ollama"></div>
         <span class="leise" style="font-size:12.5px">Kleine Wünsche an ein ausgewähltes Element gehen dann zuerst an den PC. Fällt Claude aus, springt der PC dafür ein.</span></div>
       <div class="fold"></div>
-      <div class="einstellzeile"><label for="e-look">Eigene Hinweise zum Look der Familie</label><textarea class="feld" id="e-look" placeholder="z. B. „Erledigt nutzt Grün #2f8f5b, Knöpfe immer rechts unten“">${esc(e.lookHinweise)}</textarea>
+      <div class="einstellzeile"><label for="e-look">Eigene Hinweise zum Look der Familie</label><textarea class="feld" id="e-look" placeholder="z. B. „Hauptknöpfe immer rechts unten, keine Schatten“">${esc(e.lookHinweise)}</textarea>
         <span class="leise" style="font-size:12.5px">Kranich hält sich bei jedem Entwurf daran.</span></div>
       <div class="einstellzeile"><span class="lbl">Projektordner der Apps (für „In App-Projekt der Familie“)</span>
         ${APPS.map(([k, t]) => `<div class="reihe"><b class="h" style="width:80px">${t}</b><input class="feld" data-app="${k}" value="${esc(e.appOrdner?.[k] || '')}" style="flex:1" placeholder="noch nicht gewählt"><button type="button" class="btn btn-s" data-appwahl="${k}">Wählen</button></div>`).join('')}</div>
@@ -170,5 +170,81 @@
     });
   }
 
-  window.Dialoge = { exportieren, einstellungen };
+  // ---------- Board dazu: Format wählen ----------
+  function formatWaehlen(formate, gruppen, karten) {
+    return new Promise((resolve) => {
+      const d = oeffne(`<div class="dialogkopf">${figur('ruhend', 50)}<div style="display:flex;flex-direction:column"><h2 class="h">Board dazu</h2><span class="hand" style="font-size:20px">welches Blatt soll daneben?</span></div><div class="platz"></div><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
+        <div class="formatgruppen" style="max-height:66vh">${karten(null, 'dlg-format')}</div>`);
+      const fertig = (f) => { d.zu(); resolve(f); };
+      d.el.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-aktion="dlg-format"]');
+        if (t) fertig(formate.find((f) => f.id === t.dataset.id));
+        else if (e.target === d.el || e.target.closest('[data-zu]')) resolve(null);
+      });
+    });
+  }
+
+  // ---------- Alle Größen ----------
+  const VORSCHLAG = ['story', 'linkedin', 'a5'];
+
+  function alleGroessen({ quelle, formate, vorhanden }) {
+    return new Promise((resolve) => {
+      const liste = formate.filter((f) => f.id !== quelle.format);
+      const gewaehlt = new Set(liste.filter((f) => VORSCHLAG.includes(f.id) && !vorhanden.includes(f.id)).map((f) => f.id));
+      const vor = (f, max = 120, maxH = 100) => {
+        const v = Math.min(max / f.breite, maxH / f.hoehe);
+        return { b: Math.round(f.breite * v), h: Math.round(f.hoehe * v) };
+      };
+      const d = oeffne(`<div class="dialogkopf">${figur('fertig', 56)}<div style="display:flex;flex-direction:column"><h2 class="h">Alle Größen</h2><span class="hand" style="font-size:20px">ein Entwurf, viele Blätter</span></div><div class="platz"></div><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
+        <div class="groessenkoerper">
+          <div class="groessenquelle"><span class="lbl">Ausgangs-Board</span><div class="rahmen" style="height:${Math.round(300 * Math.min(1.4, quelle.hoehe / quelle.breite))}px"></div><b class="h">${esc(quelle.name)} · ${esc(quelle.mass || `${quelle.breite} × ${quelle.hoehe}`)}</b>
+            <div class="fold" style="margin:8px 0"></div>
+            <label class="reihe" style="gap:8px"><input type="checkbox" id="ag-texte" checked> Texte ans Format anpassen</label>
+            <label class="reihe" style="gap:8px"><input type="checkbox" id="ag-daneben" checked> Als neue Boards neben das Original legen</label></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0"><div class="reihe"><span class="lbl" style="flex:1">In diese Formate falten</span><button type="button" class="btn btn-s btn-q" data-alle>Alle wählen</button><button type="button" class="btn btn-s btn-q" data-keins>Keins</button></div>
+            <div class="groessenliste">${liste.map((f) => { const m = vor(f); return `<button type="button" class="groessenkarte" data-f="${f.id}" aria-pressed="${gewaehlt.has(f.id)}"><div class="rahmen"><div class="zuschnitt" style="width:${m.b}px;height:${m.h}px"></div></div><div class="kopf2"><span class="haken">${sym('haken', 12, 3)}</span><b>${esc(f.name)}</b></div><span class="leise" style="font-size:12px">${esc(f.mass || `${f.breite} × ${f.hoehe}`)}${vorhanden.includes(f.id) ? ' · schon da' : ''}</span></button>`; }).join('')}</div></div>
+        </div>
+        <div class="dialogfuss"><span class="status" style="flex:1"></span><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-los>${figur('arbeitend', 18)} Falten</button></div>`);
+      const el = d.el;
+      // Ausgangs-Board und Vorschauen (zugeschnitten, als Hinweis)
+      const rahmen = el.querySelector('.groessenquelle .rahmen');
+      const zeigeIn = (box, b, h) => {
+        const f = document.createElement('iframe');
+        f.setAttribute('sandbox', 'allow-same-origin'); f.setAttribute('aria-hidden', 'true'); f.tabIndex = -1;
+        f.style.width = `${quelle.breite}px`; f.style.height = `${quelle.hoehe}px`;
+        f.srcdoc = Entwurf.vorbereiten(quelle.html);
+        const z = Math.max(b / quelle.breite, h / quelle.hoehe);
+        f.style.transform = `scale(${z})`;
+        f.style.left = `${(b - quelle.breite * z) / 2}px`; f.style.top = `${(h - quelle.hoehe * z) / 2}px`;
+        box.appendChild(f);
+      };
+      requestAnimationFrame(() => {
+        const z = Math.min(rahmen.clientWidth / quelle.breite, rahmen.clientHeight / quelle.hoehe);
+        zeigeIn(rahmen, quelle.breite * z, quelle.hoehe * z);
+        const fr = rahmen.querySelector('iframe');
+        fr.style.transform = `scale(${z})`; fr.style.left = `${(rahmen.clientWidth - quelle.breite * z) / 2}px`; fr.style.top = '0px';
+      });
+      const zeige = () => {
+        el.querySelectorAll('[data-f]').forEach((b) => b.setAttribute('aria-pressed', String(gewaehlt.has(b.dataset.f))));
+        const namen = liste.filter((f) => gewaehlt.has(f.id)).map((f) => f.name);
+        el.querySelector('.status').innerHTML = namen.length ? `<b class="h">${namen.length} ${namen.length === 1 ? 'Format' : 'Formate'} gewählt</b> <span class="leise">${esc(namen.join(', '))}</span>` : '<span class="leise">Noch nichts gewählt</span>';
+        el.querySelector('[data-los]').disabled = !namen.length;
+      };
+      el.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-f],[data-alle],[data-keins],[data-los]');
+        if (!t) { if (e.target === el || e.target.closest('[data-zu]')) resolve(null); return; }
+        if (t.dataset.f) { if (gewaehlt.has(t.dataset.f)) gewaehlt.delete(t.dataset.f); else gewaehlt.add(t.dataset.f); }
+        if (t.hasAttribute('data-alle')) liste.forEach((f) => gewaehlt.add(f.id));
+        if (t.hasAttribute('data-keins')) gewaehlt.clear();
+        if (t.hasAttribute('data-los')) {
+          const wahl = { formate: liste.filter((f) => gewaehlt.has(f.id)), texteAnpassen: el.querySelector('#ag-texte').checked, daneben: el.querySelector('#ag-daneben').checked };
+          d.zu(); resolve(wahl); return;
+        }
+        zeige();
+      });
+      zeige();
+    });
+  }
+
+  window.Dialoge = { exportieren, einstellungen, formatWaehlen, alleGroessen };
 })();

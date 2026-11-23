@@ -225,3 +225,66 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 .einstellzeile{display:flex;flex-direction:column;gap:6px}
 .einstellzeile label{font-weight:600}
 .meldung{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:30;padding:10px 14px;display:flex;align-items:center;gap:10px;max-width:640px}
+
+/* ---------- Leinwand mit vielen Boards ---------- */
+.welt{position:absolute;left:0;top:0;transform-origin:0 0;--gegenzoom:1;--zoom:1}
+.board{position:absolute}
+.boardname{position:absolute;left:0;bottom:100%;margin:0;padding:0 0 6px;border:0;background:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:left;max-width:calc(var(--bb) * var(--zoom) * 1px);transform:scale(var(--gegenzoom));transform-origin:left bottom;font-size:12px;color:var(--leise);cursor:pointer}
+.board.aktiv .boardname{color:var(--facette)}
+.boardkoerper{position:relative;box-shadow:0 1px 3px rgba(30,40,70,.22)}
+.board.aktiv .boardkoerper{outline:calc(2px * var(--gegenzoom)) solid var(--pflaume);outline-offset:calc(4px * var(--gegenzoom))}
+.boardkoerper iframe{display:block;border:0;background:#fff}
+.boardleer{position:absolute;left:0;top:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#fff;border:calc(2px * var(--gegenzoom)) dashed var(--linie);box-sizing:border-box;cursor:pointer}
+.boardleer svg{transform:scale(var(--gegenzoom))}
+.boardleer .leise{font-size:calc(14px * var(--gegenzoom))}
+.boardstatus{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:rgba(255,255,255,.7);border:calc(2px * var(--gegenzoom)) dashed var(--linie)}
+.boardstatus.wartet{background:#fff}
+.boardstatus .chip{transform:scale(var(--gegenzoom))}
+.boardstatus .faltblatt{transform:scale(var(--gegenzoom))}
+.board .auswahlrahmen,.board .huelle{outline-width:calc(2px * var(--gegenzoom))}
+.board .auswahlrahmen .masz{transform:translateX(-50%) scale(var(--gegenzoom));transform-origin:top center}
+.board-dazu{position:absolute;width:44px;height:44px;border-radius:50%;border:2px solid var(--pflaume);background:#fff;color:var(--facette);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(30,40,70,.18);z-index:4;padding:0}
+.board-dazu:hover{background:var(--zart)}
+.uebersicht{position:absolute;right:62px;bottom:14px;width:190px;background:#fff;border:1px solid var(--linie);padding:6px 8px 8px;display:flex;flex-direction:column;gap:4px;z-index:4}
+.kartenflaeche{position:relative;height:96px;background:var(--papier);overflow:hidden;cursor:pointer}
+.kartenflaeche span{position:absolute}
+.kartenflaeche i{position:absolute;border:1.5px solid var(--facette);pointer-events:none}
+.seitenlaschen button .loesch{opacity:0;border:0;background:transparent;color:inherit;padding:0 2px;flex:none}
+.seitenlaschen button:hover .loesch{opacity:.7}
+.formatsymbol{display:block;flex:none;background:#fff;box-shadow:0 0 0 1.5px currentColor;border-radius:1px}
+
+/* Format wählen */
+.formatkopf{display:flex;align-items:flex-end;gap:16px}
+.formatkopf h1{margin:0;font-weight:800;font-size:34px;letter-spacing:-.02em}
+.formatkoerper{flex:1;min-height:0;display:flex;gap:26px;overflow:hidden}
+.formatgruppen{flex:1;min-width:0;overflow:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 26px;align-content:start;padding:2px 6px 6px 2px}
+.formatgruppe{display:flex;flex-direction:column;gap:8px;min-width:0}
+.formatgruppe.breit{grid-column:1/-1}
+.formatreihe{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.formatkarte{border:0;padding:0;background:transparent;text-align:left;font:inherit;color:inherit;min-width:0}
+.formatkarte .card{padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.formatkarte .fvor{height:66px;background:var(--papier);display:flex;align-items:center;justify-content:center;color:var(--facette)}
+.formatkarte b{font-family:'Bricolage Grotesque',sans-serif;font-size:14px;line-height:1.2;min-height:34px}
+.formatkarte span.m{font-size:12px;color:var(--leise);margin-top:-6px;white-space:nowrap}
+.formatkarte[aria-pressed="true"] .card{outline:3px solid var(--pflaume);background:var(--zart)}
+.eigenekarte{width:260px;flex:none;padding:18px;display:flex;flex-direction:column;gap:10px;align-self:flex-start}
+.eigenekarte .reihe input{width:90px}
+
+/* Alle Größen */
+.groessenkoerper{display:flex;gap:26px;min-height:0}
+.groessenquelle{width:300px;flex:none;display:flex;flex-direction:column;gap:8px}
+.groessenquelle .rahmen,.groessenkarte .rahmen{position:relative;overflow:hidden;background:var(--papier)}
+.groessenquelle iframe,.groessenkarte iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;pointer-events:none;background:#fff}
+.groessenliste{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-content:start;max-height:56vh;overflow:auto;padding:2px}
+.groessenkarte{border:1px solid var(--linie);background:#fff;padding:8px;text-align:left;font:inherit;display:flex;flex-direction:column;gap:6px}
+.groessenkarte .rahmen{height:110px;display:flex;align-items:center;justify-content:center}
+.groessenkarte .zuschnitt{position:relative;overflow:hidden;border:1.5px solid var(--facette);box-sizing:border-box;background:#fff;flex:none}
+.groessenkarte[aria-pressed="true"]{border-color:var(--pflaume);background:var(--zart);outline:1px solid var(--pflaume)}
+.groessenkarte .kopf2{display:flex;align-items:center;gap:6px}
+.groessenkarte .kopf2 b{font-family:'Bricolage Grotesque',sans-serif;font-size:13.5px;flex:1}
+.haken{width:18px;height:18px;border:2px solid var(--linie);border-radius:3px;display:flex;align-items:center;justify-content:center;flex:none;background:#fff}
+.groessenkarte[aria-pressed="true"] .haken{background:var(--pflaume);border-color:var(--pflaume);color:#fff}
+.fortschritt{display:flex;flex-direction:column;gap:6px}
+.fortschritt .zeile{display:flex;align-items:center;gap:10px;padding:6px 8px;background:#fff;border:1px solid #ece4d2}
+.fortschritt .zeile .txt{flex:1;display:flex;flex-direction:column}
+.fortschritt .zeile .txt span{font-size:12px;color:var(--leise)}

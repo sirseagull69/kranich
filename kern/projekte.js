@@ -13,8 +13,29 @@ function neueId() {
   return `${Date.now().toString(36)}-${crypto.randomBytes(3).toString('hex')}`;
 }
 
-function neueSeite(name = 'Seite 1', breite = 1440, hoehe = 900) {
-  return { id: neueId(), name, breite, hoehe, html: '', verlauf: [] };
+// Ein Board auf der Leinwand (früher „Seite“). x und y: Lage auf der Leinwand.
+function neueSeite(name = 'Webseite', breite = 1440, hoehe = 900, { format = 'web', x = 0, y = 0 } = {}) {
+  return { id: neueId(), name, format, breite, hoehe, x, y, html: '', verlauf: [] };
+}
+
+const ABSTAND = 120;
+
+// Platz rechts neben allen Boards derselben Reihe (oben bündig mit dem Anker).
+function platzDaneben(seiten, anker) {
+  const reihe = seiten.filter((s) => anker && Math.abs((s.y || 0) - (anker.y || 0)) < 1);
+  const rechts = (reihe.length ? reihe : seiten).reduce((m, s) => Math.max(m, (s.x || 0) + s.breite), 0);
+  return { x: seiten.length ? rechts + ABSTAND : 0, y: anker ? anker.y || 0 : 0 };
+}
+
+// Ältere Projekte: Seiten ohne Lage nebeneinander legen.
+function ordneAn(projekt) {
+  let x = 0;
+  for (const s of projekt.seiten || []) {
+    if (typeof s.x !== 'number' || typeof s.y !== 'number') { s.x = x; s.y = 0; }
+    if (!s.format) s.format = 'web';
+    x = Math.max(x, s.x + s.breite + ABSTAND);
+  }
+  return projekt;
 }
 
 class Projekte {
@@ -37,7 +58,7 @@ class Projekte {
         const p = JSON.parse(fs.readFileSync(this.pfad(name, 'projekt.json'), 'utf8'));
         ergebnis.push({
           id: p.id, name: p.name, art: p.art, geaendert: p.geaendert,
-          seite: p.art === 'entwurf' ? p.seiten?.[0]?.name : 'Bild 1',
+          seite: p.art === 'entwurf' ? (p.seiten?.length > 1 ? `${p.seiten.length} Boards` : p.seiten?.[0]?.name) : 'Bild 1',
           vorschau: fs.existsSync(this.pfad(name, 'vorschau.png')),
         });
       } catch { /* kaputte Projekte überspringen */ }
@@ -47,14 +68,14 @@ class Projekte {
 
   // Ein Projekt hat immer beides: Entwurfsseiten und ein Bild. "art" sagt nur,
   // womit es geöffnet wird (der Umschalter Entwurf | Bild wechselt).
-  anlegen({ art = 'entwurf', name } = {}) {
+  anlegen({ art = 'entwurf', name, format } = {}) {
     if (!['entwurf', 'bild'].includes(art)) throw new Error('Unbekannte Projektart.');
     const id = neueId();
     const projekt = {
       id, art, name: name || (art === 'bild' ? 'Neues Bild' : 'Neues Projekt'),
       erstellt: new Date().toISOString(), geaendert: new Date().toISOString(),
       chat: [],
-      seiten: [neueSeite()],
+      seiten: [format ? neueSeite(format.name, format.breite, format.hoehe, { format: format.id }) : neueSeite()],
       bild: { breite: 0, hoehe: 0, ebenen: [], anpassung: { hell: 0, kontrast: 0, waerme: 0, saett: 0 } },
     };
     fs.mkdirSync(this.pfad(id), { recursive: true });
@@ -63,7 +84,7 @@ class Projekte {
   }
 
   laden(id) {
-    return JSON.parse(fs.readFileSync(this.pfad(id, 'projekt.json'), 'utf8'));
+    return ordneAn(JSON.parse(fs.readFileSync(this.pfad(id, 'projekt.json'), 'utf8')));
   }
 
   speichern(projekt) {
@@ -89,4 +110,4 @@ class Projekte {
   }
 }
 
-module.exports = { Projekte, neueSeite, neueId };
+module.exports = { Projekte, neueSeite, neueId, platzDaneben, ordneAn };

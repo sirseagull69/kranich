@@ -22,11 +22,14 @@ API-Schlüssel eintragen. „Verbindung testen“ zeigt, ob alles klappt.
 
 | | |
 | --- | --- |
+| Formate für alles: App, Web, Instagram-Post und Story, YouTube, LinkedIn, Flyer A5, Poster A3, Visitenkarte, Einladung, Folie, Logo, App-Icon, eigene Größe | ja |
+| Unendliche Leinwand mit vielen Boards, Übersicht, „Board dazu“ | ja |
+| Alle Größen: ein Board in weitere Formate falten lassen (neu gedacht, nicht nur skaliert) | ja |
 | Entwurf aus einem Satz | ja, eine fertige HTML-Seite im Familien-Look |
 | Element anklicken und ändern („Größer“, „Farbe“, „Wie in origami“, freier Wunsch) | ja |
 | Drei Varianten (Ruhig, Mutig, Kompakt), nehmen oder mischen | ja |
 | Aus Screenshot oder Skizze einen Entwurf | ja |
-| Seiten, Ebenenliste, Rückgängig, Verlauf | ja |
+| Ebenenliste, Rückgängig, Verlauf je Board | ja |
 | Bild: Zuschneiden, Pinsel, Radierer, Auswahl, Text, Pipette, Ebenen, Regler | ja |
 | Bild per Wort („Hintergrund weg und auf 1080 × 1080“) | ja, Claude plant feste Schritte, Kranich führt sie aus |
 | Freistellen | KI-Modell (lädt beim ersten Mal aus dem Netz), sonst nach Randfarbe |

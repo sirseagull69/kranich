@@ -18,7 +18,7 @@ let fehler = 0;
 app.whenReady().then(async () => {
   const w = start();
   w.setSize(1440, 900);
-  w.webContents.on('console-message', (_e, level, msg) => { if (level >= 3) { console.log('KONSOLE:', msg); fehler++; } });
+  w.webContents.on('console-message', (_e, level, msg, zeile, quelle) => { if (level >= 3) { console.log('KONSOLE:', msg, quelle, zeile); fehler++; } });
   const js = (code) => w.webContents.executeJavaScript(code);
   const foto = async (name) => { await warte(350); const b = await w.webContents.capturePage(); fs.writeFileSync(path.join(AUS, `${name}.png`), b.toPNG()); console.log('Foto', name); };
   const pruefe = async (was, code) => { const ok = await js(code); console.log(ok ? 'OK  ' : 'FEHL', was); if (!ok) fehler++; };
@@ -30,6 +30,15 @@ app.whenReady().then(async () => {
     await foto('1-start');
     await pruefe('Start zeigt drei Karten', "document.querySelectorAll('.startkarte').length === 3");
 
+    // Format wählen
+    await js("document.querySelector('[data-lasche=\"neu\"]').click()");
+    await bisDa("document.querySelectorAll('.formatkarte').length >= 16");
+    await pruefe('Formatgalerie zeigt alle Formate', "document.querySelectorAll('.formatkarte').length === 16 && document.querySelectorAll('.formatgruppe').length === 5");
+    await js("document.getElementById('fsuche').value = 'story'; document.getElementById('fsuche').dispatchEvent(new Event('input'))");
+    await pruefe('Suche filtert', "document.querySelectorAll('.formatkarte').length === 1");
+    await js("document.getElementById('fsuche').value = ''; document.getElementById('fsuche').dispatchEvent(new Event('input'))");
+    await js("document.querySelector('[data-aktion=\"format-waehlen\"][data-id=\"web\"]').click()");
+    await foto('1b-format');
     // Neuer Entwurf über das Eingabefeld
     await js("document.getElementById('startwunsch').value = 'Startseite für eine To-do-App'; App.aktionen['start-falten']()");
     await bisDa("App.S.kranich.zustand === 'denkt'", 3000);
@@ -38,6 +47,7 @@ app.whenReady().then(async () => {
     await bisDa("document.querySelector('.leinwand iframe')?.contentDocument?.querySelector('[data-k]')");
     await warte(500);
     await pruefe('Entwurf liegt auf der Leinwand', "!!document.querySelector('.leinwand iframe').contentDocument.querySelector('h1')");
+    await pruefe('Board hat Format Webseite', "App.S.projekt.seiten[0].format === 'web' && App.S.projekt.seiten[0].breite === 1440");
     await pruefe('Ebenen wurden gebaut', "document.querySelectorAll('.ebenen button').length >= 3");
     // Element anklicken
     await js("document.querySelector('.leinwand iframe').contentDocument.querySelector('button').click()");
@@ -81,6 +91,34 @@ app.whenReady().then(async () => {
     if (png) { const { nativeImage } = require('electron'); const s = nativeImage.createFromPath(png).getSize(); console.log(s.width === 2880 ? 'OK  ' : 'FEHL', 'PNG in 2×', s); fs.copyFileSync(png, path.join(AUS, '7-export-ergebnis.png')); }
 
     // Bild-Modus
+    // Board dazu und Alle Größen
+    await js("document.querySelector('.seitenleiste [data-aktion=\"board-dazu\"]').click()");
+    await bisDa("!!document.querySelector('.dialog [data-aktion=\"dlg-format\"]')");
+    await js("document.querySelector('.dialog [data-aktion=\"dlg-format\"][data-id=\"post\"]').click()");
+    await warte(500);
+    await pruefe('Board dazu: Post neben der Webseite', "App.S.projekt.seiten.length === 2 && App.S.projekt.seiten[1].format === 'post' && App.S.projekt.seiten[1].x === 1560 && !App.S.auswahl");
+    await js("document.getElementById('wunsch').value = 'Einladung zum Sommerfest'; App.aktionen.senden()");
+    await bisDa("App.S.kranich.zustand === 'fertig' && !!App.S.projekt.seiten[1].html");
+    await warte(600);
+    await js("document.querySelector('[data-aktion=\"alle-groessen\"]').click()");
+    await bisDa("!!document.querySelector('.groessenliste')");
+    await warte(900);
+    await foto('8a-alle-groessen');
+    await pruefe('Vorschlag: Story, Banner, Flyer gewählt', "document.querySelectorAll('.groessenkarte[aria-pressed=\"true\"]').length === 3");
+    await js("document.querySelector('[data-los]').click()");
+    await bisDa("App.S.projekt.seiten.length === 5", 3000);
+    await warte(250);
+    await foto('8b-anpassen-laeuft');
+    await bisDa("App.S.kranich.zustand === 'fertig'", 15000);
+    await warte(800);
+    await pruefe('Drei neue Boards gefaltet', "App.S.projekt.seiten.length === 5 && App.S.projekt.seiten.slice(2).every((x) => x.html && x.html.includes(x.breite + 'px'))");
+    await pruefe('Story hat richtige Größe', "(() => { const s = App.S.projekt.seiten.find((x) => x.format === 'story'); return s.breite === 1080 && s.hoehe === 1920; })()");
+    await js("Entwurf.einpassen()");
+    await foto('8c-leinwand-voll');
+    await js("document.querySelectorAll('.seitenlaschen [data-aktion=\"seite\"]')[3].click()");
+    await warte(400);
+    await pruefe('Board wechseln per Lasche', "App.S.seiteId === App.S.projekt.seiten[3].id");
+
     await js("document.querySelector('[data-modus=\"bild\"]').click()");
     await warte(300);
     await foto('8-bild-leer');
