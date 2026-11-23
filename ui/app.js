@@ -527,7 +527,8 @@
     if (!aside || !S.projekt) return;
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
-    aside.innerHTML = `<header class="blattkopf"><span class="chatfigur">${figur(haltung, 30)}</span><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><div class="platz"></div><span class="pille ${S.kranich.zustand === 'denkt' ? 'arbeitet' : ''}"><i></i> ${esc(chip)}</span>
+    const tun = S.kranich.zustand === 'denkt' ? (S.modus === 'bild' ? 'malt' : S.kranich.anpassen ? (S.projekt.app ? 'baut' : 'groessen') : 'faltet') : S.kranich.zustand === 'fertig' ? 'fertig' : haltung;
+    aside.innerHTML = `<header class="blattkopf"><span class="chatfigur">${figur(tun, 30)}</span><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><div class="platz"></div><span class="pille ${S.kranich.zustand === 'denkt' ? 'arbeitet' : ''}"><i></i> ${esc(chip)}</span>
         <button type="button" class="btn btn-q rundknopf" data-aktion="leiste" data-lasche="${verlaufAn ? 'kranich' : 'verlauf'}" aria-pressed="${verlaufAn}" title="${verlaufAn ? 'Zurück zum Gespräch' : 'Frühere Fassungen'}" aria-label="Verlauf">${sym(verlaufAn ? 'schliessen' : 'uhr', 17)}</button></header>
       <div class="leistenblatt">
         <div class="verlauf" aria-live="polite"></div>

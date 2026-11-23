@@ -41,7 +41,15 @@
   };
   const NAMEN = { still: 'Kranich', ruhend: 'Kranich ruhend', arbeitend: 'Kranich arbeitet', fertig: 'Kranich ist fertig', schlaeft: 'Kranich schläft', landet: 'Kranich landet' };
 
-  window.figur = function figur(haltung = 'ruhend', groesse = 34) {
+  // Neue Animationen aus voegel.js; alte Namen werden übersetzt
+  const ALT = { ruhend: 'ruhezustand', arbeitend: 'faltet', fertig: 'fertig', schlaeft: 'schlaeft', landet: 'landet' };
+  const LEERLAUF = ['ruhezustand', 'ruhezustand-2', 'ruhezustand-3', 'ruhezustand-4', 'ruhezustand-5'];
+  window.figur = function figur(haltung = 'ruhend', groesse = 34, vogel = 'kranich') {
+    if (window.Voegel && haltung !== 'still') {
+      let name = ALT[haltung] || haltung;
+      if (name === 'ruhezustand' && groesse >= 60) name = LEERLAUF[Math.floor(Math.random() * LEERLAUF.length)];
+      if (window.Voegel.ANIMATIONEN[vogel]?.some((a) => a.name === name)) return window.Voegel.svg(vogel, name, groesse);
+    }
     const h = HALTUNG[haltung] ? haltung : 'ruhend';
     const id = `kr${++zaehler}`;
     return `<svg id="${id}" viewBox="0 0 100 100" width="${groesse}" height="${groesse}" role="img" aria-label="${NAMEN[h]}" style="display:block;flex:none;overflow:visible">${SCHATTEN}${HALTUNG[h](id)}</svg>`;
