@@ -43,7 +43,7 @@
     let los = LOS[a.status] || '';
     if (pct != null) { st = pct >= 100 ? 'Installiert …' : `Lädt ${pct} %`; art = ''; los = ''; }
     else if (u.update) { st = `Update ${u.neu}`; art = 'update'; los = '<span class="updknopf" data-update="' + a.id + '">Aktualisieren</span>'; }
-    else if (a.status === 'fehlt' && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
+    else if ((a.status === 'fehlt' || (a.web && !a.version)) && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
     else if (a.status === 'fehlt') los = '';
     const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : '<span class="papier"></span>';
     return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
