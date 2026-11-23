@@ -93,9 +93,9 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 
 /* ---------- Werkbank ---------- */
 .werkbank{flex:1;min-height:0;display:flex;padding:0 16px 16px 0}
-.seitenleiste{width:216px;flex:none;padding:6px 0 0 16px;display:flex;flex-direction:column;gap:6px;overflow:auto}
+.seitenleiste{width:236px;flex:none;padding:6px 0 0 16px;display:flex;flex-direction:column;gap:6px;overflow:auto}
 .seitenlaschen{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.seitenlaschen button{display:flex;align-items:center;gap:8px;min-height:44px;padding:0 12px;border:0;border-radius:12px 0 0 12px;text-align:left;font-size:14px;width:88%;background:var(--lasche);color:var(--tinte);font-weight:500;font-family:'Bricolage Grotesque',sans-serif}
+.seitenlaschen button{display:flex;align-items:center;gap:7px;min-height:40px;padding:0 10px;border:0;border-radius:12px 0 0 12px;text-align:left;font-size:14px;width:88%;background:var(--lasche);color:var(--tinte);font-weight:500;font-family:'Bricolage Grotesque',sans-serif}
 .seitenlaschen button[aria-current="true"]{width:100%;background:var(--flaeche);color:var(--facette);font-weight:800;box-shadow:-2px 2px 6px rgba(30,40,70,.08)}
 .seitenlaschen button span{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 .ebenen{display:flex;flex-direction:column;gap:1px;padding-right:12px}
@@ -366,3 +366,6 @@ textarea.feld{padding:8px 10px;min-height:70px;resize:vertical}
 .schrittnr{background:var(--verlauf)!important}
 .avatar{background:linear-gradient(135deg,#4a2f9a,#1d2742)!important}
 .abspielen{background:radial-gradient(ellipse at 30% 20%,#3a2a6e 0%,#1d2742 60%)}
+
+.wunschfeld>div:last-child{flex-wrap:nowrap;min-width:0}
+.wunschfeld .btn-p{flex:none}

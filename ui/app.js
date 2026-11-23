@@ -304,7 +304,7 @@
     const s = seite();
     const mehrere = S.projekt.seiten.length > 1;
     nav.innerHTML = `<span class="lbl" style="padding:0 0 2px 2px">Boards</span>
-      <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="Doppelklick zum Umbenennen">${formatSymbol(x, 16)}<span>${esc(x.name)}</span>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`).join('')}</div>
+      <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} – Doppelklick zum Umbenennen">${formatSymbol(x, 12)}<span>${esc(x.name)}</span>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`).join('')}</div>
       <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="board-dazu">${sym('plus', 14)} Board dazu</button>
       <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="app-pruefung" ${s.html ? '' : 'disabled'}>${sym('haken', 14)} Selbstprüfung${s.pruefung?.offen?.length ? ` <span class="chip chip-gelb">${s.pruefung.offen.length}</span>` : ''}</button>
       <div class="fold" style="margin:14px 16px 10px 0"></div>
@@ -410,8 +410,8 @@
       ${S.anhang && S.modus === 'entwurf' ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise" style="font-size:12.5px">${esc(S.anhang.name)} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
       <textarea id="wunsch" rows="2" placeholder="${S.modus === 'bild' ? 'z. B. „Hintergrund weg und auf 1080 × 1080“' : 'z. B. „Mach den Hintergrund heller“'}"></textarea>
       <div style="display:flex;align-items:center;gap:4px">
-        <button type="button" class="btn btn-s btn-q" data-aktion="${S.modus === 'bild' ? 'bild-einfuegen' : 'anhang'}">${sym('klammer', 15)} Bild anhängen</button>
-        <button type="button" class="btn btn-s btn-q" disabled title="Sprechen kommt noch">${sym('mikro', 15)} Sprechen</button>
+        <button type="button" class="btn btn-s btn-q" data-aktion="${S.modus === 'bild' ? 'bild-einfuegen' : 'anhang'}">${sym('klammer', 15)} Bild</button>
+        <button type="button" class="btn btn-s btn-q" disabled title="Sprechen kommt noch" aria-label="Sprechen (kommt noch)">${sym('mikro', 15)}</button>
         <div class="platz"></div>
         <button type="button" class="btn btn-s btn-p" data-aktion="senden" ${denkt ? 'disabled' : ''}>${sym('senden', 15, 2.4)} Senden</button></div>`;
     const ta = el.querySelector('textarea');

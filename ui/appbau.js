@@ -90,20 +90,30 @@
     const pos = new Map(plan.bildschirme.map((b, i) => [b.id, { x: 20 + (i % spalten) * (bw + gx), y: 20 + Math.floor(i / spalten) * (bh + gy) }]));
     const breite = 40 + spalten * bw + (spalten - 1) * gx;
     const hoehe = 40 + Math.ceil(n / spalten) * bh + (Math.ceil(n / spalten) - 1) * gy;
+    const schilder = [];
     const pfeile = plan.ablaeufe.map((a, i) => {
       const v = pos.get(a.von), z = pos.get(a.nach);
       if (!v || !z) return '';
-      const x1 = v.x + bw / 2, y1 = v.y + bh / 2, x2 = z.x + bw / 2, y2 = z.y + bh / 2;
+      const gegen = plan.ablaeufe.some((b) => b.von === a.nach && b.nach === a.von);
+      const lx = z.x - v.x, ly = z.y - v.y, ll = Math.hypot(lx, ly) || 1;
+      const ver = gegen ? 7 : 0;
+      const nx = (-ly / ll) * ver, ny = (lx / ll) * ver;
+      const x1 = v.x + bw / 2 + nx, y1 = v.y + bh / 2 + ny, x2 = z.x + bw / 2 + nx, y2 = z.y + bh / 2 + ny;
       // an den Kastenrand kürzen
       const dx = x2 - x1, dy = y2 - y1;
       const t = (w, h) => Math.min(Math.abs(w / 2 / (dx || 1e-6)), Math.abs(h / 2 / (dy || 1e-6)));
       const s = t(bw + 8, bh + 8);
       const ax = x1 + dx * s, ay = y1 + dy * s, bx = x2 - dx * s, by = y2 - dy * s;
-      const mx = (ax + bx) / 2 + (Math.abs(dy) > Math.abs(dx) ? 8 : 0), my = (ay + by) / 2 - 7;
-      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#4a2f9a" stroke-width="1.6" marker-end="url(#pfeil)"></line><text x="${mx}" y="${my}" text-anchor="${Math.abs(dy) > Math.abs(dx) ? 'start' : 'middle'}" font-size="11" fill="#4a2f9a" font-family="Bricolage Grotesque, sans-serif" font-weight="700" paint-order="stroke" stroke="#fffdf8" stroke-width="4">${esc(a.knopf)}</text>`;
-    }).join('');
+      // Schild auf 40 % der Strecke (bei Gegenpfeilen nicht in der Mitte übereinander)
+      const t2 = gegen ? 0.38 : 0.5;
+      const mx = ax + (bx - ax) * t2, my = ay + (by - ay) * t2;
+      const text = a.knopf.length > 16 ? `${a.knopf.slice(0, 15)}…` : a.knopf;
+      const sb = text.length * 6.2 + 12;
+      schilder.push(`<g><rect x="${mx - sb / 2}" y="${my - 9}" width="${sb}" height="18" rx="9" fill="#fffdf8" stroke="#d6caf9"></rect><text x="${mx}" y="${my + 4}" text-anchor="middle" font-size="10.5" fill="#4a2f9a" font-family="Bricolage Grotesque, sans-serif" font-weight="700"><title>${esc(a.knopf)}</title>${esc(text)}</text></g>`);
+      return `<line x1="${ax}" y1="${ay}" x2="${bx}" y2="${by}" stroke="#4a2f9a" stroke-width="1.6" marker-end="url(#pfeil)"></line>`;
+    }).join('') + '';
     const kaesten = plan.bildschirme.map((b) => { const p = pos.get(b.id); return `<g><rect x="${p.x}" y="${p.y}" width="${bw}" height="${bh}" fill="#fff" stroke="#d9d0bc"></rect><text x="${p.x + 12}" y="${p.y + 23}" font-size="14" font-weight="800" fill="#1d2742" font-family="Bricolage Grotesque, sans-serif">${esc(b.name.length > 17 ? `${b.name.slice(0, 16)}…` : b.name)}</text><text x="${p.x + 12}" y="${p.y + 41}" font-size="11" fill="#5b6170" font-family="Source Serif 4, serif">${esc(FORMAT_NAME[b.format] || b.format)}${b.zustaende.length ? ` · ${b.zustaende.length} ${b.zustaende.length === 1 ? 'Zustand' : 'Zustände'}` : ''}</text></g>`; }).join('');
-    return `<svg viewBox="0 0 ${breite} ${hoehe}" width="100%" style="max-height:100%" role="img" aria-label="Ablauf der App"><defs><marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#4a2f9a"></path></marker></defs>${pfeile}${kaesten}</svg>`;
+    return `<svg viewBox="0 0 ${breite} ${hoehe}" width="100%" style="max-height:100%" role="img" aria-label="Ablauf der App"><defs><marker id="pfeil" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#4a2f9a"></path></marker></defs>${pfeile}${kaesten}${schilder.join('')}</svg>`;
   }
 
   function renderPlan() {
@@ -140,7 +150,7 @@
               <span class="lbl" style="font-size:10.5px">Karte und Kopfzeile</span>
               <div class="bv-kopf"><b class="h">${esc(plan.name)}</b><span class="chip chip-gruen">Gespeichert</span></div>
               <div class="bv-karte"><b class="h">Bericht KW 47</b><small class="leise">Geändert heute, 08:30</small></div>
-              ${bs.hinweis ? `<span class="hand" style="font-size:18px">${esc(bs.hinweis)}</span>` : ''}
+              ${bs.hinweis ? `<span class="hand" style="font-size:18px" title="${esc(bs.hinweis)}">${esc(bs.hinweis.length > 90 ? `${bs.hinweis.slice(0, 88)}…` : bs.hinweis)}</span>` : ''}
             </div></section>
         </div>
         <div class="planfuss"><b class="h" style="font-size:16px">${z.bildschirme} Bildschirme, ${z.boards} Boards${z.boards > z.bildschirme ? ' mit Zuständen' : ''}</b><span class="leise">dauert etwa ${Math.max(1, Math.ceil(z.boards * 0.5))} Minuten</span><div class="platz"></div><button type="button" class="btn btn-p" data-aktion="app-falten">${figur('arbeitend', 18)} Alles falten</button></div>
@@ -185,6 +195,7 @@
     if (!jobs.length) { H.meldung('Alle Boards sind schon gefaltet.'); return; }
     App.chat({ wer: 'ich', text: `Falte alle Bildschirme von „${plan.name}“` });
     App.setzeKranich('denkt', { anpassen: jobs, titel: `Ich baue „${plan.name}“: ${offen.length} Boards`, meldung: `0 von ${offen.length}` });
+    App.renderKopfKnoepfe();
     for (const b of offen) Entwurf.setzeStatus(b.id, 'wartet');
     Entwurf.einpassen();
 
