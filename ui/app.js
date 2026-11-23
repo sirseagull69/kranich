@@ -140,7 +140,7 @@
           <div class="kl-eingabe">
             ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise">${esc(S.anhang.name || 'Bild')} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
             <input id="startwunsch" placeholder="Ein Satz reicht, z. B. „Plakat für den Flohmarkt am Samstag“" aria-label="Was soll Kranich falten?">
-            <div class="reihe"><button type="button" class="kl-leise" data-aktion="anhang">${sym('klammer', 16)} Bild</button><button type="button" class="kl-leise" data-aktion="neu" data-art="entwurf">${sym('lineal', 16)} Format</button><div class="platz"></div>
+            <div class="reihe"><span class="leise" style="font-size:13px">Kranich sucht das passende Format selbst aus.</span><div class="platz"></div>
               <button type="button" class="kl-los" data-aktion="start-falten">Falten ${sym('senden', 16, 2.4)}</button></div></div>
           <div class="kl-karten">${KARTEN.map(([art, anim, t, x, hell]) => `<button type="button" class="kl-karte" style="--hell:${hell}" data-aktion="neu" data-art="${art}" data-anim="${anim}"><span class="kl-bild">${figur(anim, 104)}</span><b class="h">${t}</b><span class="leise">${x}</span></button>`).join('')}</div>
           <div class="kl-zeile2">
