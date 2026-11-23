@@ -50,27 +50,40 @@ function tempBild(dataUrl) {
 }
 
 // Rendert einen Entwurf unsichtbar und liefert ein Bild davon.
+// Unsichtbare Werk-Fenster: einmal anlegen und wiederverwenden. Ständiges Öffnen und
+// Schließen lässt unter Windows das Hauptfenster flackern.
+const werk = { mitJs: null, ohneJs: null, kette: { mitJs: Promise.resolve(), ohneJs: Promise.resolve() } };
+function mitWerkfenster(art, fn) {
+  const lauf = werk.kette[art].then(async () => {
+    let w = werk[art];
+    if (!w || w.isDestroyed()) {
+      w = new BrowserWindow({ show: false, width: 800, height: 600, useContentSize: true, frame: false, skipTaskbar: true, webPreferences: { offscreen: true, sandbox: true, javascript: art === 'mitJs' } });
+      werk[art] = w;
+    }
+    return fn(w);
+  });
+  werk.kette[art] = lauf.catch(() => {});
+  return lauf;
+}
+function werkfensterZu() { for (const k of ['mitJs', 'ohneJs']) { if (werk[k] && !werk[k].isDestroyed()) werk[k].destroy(); werk[k] = null; } }
+
 async function fotografiere(html, breite, hoehe, faktor = 1) {
   const datei = path.join(os.tmpdir(), `kranich-foto-${Date.now()}.html`);
   // Eigene Schriften mitgeben, damit das Foto auch ohne Internet stimmt.
   const schrift = `<link rel="stylesheet" href="${require('node:url').pathToFileURL(path.join(__dirname, '..', 'ui', 'schrift', 'schrift.css')).href}">`;
   const mitSchrift = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + schrift) : schrift + html;
   fs.writeFileSync(datei, mitSchrift, 'utf8');
-  const w = new BrowserWindow({
-    show: false, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor),
-    useContentSize: true, frame: false,
-    webPreferences: { offscreen: true, javascript: false, sandbox: true },
+  return mitWerkfenster('ohneJs', async (w) => {
+    try {
+      w.setContentSize(Math.round(breite * faktor), Math.round(hoehe * faktor));
+      await w.loadFile(datei);
+      w.webContents.setZoomFactor(faktor);
+      await new Promise((r) => setTimeout(r, 600));
+      return await w.webContents.capturePage({ x: 0, y: 0, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor) });
+    } finally {
+      fs.rm(datei, { force: true }, () => {});
+    }
   });
-  try {
-    await w.loadFile(datei);
-    w.webContents.setZoomFactor(faktor);
-    await new Promise((r) => setTimeout(r, 600));
-    const bild = await w.webContents.capturePage({ x: 0, y: 0, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor) });
-    return bild;
-  } finally {
-    w.destroy();
-    fs.rm(datei, { force: true }, () => {});
-  }
 }
 
 function mitSchrift(html) {
@@ -83,16 +96,18 @@ async function pruefe(html, format) {
   const opt = PR.messOptionen(format);
   const datei = path.join(os.tmpdir(), `kranich-pruef-${Date.now()}.html`);
   fs.writeFileSync(datei, mitSchrift(String(html).replace(/<script[\s\S]*?<\/script>/gi, '')), 'utf8');
-  const w = new BrowserWindow({ show: false, width: opt.breite, height: opt.hoehe, useContentSize: true, frame: false, webPreferences: { offscreen: true, sandbox: true } });
-  try {
-    await w.loadFile(datei);
-    await new Promise((r) => setTimeout(r, 400));
-    const roh = await w.webContents.executeJavaScript(`${PR.messCode}(${JSON.stringify(opt)})`);
-    return PR.bewerte(roh);
-  } finally {
-    w.destroy();
-    fs.rm(datei, { force: true }, () => {});
-  }
+  return mitWerkfenster('mitJs', async (w) => {
+    try {
+      w.setContentSize(opt.breite, opt.hoehe);
+      w.webContents.setZoomFactor(1);
+      await w.loadFile(datei);
+      await new Promise((r) => setTimeout(r, 400));
+      const roh = await w.webContents.executeJavaScript(`${PR.messCode}(${JSON.stringify(opt)})`);
+      return PR.bewerte(roh);
+    } finally {
+      fs.rm(datei, { force: true }, () => {});
+    }
+  });
 }
 
 // Bildschirmfotos vom aktuellen Stand der Familie (ui/stand), für Wünsche, die eine App nennen
@@ -366,6 +381,7 @@ function oeffneFenster() {
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
+  fenster.on('closed', () => { werkfensterZu(); if (process.platform !== 'darwin') app.quit(); });
   fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   // Vom Launcher „Selbst gfaltet“: --oeffne=<projekt-id>
   fenster.webContents.once('did-finish-load', () => { const id = oeffneArg(process.argv); if (id) fenster.webContents.send('start:oeffne', id); });
@@ -423,5 +439,6 @@ if (!process.env.KRANICH_RAUCH) {
     });
     app.whenReady().then(start);
     app.on('window-all-closed', () => app.quit());
+    app.on('before-quit', werkfensterZu);
   }
 }
