@@ -14,6 +14,8 @@ const hirn = process.env.KRANICH_SPIELHIRN ? { ...echtesHirn, frage: require('..
 const A = require('../kern/auftraege');
 const { htmlFuerApp, svgAusHtml, dateiname } = require('../kern/export');
 const { FORMATE, GRUPPEN, format: formatVon, eigenesFormat } = require('../kern/formate');
+const AP = require('../kern/appplan');
+const PR = require('../kern/pruefung');
 
 let fenster = null;
 let projekte;
@@ -64,6 +66,28 @@ async function fotografiere(html, breite, hoehe, faktor = 1) {
     await new Promise((r) => setTimeout(r, 600));
     const bild = await w.webContents.capturePage({ x: 0, y: 0, width: Math.round(breite * faktor), height: Math.round(hoehe * faktor) });
     return bild;
+  } finally {
+    w.destroy();
+    fs.rm(datei, { force: true }, () => {});
+  }
+}
+
+function mitSchrift(html) {
+  const schrift = `<link rel="stylesheet" href="${require('node:url').pathToFileURL(path.join(__dirname, '..', 'ui', 'schrift', 'schrift.css')).href}">`;
+  return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, (m) => m + schrift) : schrift + html;
+}
+
+// Selbstprüfung: Entwurf unsichtbar laden (eigene Skripte entfernt) und nachmessen.
+async function pruefe(html, format) {
+  const opt = PR.messOptionen(format);
+  const datei = path.join(os.tmpdir(), `kranich-pruef-${Date.now()}.html`);
+  fs.writeFileSync(datei, mitSchrift(String(html).replace(/<script[\s\S]*?<\/script>/gi, '')), 'utf8');
+  const w = new BrowserWindow({ show: false, width: opt.breite, height: opt.hoehe, useContentSize: true, frame: false, webPreferences: { offscreen: true, sandbox: true } });
+  try {
+    await w.loadFile(datei);
+    await new Promise((r) => setTimeout(r, 400));
+    const roh = await w.webContents.executeJavaScript(`${PR.messCode}(${JSON.stringify(opt)})`);
+    return PR.bewerte(roh);
   } finally {
     w.destroy();
     fs.rm(datei, { force: true }, () => {});
@@ -148,6 +172,30 @@ function registriere() {
     return { ...A.leseEntwurf(text), weg };
   });
 
+  // Ganze App entwerfen
+  handle('kranich:appPlan', async ({ beschreibung, geraet, zustaende }) => {
+    const e = einstellungen.alle();
+    const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag: AP.auftragPlan({ beschreibung, geraet, zustaende }) }, e);
+    const plan = AP.lesePlanApp(text, { geraet });
+    return { plan, boards: AP.legeBoards(AP.boardsAusPlan(plan)), weg };
+  });
+  handle('kranich:bausteine', async ({ plan }) => {
+    const e = einstellungen.alle();
+    const { text } = await hirn.frage({ system: AP.systemBausteine(e), auftrag: AP.auftragBausteine(plan) }, e);
+    return AP.leseBausteine(text);
+  });
+  handle('kranich:appBoard', async ({ plan, board, css }) => {
+    const e = einstellungen.alle();
+    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: AP.auftragAppBoard({ plan, board, css }) }, e);
+    return A.leseEntwurf(text);
+  });
+  handle('kranich:pruefen', async ({ html, format: f }) => ({ funde: await pruefe(html, typeof f === 'string' ? formatVon(f) : f) }));
+  handle('kranich:reparieren', async ({ html, probleme, breite, hoehe }) => {
+    const e = einstellungen.alle();
+    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: PR.auftragReparieren({ html, probleme, breite, hoehe }) }, e);
+    return A.leseEntwurf(text);
+  });
+
   handle('kranich:varianten', async ({ html, wunsch, breite, hoehe }) => {
     const e = einstellungen.alle();
     const system = A.systemEntwurf(e);
@@ -203,6 +251,25 @@ function registriere() {
     return { datei: schreibeExport(zielPfad, name, format === 'jpg' ? 'jpg' : 'png', inhalt) };
   });
 
+  // Paket für die Übergabe: alle Boards, Bausteine, Plan und Abläufe in einem Ordner.
+  handle('export:paket', async ({ name, boards, css, plan, ziel, app: appName, ordner }) => {
+    const basis = zielOrdner(ziel, appName, ordner);
+    let paket = path.join(basis, `${dateiname(name)}-paket`);
+    for (let i = 2; fs.existsSync(paket) && i < 100; i++) paket = path.join(basis, `${dateiname(name)}-paket-${i}`);
+    fs.mkdirSync(path.join(paket, 'boards'), { recursive: true });
+    const liste = [];
+    for (const b of boards) {
+      const datei = `${dateiname(b.id || b.name)}.html`;
+      fs.writeFileSync(path.join(paket, 'boards', datei), htmlFuerApp(b.html, { namenBehalten: true }), 'utf8');
+      liste.push({ id: b.id, name: b.name, datei: `boards/${datei}`, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand || null });
+    }
+    if (css) fs.writeFileSync(path.join(paket, 'bausteine.css'), css, 'utf8');
+    const inhalt = { name, erstellt: new Date().toISOString(), boards: liste, ablaeufe: plan?.ablaeufe || [], bildschirme: plan?.bildschirme || [] };
+    fs.writeFileSync(path.join(paket, 'plan.json'), JSON.stringify(inhalt, null, 2), 'utf8');
+    fs.writeFileSync(path.join(paket, 'LIESMICH.md'), `# ${name}\n\nGefaltet mit Kranich.\n\n- boards/: ein HTML pro Board (data-name = Baustein, data-ziel = Ziel-Board beim Klick)\n- bausteine.css: gemeinsame Stile aller Boards\n- plan.json: Bildschirme, Zustände, Abläufe\n\n## Boards\n${liste.map((b) => `- ${b.name} (${b.breite} × ${b.hoehe})${b.zustand ? ` – Zustand ${b.zustand}` : ''}: ${b.datei}`).join('\n')}\n\n## Abläufe\n${(plan?.ablaeufe || []).map((a) => `- ${a.von} → „${a.knopf}“ → ${a.nach}`).join('\n') || '- keine'}\n`, 'utf8');
+    return { datei: paket };
+  });
+
   handle('export:bild', async ({ dataUrl, format, ziel, app: appName, ordner, name, breite, hoehe }) => {
     const zielPfad = zielOrdner(ziel, appName, ordner);
     const { puffer } = dataUrlZuPuffer(dataUrl);
@@ -236,7 +303,7 @@ function start() {
   return oeffneFenster();
 }
 
-module.exports = { start, fotografiere };
+module.exports = { start, fotografiere, pruefe };
 
 if (!process.env.KRANICH_RAUCH) {
   app.whenReady().then(start);

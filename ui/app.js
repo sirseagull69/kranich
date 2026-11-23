@@ -430,6 +430,23 @@
     s.html = html;
   }
 
+  // Selbstprüfung: Entwurf nachmessen und gefundene Fehler einmal reparieren lassen.
+  async function pruefeUndRepariere(board, html, nr) {
+    const format = { id: board.format, breite: board.breite, hoehe: board.hoehe, druck: Boolean((S.formate.find((f) => f.id === board.format) || {}).druck) };
+    Entwurf.setzeStatus(board.id, 'pruefen');
+    const p = await K.app.pruefen({ html, format });
+    if (nr !== auftragNr || p?.fehler || !p.funde?.length) return { html, gefunden: [], repariert: false };
+    Entwurf.setzeStatus(board.id, 'repariert');
+    const r = await K.app.reparieren({ html, probleme: p.funde, breite: board.breite, hoehe: board.hoehe });
+    if (nr !== auftragNr || r?.fehler) return { html, gefunden: p.funde, repariert: false };
+    return { html: r.html, gefunden: p.funde, repariert: true };
+  }
+
+  function pruefBericht(pr) {
+    if (!pr.gefunden.length) return 'Selbstprüfung ohne Befund';
+    return pr.repariert ? `Selbstprüfung: ${pr.gefunden.length} ${pr.gefunden.length === 1 ? 'Fehler' : 'Fehler'} repariert` : `Selbstprüfung: ${pr.gefunden.length} offen`;
+  }
+
   let auftragNr = 0;
   async function sendeEntwurf(wunsch, { auswahl = S.auswahl, app: appName } = {}) {
     const s = seite();
@@ -450,6 +467,13 @@
     Entwurf.setzeStatus(s.id, 'laeuft');
     const r = await K.entwurf({ wunsch, html: anhang ? '' : s.html, auswahl: anhang ? null : auswahl, breite: s.breite, hoehe: s.hoehe, bild: anhang?.dataUrl, app: appName, format: s.format });
     if (nr !== auftragNr) return; // abgebrochen
+    let pr = { gefunden: [], repariert: false };
+    if (!r?.fehler) {
+      S.kranich.meldung = 'Prüfe mich selbst …'; renderMitte();
+      pr = await pruefeUndRepariere(s, r.html, nr);
+      if (nr !== auftragNr) return;
+      r.html = pr.html;
+    }
     Entwurf.setzeStatus(s.id, r?.fehler ? null : 'fertig');
     if (r?.fehler) {
       chat({ wer: 'kranich', fehler: true, titel: r.fehler.art === 'nicht-installiert' || r.fehler.art === 'nicht-angemeldet' ? 'Claude ist nicht bereit' : 'Keine Verbindung zu Claude', text: `${r.fehler.nachricht} Dein Wunsch ist gemerkt. Ich versuch es, sobald du „Nochmal“ drückst.` });
@@ -461,6 +485,7 @@
     const chips = [];
     if (auswahl) chips.push(auswahl.name);
     if (r.weg === 'lokal') chips.push('mit dem Modell auf deinem PC');
+    chips.push(pruefBericht(pr));
     chat({ wer: 'kranich', text: r.notiz || 'Fertig, schau mal.', chips, rueckgaengig: true });
     setzeKranich('fertig', { fehler: null });
     Entwurf.zeigeAlle(S.projekt.seiten, seite().id);
@@ -501,6 +526,9 @@
         j.zustand = 'fehler'; j.fehler = r.fehler.nachricht;
         Entwurf.setzeStatus(j.board.id, 'fehler');
       } else {
+        const pr = await pruefeUndRepariere(j.board, r.html, nr);
+        if (nr !== auftragNr) return;
+        r.html = pr.html; j.pruefung = pruefBericht(pr);
         j.zustand = 'fertig'; fertig++;
         j.board.verlauf = [{ html: r.html, was: `Aus „${quelle.name}“ gefaltet`, zeit: new Date().toISOString() }];
         j.board.stand = 0; j.board.html = r.html;

@@ -8,7 +8,7 @@ process.env.KRANICH_RAUCH = '1';
 process.env.KRANICH_SPIELHIRN = process.env.KRANICH_SPIELHIRN || '1';
 process.env.KRANICH_DATEN = fs.mkdtempSync(path.join(os.tmpdir(), 'kranich-rauch-'));
 const { app } = require('electron');
-const { start } = require('../main/main');
+const { start, pruefe: pruefeEntwurf } = require('../main/main');
 
 const AUS = path.join(__dirname, '..', 'rauch');
 fs.mkdirSync(AUS, { recursive: true });
@@ -19,13 +19,20 @@ app.whenReady().then(async () => {
   const w = start();
   w.setSize(1440, 900);
   w.webContents.on('console-message', (_e, level, msg, zeile, quelle) => { if (level >= 3) { console.log('KONSOLE:', msg, quelle, zeile); fehler++; } });
-  const js = (code) => w.webContents.executeJavaScript(code);
+  const js = (code) => w.webContents.executeJavaScript(code).catch((e) => { console.log('JS-FEHLER bei:', code.slice(0, 160)); throw e; });
   const foto = async (name) => { await warte(350); const b = await w.webContents.capturePage(); fs.writeFileSync(path.join(AUS, `${name}.png`), b.toPNG()); console.log('Foto', name); };
   const pruefe = async (was, code) => { const ok = await js(code); console.log(ok ? 'OK  ' : 'FEHL', was); if (!ok) fehler++; };
   const bisDa = async (code, ms = 8000) => { const t = Date.now(); while (Date.now() - t < ms) { if (await js(code)) return true; await warte(150); } return false; };
 
   try {
     await w.webContents.once('did-finish-load', () => {});
+    // Selbstprüfung mit absichtlich kaputtem Entwurf
+    const kaputt = '<!doctype html><html><head><style>body{margin:0;width:390px;height:844px;background:#fff}</style></head><body><h1 data-k="k1" style="font-size:28px;color:#e8e8e8">Kaum lesbar</h1><p data-k="k2" style="font-size:9px">winzig</p><div data-k="k3" style="width:500px;height:20px;background:#ccc">zu breit</div><button data-k="k4" style="height:24px">OK</button><div data-k="k5" style="width:100px;height:20px;overflow:hidden;white-space:nowrap">Dieser Text ist viel zu lang für den Kasten</div></body></html>';
+    const funde = await pruefeEntwurf(kaputt, { id: 'app', breite: 390, hoehe: 844 });
+    const arten = new Set(funde.map((f) => f.art));
+    console.log(['raus', 'ueberlauf', 'klein', 'kontrast', 'ziel'].every((a) => arten.has(a)) ? 'OK  ' : 'FEHL', 'Selbstprüfung findet alle Fehlerarten', [...arten].join(','));
+    const gut = await pruefeEntwurf('<!doctype html><html><head><style>body{margin:0;width:390px;height:844px;background:#fff;color:#1d2742;font-size:16px}button{min-height:48px;min-width:120px}</style></head><body><h1>Hallo</h1><p>Alles gut lesbar.</p><button>Weiter</button></body></html>', { id: 'app', breite: 390, hoehe: 844 });
+    console.log(gut.length === 0 ? 'OK  ' : 'FEHL', 'Selbstprüfung lässt sauberen Entwurf in Ruhe', JSON.stringify(gut.map((f) => f.text)));
     await bisDa("!!document.querySelector('#start')");
     await foto('1-start');
     await pruefe('Start zeigt drei Karten', "document.querySelectorAll('.startkarte').length === 3");

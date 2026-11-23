@@ -32,6 +32,10 @@ async function frage(auftrag) {
   if (/Bildbearbeiter/.test(auftrag.system)) {
     return { weg: 'claude', text: JSON.stringify({ notiz: 'Mach ich: Tasse freistellen, Rest durchsichtig, dann auf 1080 × 1080.', schritte: [{ art: 'freistellen' }, { art: 'quadrat', groesse: 1080 }, { art: 'anpassen', hell: 12, waerme: -8 }] }) };
   }
+  if (/Die Selbstprüfung hat/.test(a)) {
+    const html = (a.match(/```html\n([\s\S]*?)```/) || [])[1];
+    return { weg: 'claude', text: `NOTIZ: Repariert.\n\`\`\`html\n${html}\n\`\`\`` };
+  }
   const ziel = a.match(/Ziel: (\d+) × (\d+) px/);
   if (ziel) {
     const [b, h] = [Number(ziel[1]), Number(ziel[2])];

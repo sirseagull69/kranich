@@ -29,7 +29,7 @@
     return text && !['ul', 'ol', 'form', 'nav', 'section', 'main', 'header', 'aside', 'footer', 'table'].includes(tag) ? `${art} „${text}“` : art;
   }
 
-  const STATUS = { wartet: ['Wartet', 'chip-grau'], laeuft: ['Wird gefaltet …', 'chip-zart'], fertig: ['Fertig', 'chip-gruen'], fehler: ['Hat nicht geklappt', 'chip-rot'] };
+  const STATUS = { wartet: ['Wartet', 'chip-grau'], laeuft: ['Wird gefaltet …', 'chip-zart'], pruefen: ['Prüft sich selbst …', 'chip-zart'], repariert: ['Wird repariert …', 'chip-gelb'], fertig: ['Fertig', 'chip-gruen'], fehler: ['Hat nicht geklappt', 'chip-rot'] };
 
   const z = {
     leinwand: null, welt: null, menue: null, plus: null, karte: null, cb: {},
@@ -331,7 +331,7 @@
     const [text, art] = STATUS[status];
     b.statusEl.hidden = false;
     b.statusEl.className = `boardstatus ${status}`;
-    b.statusEl.innerHTML = `${status === 'laeuft' ? '<div class="faltblatt"></div>' : ''}<span class="chip ${art}">${status === 'fertig' ? sym('haken', 13) : ''}${text}</span>`;
+    b.statusEl.innerHTML = `${['laeuft', 'repariert'].includes(status) ? '<div class="faltblatt"></div>' : ''}<span class="chip ${art}">${status === 'fertig' ? sym('haken', 13) : ''}${text}</span>`;
     b.leer.hidden = true;
     if (status === 'fertig') setTimeout(() => { if (b.status === 'fertig') setzeStatus(id, null); }, 2500);
   }

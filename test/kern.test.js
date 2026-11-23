@@ -205,3 +205,73 @@ test('Auftrag Anpassen nennt Ziel, Regeln und Textwunsch', () => {
   assert.match(a, /wörtlich gleich/);
   assert.match(a, /data-k="k1"/);
 });
+
+const AP = require('../kern/appplan');
+const PR = require('../kern/pruefung');
+
+const PLAN_TEXT = JSON.stringify({
+  name: 'Eule', notiz: 'Fünf Bildschirme.',
+  bildschirme: [
+    { name: 'Startfenster', format: 'fenster', zweck: 'Dokumente öffnen', zustaende: ['leer', 'quatsch'] },
+    { name: 'Dokument', format: 'fenster', zweck: 'Schreiben', zustaende: ['laedt', 'fehler'] },
+    { name: 'Startfenster', format: 'fenster' },
+    { name: 'Einstellungen', format: 'unbekannt' },
+    { name: '' },
+  ],
+  ablaeufe: [{ von: 'Startfenster', knopf: 'Neues Dokument', nach: 'Dokument' }, { von: 'Dokument', knopf: 'X', nach: 'Gibtsnicht' }, { von: 'Dokument', knopf: '', nach: 'Startfenster' }],
+  bausteine: { hausfarbe: '#C47F17', facette: 'braun' },
+});
+
+test('App-Plan wird geprüft: doppelte, leere und falsche Einträge fliegen raus', () => {
+  const p = AP.lesePlanApp(`Hier:\n\`\`\`json\n${PLAN_TEXT}\n\`\`\``);
+  assert.deepEqual(p.bildschirme.map((b) => b.id), ['startfenster', 'dokument', 'einstellungen']);
+  assert.deepEqual(p.bildschirme[0].zustaende, ['leer']);
+  assert.equal(p.bildschirme[2].format, 'fenster');
+  assert.deepEqual(p.ablaeufe, [{ von: 'startfenster', nach: 'dokument', knopf: 'Neues Dokument' }]);
+  assert.equal(p.bausteine.hausfarbe, '#c47f17');
+  assert.equal(p.bausteine.facette, '#4a2f9a');
+  assert.throws(() => AP.lesePlanApp('{"bildschirme":[]}'), /keine Bildschirme/);
+});
+
+test('Boards aus dem Plan: Zustände daneben, jeder Bildschirm eine Reihe', () => {
+  const p = AP.lesePlanApp(PLAN_TEXT);
+  const b = AP.legeBoards(AP.boardsAusPlan(p));
+  assert.deepEqual(b.map((x) => x.id), ['startfenster', 'startfenster--leer', 'dokument', 'dokument--laedt', 'dokument--fehler', 'einstellungen']);
+  assert.equal(b[1].x, 1320); assert.equal(b[1].y, 0);
+  assert.equal(b[2].y, 1020); assert.equal(b[4].x, 2640);
+  assert.equal(b[1].name, 'Startfenster · Leer');
+});
+
+test('Aufträge für Bausteine und Boards enthalten das Nötige', () => {
+  const p = AP.lesePlanApp(PLAN_TEXT);
+  assert.match(AP.systemPlan(), /höchstens|Höchstens/);
+  assert.match(AP.auftragPlan({ beschreibung: 'Schreibprogramm', geraet: 'handy', zustaende: false }), /Handy.*\n.*Keine Zustände/s);
+  const css = ':root{--k-haus:#c47f17}';
+  const board = AP.boardsAusPlan(p)[0];
+  const a = AP.auftragAppBoard({ plan: p, board, css });
+  assert.match(a, /data-ziel="dokument"/);
+  assert.match(a, /„Neues Dokument“/);
+  assert.match(a, /--k-haus/);
+  assert.match(AP.auftragAppBoard({ plan: p, board: AP.boardsAusPlan(p)[1], css }), /Zustand „Leer/);
+  const bs = AP.leseBausteine('NOTIZ: Steht.\n```css\n:root{--k-haus:#c47f17}\n```\n```html\n<html><body>x</body></html>\n```');
+  assert.equal(bs.notiz, 'Steht.'); assert.match(bs.css, /--k-haus/); assert.match(bs.html, /^<!doctype html>/);
+  assert.throws(() => AP.leseBausteine('```css\n.a{}\n```'), /keine Bausteine/);
+});
+
+test('Selbstprüfung: Auswertung fasst zusammen, sortiert und begrenzt', () => {
+  const funde = [
+    { art: 'klein', k: 'k1', name: 'Text', wert: '9.0 px' },
+    { art: 'raus', k: 'k2', name: 'Bild', wert: '30 px' },
+    { art: 'klein', k: 'k1', name: 'Text', wert: '9.0 px' },
+    { art: 'unbekannt', k: 'k3' },
+    ...Array.from({ length: 20 }, (_, i) => ({ art: 'kontrast', k: `x${i}`, name: 'T', wert: '2.0 : 1' })),
+  ];
+  const b = PR.bewerte(funde);
+  assert.equal(b.length, 12);
+  assert.equal(b[0].art, 'raus');
+  assert.match(b[0].text, /ragt aus dem Bild \(30 px\): Bild/);
+  assert.equal(PR.messOptionen({ id: 'app', breite: 390, hoehe: 844 }).touch, true);
+  assert.equal(PR.messOptionen({ id: 'a5', breite: 559, hoehe: 794, druck: true }).minSchrift, 12);
+  assert.match(PR.auftragReparieren({ html: HTML, probleme: b.slice(0, 2), breite: 800, hoehe: 600 }), /1\. ragt aus dem Bild/);
+  assert.match(PR.messCode, /^\(function messen/);
+});

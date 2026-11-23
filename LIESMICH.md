@@ -26,6 +26,8 @@ API-Schlüssel eintragen. „Verbindung testen“ zeigt, ob alles klappt.
 | Unendliche Leinwand mit vielen Boards, Übersicht, „Board dazu“ | ja |
 | Alle Größen: ein Board in weitere Formate falten lassen (neu gedacht, nicht nur skaliert) | ja |
 | Entwurf aus einem Satz | ja, eine fertige HTML-Seite im Familien-Look |
+| Selbstprüfung nach jedem Entwurf (ragt raus, Text läuft über, Kontrast, Schrift zu klein, Klickfläche zu klein) mit automatischer Reparatur | ja |
+| Ganze App entwerfen (Plan, Bausteine, alle Boards, Abläufe, Paket) | Technik fertig, Oberfläche folgt nach dem Canvas |
 | Element anklicken und ändern („Größer“, „Farbe“, „Wie in origami“, freier Wunsch) | ja |
 | Drei Varianten (Ruhig, Mutig, Kompakt), nehmen oder mischen | ja |
 | Aus Screenshot oder Skizze einen Entwurf | ja |

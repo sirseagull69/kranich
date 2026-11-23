@@ -19,6 +19,13 @@ contextBridge.exposeInMainWorld('kranich', {
   entwurf: rufe('kranich:entwurf'),
   varianten: rufe('kranich:varianten'),
   anpassen: rufe('kranich:anpassen'),
+  app: {
+    plan: rufe('kranich:appPlan'),
+    bausteine: rufe('kranich:bausteine'),
+    board: rufe('kranich:appBoard'),
+    pruefen: rufe('kranich:pruefen'),
+    reparieren: rufe('kranich:reparieren'),
+  },
   formate: { liste: rufe('formate:liste'), eigen: rufe('formate:eigen') },
   bildPlan: rufe('kranich:bild'),
   datei: {
@@ -30,5 +37,6 @@ contextBridge.exposeInMainWorld('kranich', {
     standardOrdner: rufe('export:standardOrdner'),
     entwurf: rufe('export:entwurf'),
     bild: rufe('export:bild'),
+    paket: rufe('export:paket'),
   },
 });
