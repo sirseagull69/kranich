@@ -27,7 +27,7 @@ const VOEGEL = {
   albatros: {
     basis: { schwanz: '16,66 2,58 28,62', koerper: '16,66 70,66 50,44', fluegel: '28,58 62,58 16,36', hals: '60,62 78,42 72,66', kopf: '78,42 95,48 78,52', bein: '40,66 44,66 42,84', bein2: '50,66 54,66 55,84' },
     farben: { '#c2410c': '#1d5e3a', '#ff8a4c': '#2f8a55', '#ffc9a8': '#a8dcbb', '#2d1a10': '#1d2742', '#e8590c': '#2f8a55', '#fff0e6': '#e6f4eb', '#7a3a1c': '#14472b' },
-    rolleFarbe: { schwanz: '#1d5e3a', koerper: '#2f8a55', fluegel: '#a8dcbb', hals: '#f3faf5', kopf: '#e8a53a', bein: '#1d5e3a' },
+    rolleFarbe: { schwanz: '#1d5e3a', koerper: '#2f8a55', fluegel: '#a8dcbb', hals: '#1d5e3a', kopf: '#e8a53a', bein: '#1d5e3a' },
   },
 };
 const papier = (pts) => pts.every(([x, y]) => [20, 50, 80].includes(x) && [20, 50, 80].includes(y)) || pts.every(([x, y]) => x === pts[0][0] && y === pts[0][1]);
