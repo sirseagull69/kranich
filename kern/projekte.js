@@ -57,8 +57,8 @@ class Projekte {
       try {
         const p = JSON.parse(fs.readFileSync(this.pfad(name, 'projekt.json'), 'utf8'));
         ergebnis.push({
-          id: p.id, name: p.name, art: p.art, geaendert: p.geaendert,
-          seite: p.art === 'entwurf' ? (p.seiten?.length > 1 ? `${p.seiten.length} Boards` : p.seiten?.[0]?.name) : 'Bild 1',
+          id: p.id, name: p.name, art: p.art, geaendert: p.geaendert, app: Boolean(p.app),
+          seite: p.art === 'entwurf' ? (p.seiten?.length > 1 ? `${p.seiten.length} Boards` : p.seiten?.[0]?.name || (p.app ? 'Plan' : '')) : 'Bild 1',
           vorschau: fs.existsSync(this.pfad(name, 'vorschau.png')),
         });
       } catch { /* kaputte Projekte überspringen */ }

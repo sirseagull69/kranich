@@ -35,7 +35,7 @@ app.whenReady().then(async () => {
     console.log(gut.length === 0 ? 'OK  ' : 'FEHL', 'Selbstprüfung lässt sauberen Entwurf in Ruhe', JSON.stringify(gut.map((f) => f.text)));
     await bisDa("!!document.querySelector('#start')");
     await foto('1-start');
-    await pruefe('Start zeigt drei Karten', "document.querySelectorAll('.startkarte').length === 3");
+    await pruefe('Start zeigt vier Karten', "document.querySelectorAll('.startkarte').length === 4");
 
     // Format wählen
     await js("document.querySelector('[data-lasche=\"neu\"]').click()");
@@ -178,6 +178,66 @@ app.whenReady().then(async () => {
     await js("document.querySelector('[data-modus=\"entwurf\"]').click()");
     await warte(600);
     await pruefe('Entwurf nach Neuladen da', "!!document.querySelector('.leinwand iframe').contentDocument.querySelector('h1')");
+
+    // Ganze App entwerfen
+    await js("App.aktionen['zum-start']()");
+    await bisDa("!!document.querySelector('#start')");
+    await js("document.querySelector('[data-lasche=\"app\"]').click()");
+    await bisDa("!!document.getElementById('appwunsch')");
+    await js("document.getElementById('appwunsch').value = 'Eule – Schreibprogramm der origami-Familie'");
+    await foto('15-app-auftrag');
+    await js("App.aktionen['app-plan']()");
+    await bisDa("!!document.querySelector('.planblatt')", 8000);
+    await warte(400);
+    await foto('16-app-plan');
+    await pruefe('Plan: 3 Bildschirme, Ablauf, Bausteine', "document.querySelectorAll('.plankarte').length === 3 && !!document.querySelector('.diagramm svg line') && App.S.projekt.app.plan.bausteine.hausfarbe === '#c47f17'");
+    await js("document.querySelector('[data-aktion=\"app-zustand\"][data-id=\"editor\"][data-z=\"fehler\"]').click()");
+    await pruefe('Zustand im Plan ergänzt', "App.S.projekt.app.plan.bildschirme[1].zustaende.includes('fehler')");
+    await js("document.querySelector('.planfuss [data-aktion=\"app-falten\"]').click()");
+    await bisDa("App.S.projekt.seiten.length === 5", 4000);
+    await warte(700);
+    await foto('17-app-baut');
+    await bisDa("App.S.kranich.zustand === 'fertig'", 30000);
+    await warte(800);
+    await js("Entwurf.einpassen()");
+    await foto('18-app-fertig');
+    await pruefe('Alle 5 Boards gefaltet, mit Bausteinen und Links', "App.S.projekt.seiten.every((b) => b.html) && !!App.S.projekt.app.css && App.S.projekt.seiten[0].html.includes('data-ziel=\"editor\"') && App.S.projekt.seiten[0].html.includes('data-bausteine')");
+    await pruefe('Selbstprüfung an jedem Board gemerkt', "App.S.projekt.seiten.every((b) => b.pruefung)");
+    // Abspielen
+    await js("App.aktionen['app-abspielen']()");
+    await bisDa("!!document.querySelector('.abspielen iframe')?.contentDocument?.querySelector('[data-ziel]')");
+    await warte(300);
+    await foto('19-abspielen');
+    await js("document.querySelector('.abspielen iframe').contentDocument.querySelector('[data-ziel=\"editor\"]').click()");
+    await warte(500);
+    await pruefe('Abspielen: Klick führt zum Editor', "/Editor/.test(document.querySelector('.abspielleiste').textContent)");
+    await js("document.querySelector('[data-a=\"zurueck\"]').click()");
+    await warte(300);
+    await pruefe('Abspielen: Zurück', "/Start/.test(document.querySelector('.abspielleiste').textContent)");
+    await js("document.querySelector('[data-a=\"zu\"]').click()");
+    // Selbstprüfung-Ansicht
+    await js("App.aktionen['app-pruefung']()");
+    await bisDa("!!document.querySelector('.pruefleinwand')");
+    await warte(600);
+    await foto('20-selbstpruefung');
+    await pruefe('Selbstprüfung-Ansicht offen', "!!document.querySelector('.pruefbuehne iframe') && /Board 1 von 5/.test(document.body.textContent)");
+    await js("App.aktionen['app-zur-leinwand']()");
+    // Übergabe
+    await js("App.aktionen['app-uebergabe']()");
+    await bisDa("!!document.querySelector('.baum')");
+    await warte(300);
+    await foto('21-uebergabe');
+    await js("document.querySelector('[data-los]').click()");
+    await bisDa("!document.querySelector('.baum')", 8000);
+    const pk = path.join(app.getPath('documents'), 'Kranich', 'eule-paket');
+    const ok = fs.existsSync(path.join(pk, 'plan.json')) && fs.readdirSync(path.join(pk, 'boards')).length === 5 && fs.existsSync(path.join(pk, 'bausteine.css'));
+    console.log(ok ? 'OK  ' : 'FEHL', 'Paket mit 5 Boards, Bausteinen und Plan');
+    if (ok) { const pl = JSON.parse(fs.readFileSync(path.join(pk, 'plan.json'), 'utf8')); console.log(pl.ablaeufe.length === 3 ? 'OK  ' : 'FEHL', 'Abläufe im Paket'); }
+    await js("document.querySelector('[data-aktion=\"zum-start\"]').click()");
+    await bisDa("!!document.querySelector('#start')");
+    await js("document.querySelector('[data-aktion=\"projekt-oeffnen\"]').click()");
+    await bisDa("App.S.ansicht === 'werkbank'");
+    await warte(500);
 
     // Keine Verbindung
     process.env.KRANICH_SPIELHIRN = 'fehler';

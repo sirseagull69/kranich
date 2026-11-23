@@ -67,7 +67,7 @@
   function karteNeu(art, titel, text, bild) {
     return `<button type="button" class="startkarte cardw" data-aktion="neu" data-art="${art}"><div class="card">
       <div class="bildfeld">${bild}</div>
-      <div class="ktitel">${sym(art === 'bild' ? 'zuschneiden' : art === 'ausbild' ? 'mischen' : 'seite', 18)}<span class="h">${titel}</span></div>
+      <div class="ktitel">${sym(art === 'bild' ? 'zuschneiden' : art === 'ausbild' ? 'mischen' : art === 'app' ? 'varianten' : 'seite', 18)}<span class="h">${titel}</span></div>
       <span class="ktext">${text}</span></div></button>`;
   }
 
@@ -77,7 +77,7 @@
       <button type="button" style="border:0;padding:0;background:transparent;width:100%;text-align:left;font:inherit;color:inherit" data-aktion="projekt-oeffnen" data-id="${p.id}"><div class="card">
       <div class="vorschau" style="${url ? `background-image:url('${url}')` : ''}">${url ? '' : figur('ruhend', 40)}</div>
       <span class="pname h">${esc(p.name)}${p.seite ? ` · ${esc(p.seite)}` : ''}</span>
-      <span class="pinfo"><span class="chip ${p.art === 'bild' ? 'chip-gelb' : 'chip-zart'}">${p.art === 'bild' ? 'Bild' : 'Entwurf'}</span>${esc(H.wann(p.geaendert))}</span></div></button></div>`;
+      <span class="pinfo"><span class="chip ${p.art === 'bild' ? 'chip-gelb' : p.app ? 'chip-gruen' : 'chip-zart'}">${p.art === 'bild' ? 'Bild' : p.app ? 'App' : 'Entwurf'}</span>${esc(H.wann(p.geaendert))}</span></div></button></div>`;
   }
 
   function renderStart() {
@@ -90,6 +90,7 @@
           <div class="karten3">
             ${karteNeu('entwurf', 'Oberfläche entwerfen', 'Eine App-Seite, ein Fenster oder eine Webseite von Grund auf.', '<div style="width:150px;height:104px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);display:flex;flex-direction:column;gap:7px;padding:12px"><span style="height:10px;width:60%;background:#1d2742"></span><span style="height:6px;width:85%;background:#d9d0bc"></span><span style="height:6px;width:70%;background:#d9d0bc"></span><span style="margin-top:auto;height:16px;width:46%;background:#6243c4;align-self:flex-end"></span></div>')}
             ${karteNeu('bild', 'Bild bearbeiten', 'Zuschneiden, freistellen, Farben anpassen – per Wort oder Werkzeug.', '<div style="width:150px;height:104px;background:linear-gradient(135deg,#d6caf9,#fbf0d4);position:relative;box-shadow:0 1px 2px rgba(30,40,70,.2)"><span style="position:absolute;left:48px;top:30px;width:54px;height:50px;background:#4a2f9a;border-radius:4px 4px 14px 14px"></span><span style="position:absolute;inset:14px;border:1.5px dashed #fff"></span></div>')}
+            ${karteNeu('app', 'Ganze App entwerfen', 'Alle Bildschirme mit Plan, Abläufen und Zuständen.', `<div style="display:grid;grid-template-columns:repeat(3,34px);gap:6px">${'<span style="height:24px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2)"></span>'.repeat(5)}<span style="height:24px;background:#6243c4"></span></div>`)}
             ${karteNeu('ausbild', 'Aus Bild eine Oberfläche', 'Screenshot oder Skizze rein, bearbeitbarer Entwurf raus.', `<div style="display:flex;align-items:center;gap:10px"><div style="width:58px;height:58px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);transform:rotate(-4deg);padding:8px"><span style="display:block;height:4px;width:80%;background:#5b6170;margin-bottom:6px"></span><span style="display:block;height:4px;width:60%;background:#5b6170"></span></div><span style="color:#4a2f9a">${sym('senden', 18)}</span><div style="width:64px;height:64px;background:#fff;box-shadow:0 1px 2px rgba(30,40,70,.2);padding:8px;display:flex;flex-direction:column;gap:5px"><span style="height:7px;width:70%;background:#1d2742"></span><span style="height:5px;width:90%;background:#d9d0bc"></span><span style="margin-top:auto;height:10px;width:50%;background:#6243c4;align-self:flex-end"></span></div></div>`)}
           </div>
           <div class="hinweis">${figur('ruhend', 30)}<span>Kranich kennt den Look der origami-Familie und hält sich daran.</span></div>
@@ -101,6 +102,8 @@
           <button type="button" class="btn btn-q" data-aktion="anhang">${sym('klammer', 16)} Bild anhängen</button>
           <button type="button" class="btn btn-q" disabled title="Sprechen kommt noch">${sym('mikro', 16)} Sprechen</button>
           <button type="button" class="btn btn-p" data-aktion="start-falten">${figur('arbeitend', 18)} Falten</button></div>`;
+    } else if (l === 'app') {
+      blatt = AppBau.renderAuftrag();
     } else if (l === 'alle') {
       blatt = `<h1 class="h" style="margin:0;font-size:30px;font-weight:800">Alle Projekte</h1><div class="projektliste" style="grid-template-columns:repeat(4,1fr)">${projekteHtml}</div>`;
     } else {
@@ -111,7 +114,7 @@
         <button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="alle">${sym('ordner', 16)} Öffnen…</button>
         <button type="button" class="btn btn-q" data-aktion="einstellungen">${sym('zahnrad', 16)} Einstellungen</button>
         <span class="avatar h" aria-label="Angemeldet als Nils">NP</span></header>
-      <div class="laschen" role="tablist">${[['start', 'Start'], ['neu', 'Neu'], ['alle', 'Alle Projekte']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${l === k}" data-aktion="lasche" data-lasche="${k}">${t}</button>`).join('')}</div>
+      <div class="laschen" role="tablist">${[['start', 'Start'], ['neu', 'Neu'], ['app', 'Ganze App'], ['alle', 'Alle Projekte']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${l === k}" data-aktion="lasche" data-lasche="${k}">${t}</button>`).join('')}</div>
       <section class="paper startblatt">${blatt}${eselsohr(54, '#f6f1e7')}</section></section>`;
     document.getElementById('startwunsch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') aktionen['start-falten'](); });
     const suche = document.getElementById('fsuche');
@@ -162,6 +165,13 @@
     const p = await K.projekte.laden(id);
     if (p?.fehler) { H.meldung(p.fehler.nachricht, { art: 'fehler' }); return; }
     S.projekt = p;
+    if (p.app?.plan && !p.seiten?.length) {
+      p.chat = p.chat || [];
+      S.modus = 'entwurf'; S.seiteId = null;
+      S.kranich = { zustand: 'bereit', schritte: [], letzter: null, fehler: null, meldung: '' };
+      AppBau.renderPlan();
+      return;
+    }
     p.seiten = p.seiten?.length ? p.seiten : [{ id: `s${Date.now().toString(36)}`, name: 'Seite 1', breite: 1440, hoehe: 900, html: '', verlauf: [] }];
     p.chat = p.chat || [];
     S.seiteId = p.seiten[0].id;
@@ -211,6 +221,7 @@
 
   function kopfKnoepfe() {
     const kannZurueck = S.modus === 'bild' ? Bild.z.stand > 0 : (seite()?.stand || 0) > 0;
+    if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     return `<button type="button" class="btn btn-q" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'}>${sym('zurueck', 16)} Rückgängig</button>
       ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="alle-groessen" ${seite()?.html ? '' : 'disabled title="Erst etwas aufs Board falten"'}>${sym('mischen', 16)} Alle Größen</button>`}
       <button type="button" class="btn" data-aktion="varianten" ${S.modus === 'bild' ? 'disabled title="Varianten gibt es im Entwurf"' : ''}>${sym('varianten', 16)} Varianten</button>
@@ -295,6 +306,7 @@
     nav.innerHTML = `<span class="lbl" style="padding:0 0 2px 2px">Boards</span>
       <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="Doppelklick zum Umbenennen">${formatSymbol(x, 16)}<span>${esc(x.name)}</span>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`).join('')}</div>
       <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="board-dazu">${sym('plus', 14)} Board dazu</button>
+      <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="app-pruefung" ${s.html ? '' : 'disabled'}>${sym('haken', 14)} Selbstprüfung${s.pruefung?.offen?.length ? ` <span class="chip chip-gelb">${s.pruefung.offen.length}</span>` : ''}</button>
       <div class="fold" style="margin:14px 16px 10px 0"></div>
       <span class="lbl" style="padding:0 0 4px 2px">Ebenen · ${esc(s.name)}</span>
       <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 16}px">${sym(['button', 'a', 'input'].includes(e.tag) ? 'box' : /^h\d|p|label$/.test(e.tag) ? 'text' : ['ul', 'ol', 'nav', 'table'].includes(e.tag) ? 'liste' : 'box', 14)}<span>${esc(e.name)}</span></button>`).join('') : '<span class="leise" style="font-size:13px;padding:0 4px">Noch leer</span>'}</div>`;
@@ -310,7 +322,7 @@
     const k = S.kranich;
     let html = '';
     if (k.zustand === 'denkt') {
-      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …')}</b><span class="leise" style="font-size:13px">${esc(k.meldung)}</span></div>
+      html = `<div class="hinweisband paper">${figur('arbeitend', 34)}<div style="display:flex;flex-direction:column;flex:1"><b class="h">${esc(k.titel || (k.anpassen ? `Ich falte ${k.anpassen.length} weitere Größen` : 'Kranich faltet …'))}</b><span class="leise" style="font-size:13px">${esc(k.meldung)}</span></div>
         <button type="button" class="btn btn-s" data-aktion="abbrechen">${k.anpassen ? 'Anhalten' : 'Abbrechen'}</button></div>`;
     } else if (k.zustand === 'fehler') {
       html = `<div class="hinweisband paper fehler" role="alert">${figur('ruhend', 34)}<div style="display:flex;flex-direction:column"><b class="h">${esc(k.fehler?.nachricht || 'Kranich kommt gerade nicht an Claude ran')}</b>
@@ -370,7 +382,7 @@
       return;
     }
     const fortschritt = S.kranich.zustand === 'denkt' && S.kranich.anpassen
-      ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><b>Ich falte „${esc(seite().name)}“ in ${S.kranich.anpassen.length} weitere Größen</b><div class="fortschritt">${S.kranich.anpassen.map((j) => `<div class="zeile"><span class="txt"><b class="h">${esc(j.format.name)}</b><span>${esc(j.format.mass || `${j.format.breite} × ${j.format.hoehe}`)}</span></span><span class="chip ${{ wartet: 'chip-grau', laeuft: 'chip-zart', fertig: 'chip-gruen', fehler: 'chip-rot' }[j.zustand]}">${{ wartet: 'Wartet', laeuft: 'Läuft', fertig: 'Fertig', fehler: 'Fehler' }[j.zustand]}</span></div>`).join('')}</div>
+      ? `<div class="blase-kr"><span class="ava">${figur('arbeitend', 30)}</span><div class="inhalt"><b>${esc(S.kranich.titel || `Ich falte „${seite().name}“ in ${S.kranich.anpassen.length} weitere Größen`)}</b><div class="fortschritt">${S.kranich.anpassen.map((j) => `<div class="zeile"><span class="txt"><b class="h">${esc(j.format.name)}</b><span>${esc(j.notiz || j.format.mass || `${j.format.breite} × ${j.format.hoehe}`)}</span></span><span class="chip ${{ wartet: 'chip-grau', laeuft: 'chip-zart', repariert: 'chip-gelb', fertig: 'chip-gruen', fehler: 'chip-rot' }[j.zustand]}">${{ wartet: 'Wartet', laeuft: 'Läuft', repariert: 'Repariert', fertig: 'Fertig', fehler: 'Fehler' }[j.zustand]}</span></div>`).join('')}</div>
         <div class="reihe"><span class="leise" style="flex:1">${esc(S.kranich.meldung)}</span><button type="button" class="btn btn-s" data-aktion="abbrechen">Anhalten</button></div></div></div>` : '';
     el.innerHTML = chat.map((c, i) => {
       if (c.wer === 'ich') return `<div class="blase-ich">${esc(c.text)}</div>`;
@@ -431,20 +443,26 @@
   }
 
   // Selbstprüfung: Entwurf nachmessen und gefundene Fehler einmal reparieren lassen.
-  async function pruefeUndRepariere(board, html, nr) {
+  async function pruefeUndRepariere(board, html, nr, { status = true } = {}) {
     const format = { id: board.format, breite: board.breite, hoehe: board.hoehe, druck: Boolean((S.formate.find((f) => f.id === board.format) || {}).druck) };
-    Entwurf.setzeStatus(board.id, 'pruefen');
+    if (status) Entwurf.setzeStatus(board.id, 'pruefen');
     const p = await K.app.pruefen({ html, format });
-    if (nr !== auftragNr || p?.fehler || !p.funde?.length) return { html, gefunden: [], repariert: false };
-    Entwurf.setzeStatus(board.id, 'repariert');
+    if (nr !== auftragNr || p?.fehler) return { html, gefunden: [], offen: [], repariert: false };
+    if (!p.funde?.length) { board.pruefung = { gefunden: [], offen: [], zeit: new Date().toISOString() }; return { html, gefunden: [], offen: [], repariert: false }; }
+    if (status) Entwurf.setzeStatus(board.id, 'repariert');
     const r = await K.app.reparieren({ html, probleme: p.funde, breite: board.breite, hoehe: board.hoehe });
-    if (nr !== auftragNr || r?.fehler) return { html, gefunden: p.funde, repariert: false };
-    return { html: r.html, gefunden: p.funde, repariert: true };
+    if (nr !== auftragNr || r?.fehler) { board.pruefung = { gefunden: p.funde, offen: p.funde, zeit: new Date().toISOString() }; return { html, gefunden: p.funde, offen: p.funde, repariert: false }; }
+    const nach = await K.app.pruefen({ html: r.html, format });
+    const offen = nach?.funde || [];
+    board.pruefung = { gefunden: p.funde, offen, zeit: new Date().toISOString() };
+    return { html: r.html, gefunden: p.funde, offen, repariert: true };
   }
 
   function pruefBericht(pr) {
     if (!pr.gefunden.length) return 'Selbstprüfung ohne Befund';
-    return pr.repariert ? `Selbstprüfung: ${pr.gefunden.length} ${pr.gefunden.length === 1 ? 'Fehler' : 'Fehler'} repariert` : `Selbstprüfung: ${pr.gefunden.length} offen`;
+    const rep = pr.repariert ? pr.gefunden.length - (pr.offen?.length || 0) : 0;
+    const offen = pr.repariert ? (pr.offen?.length || 0) : pr.gefunden.length;
+    return `Selbstprüfung: ${[rep ? `${rep} repariert` : '', offen ? `${offen} offen` : ''].filter(Boolean).join(', ')}`;
   }
 
   let auftragNr = 0;
@@ -723,6 +741,7 @@
     'lasche': (el) => { S.startLasche = el.dataset.lasche; renderStart(); },
     'neu': (el) => {
       if (el.dataset.art === 'entwurf') { S.startLasche = 'neu'; renderStart(); return; }
+      if (el.dataset.art === 'app') { S.startLasche = 'app'; renderStart(); return; }
       if (el.dataset.art === 'ausbild') return aktionen.anhang(null, { danach: (b) => neuesProjekt('entwurf', { anhang: b }) });
       return neuesProjekt(el.dataset.art);
     },
@@ -946,7 +965,12 @@
 
   window.addEventListener('beforeunload', () => { speichernSpaeter.sofort(); });
 
-  window.App = { zeigeStart, oeffne, neuesProjekt, aktionen, S, renderWerkbank, sendeEntwurf, sendeBild };
+  window.App = {
+    zeigeStart, oeffne, neuesProjekt, aktionen, S, renderWerkbank, sendeEntwurf, sendeBild,
+    renderStart, kopfHtml, seite, chat, setzeKranich, renderVerlauf, renderMitte, renderSeitenleiste, renderKopfKnoepfe,
+    zeigeBoards, waehleBoard, geaendert, speichernSpaeter, pruefeUndRepariere, pruefBericht, formatSymbol,
+    get auftragNr() { return auftragNr; }, neuerAuftrag: () => ++auftragNr,
+  };
 
   (async () => {
     S.einstellungen = await K.einstellungen.lesen();

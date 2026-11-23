@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('kranich', {
   anpassen: rufe('kranich:anpassen'),
   app: {
     plan: rufe('kranich:appPlan'),
+    boards: rufe('kranich:appBoards'),
     bausteine: rufe('kranich:bausteine'),
     board: rufe('kranich:appBoard'),
     pruefen: rufe('kranich:pruefen'),

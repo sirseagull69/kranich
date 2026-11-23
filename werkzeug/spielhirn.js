@@ -32,6 +32,29 @@ async function frage(auftrag) {
   if (/Bildbearbeiter/.test(auftrag.system)) {
     return { weg: 'claude', text: JSON.stringify({ notiz: 'Mach ich: Tasse freistellen, Rest durchsichtig, dann auf 1080 × 1080.', schritte: [{ art: 'freistellen' }, { art: 'quadrat', groesse: 1080 }, { art: 'anpassen', hell: 12, waerme: -8 }] }) };
   }
+  if (/Produktdesigner/.test(auftrag.system)) {
+    return { weg: 'claude', text: JSON.stringify({
+      name: 'Eule', notiz: 'Drei Bildschirme, Start mit leerem Zustand.',
+      bildschirme: [
+        { name: 'Start', format: 'fenster', zweck: 'Zuletzt geöffnete Dokumente.', zustaende: ['leer'] },
+        { name: 'Editor', format: 'fenster', zweck: 'Schreiben, origami hilft rechts.', zustaende: [] },
+        { name: 'Einstellungen', format: 'fenster', zweck: 'Schrift und Konto.', zustaende: [] },
+      ],
+      ablaeufe: [{ von: 'Start', knopf: 'Neues Dokument', nach: 'Editor' }, { von: 'Editor', knopf: 'Einstellungen', nach: 'Einstellungen' }, { von: 'Einstellungen', knopf: 'Zurück', nach: 'Start' }],
+      bausteine: { hausfarbe: '#c47f17', facette: '#8a5512', hell: '#f3dcb2', hinweis: 'warm und ruhig' },
+    }) };
+  }
+  if (/gemeinsamen Bausteine/.test(auftrag.system)) {
+    return { weg: 'claude', text: 'NOTIZ: Bausteine stehen.\n```css\n:root{--k-grund:#f6f1e7;--k-haus:#c47f17;--k-facette:#8a5512;--k-hell:#f3dcb2;--k-tinte:#1d2742}\n.k-knopf{min-height:44px;padding:0 18px;border:0;background:var(--k-haus);color:#1d2742;font:700 16px sans-serif}\n.k-kopf{height:64px;display:flex;align-items:center;gap:12px;padding:0 24px;background:#fff;border-bottom:3px solid var(--k-haus)}\n```\n```html\n<html><head><style>body{margin:0}</style></head><body><h1>Bausteine</h1></body></html>\n```' };
+  }
+  if (/Gestalte einen Bildschirm der App/.test(a)) {
+    const bs = (a.match(/Bildschirm: ([^.]+)\./) || [])[1] || 'Bildschirm';
+    const fl = a.match(/Fläche: (\d+) × (\d+) px/);
+    const css = (a.match(/```css\n([\s\S]*?)```/) || [])[1] || '';
+    const links = [...a.matchAll(/- „([^“]+)“ → data-ziel="([^"]+)"/g)].map((m) => `<button class="k-knopf" data-ziel="${m[2]}" data-name="Knopf „${m[1]}“">${m[1]}</button>`).join('');
+    const zustand = (a.match(/Zustand „([^“]+)“/) || [])[1];
+    return { weg: 'claude', text: `NOTIZ: ${bs} steht.\n\`\`\`html\n<!doctype html><html lang="de"><head><meta charset="utf-8"><style data-bausteine>${css}</style><style>html,body{margin:0;width:${fl[1]}px;height:${fl[2]}px;overflow:hidden;background:var(--k-grund);color:#1d2742;font-family:sans-serif}main{padding:32px;display:flex;flex-direction:column;gap:16px;font-size:18px}</style></head><body><header class="k-kopf" data-name="Kopfzeile"><b style="font-size:22px">Eule · ${bs}</b><span style="flex:1"></span>${links}</header><main data-name="Inhalt"><h1 style="margin:0">${bs}</h1><p>${zustand ? `Zustand: ${zustand}` : 'Hier steht der Inhalt.'}</p></main></body></html>\n\`\`\`` };
+  }
   if (/Die Selbstprüfung hat/.test(a)) {
     const html = (a.match(/```html\n([\s\S]*?)```/) || [])[1];
     return { weg: 'claude', text: `NOTIZ: Repariert.\n\`\`\`html\n${html}\n\`\`\`` };

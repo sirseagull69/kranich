@@ -173,12 +173,21 @@ function registriere() {
   });
 
   // Ganze App entwerfen
-  handle('kranich:appPlan', async ({ beschreibung, geraet, zustaende }) => {
+  handle('kranich:appPlan', async ({ beschreibung, geraet, zustaende, look, bild }) => {
     const e = einstellungen.alle();
-    const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag: AP.auftragPlan({ beschreibung, geraet, zustaende }) }, e);
-    const plan = AP.lesePlanApp(text, { geraet });
-    return { plan, boards: AP.legeBoards(AP.boardsAusPlan(plan)), weg };
+    const bilder = bild ? [tempBild(bild)] : [];
+    try {
+      let auftrag = AP.auftragPlan({ beschreibung, geraet, zustaende });
+      if (look === 'eigen') auftrag += '\nLook: eigener Look für diese App (nicht die Farben der Familie), aber gleich gute Qualität.';
+      if (bilder.length) auftrag += '\nEine Skizze oder ein Bild von Nils ist angehängt; richte den Plan daran aus.';
+      const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag, bilder }, e);
+      const plan = AP.lesePlanApp(text, { geraet });
+      return { plan, weg };
+    } finally {
+      for (const b of bilder) fs.rm(b, { force: true }, () => {});
+    }
   });
+  handle('kranich:appBoards', (plan) => ({ boards: AP.legeBoards(AP.boardsAusPlan(plan)) }));
   handle('kranich:bausteine', async ({ plan }) => {
     const e = einstellungen.alle();
     const { text } = await hirn.frage({ system: AP.systemBausteine(e), auftrag: AP.auftragBausteine(plan) }, e);
