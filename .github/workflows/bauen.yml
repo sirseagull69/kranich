@@ -1,5 +1,5 @@
 # Baut die Installer fuer Kranich (Windows und Mac)
-# Token fuer das Download-Repo: Secret DOWNLOADS_TOKEN
+# Token fuer das Download-Repo: Secret DOWNLOAD_TOKEN
 # und legt sie auf GitHub unter
 # "Releases" ab. Laeuft, sobald sich die Versionsnummer in package.json
 # aendert (oder von Hand ueber "Run workflow").
@@ -54,9 +54,9 @@ jobs:
       - name: Ins oeffentliche Download-Repo legen
         shell: bash
         env:
-          GH_TOKEN: ${{ secrets.DOWNLOADS_TOKEN }}
+          GH_TOKEN: ${{ secrets.DOWNLOAD_TOKEN }}
         run: |
-          [ -z "$GH_TOKEN" ] && { echo "Kein DOWNLOADS_TOKEN"; exit 0; }
+          [ -z "$GH_TOKEN" ] && { echo "Kein DOWNLOAD_TOKEN"; exit 0; }
           TAG="kranich-v$(node -p "require('./package.json').version")"
           R=sirseagull69/selbst-gfaltet-downloads
           gh api repos/$R/commits -q '.[0].sha' >/dev/null 2>&1 || gh api -X PUT repos/$R/contents/README.md -f message="Start" -f content="$(printf '# Selbst gfaltet - Downloads\n\nInstaller von Kranich, Albatros und dem Startfenster.\n' | base64 | tr -d '\n')" || true
