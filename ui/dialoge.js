@@ -4,10 +4,10 @@
   const K = window.kranich;
   const { esc } = H;
 
-  function oeffne(inhalt, { schmal = false } = {}) {
+  function oeffne(inhalt, { schmal = false, einstellungen: eins = false } = {}) {
     const s = document.createElement('div');
     s.className = 'schleier';
-    s.innerHTML = `<div class="dialog paper ${schmal ? 'schmal' : ''}" role="dialog" aria-modal="true">${inhalt}${eselsohr(54, 'rgba(0,0,0,0)')}</div>`;
+    s.innerHTML = `<div class="dialog paper ${schmal ? 'schmal' : ''} ${eins ? 'einstelldialog' : ''}" role="dialog" aria-modal="true">${inhalt}${eselsohr(54, 'rgba(0,0,0,0)')}</div>`;
     document.body.appendChild(s);
     const zu = () => s.remove();
     s.addEventListener('click', (e) => { if (e.target === s || e.target.closest('[data-zu]')) zu(); });
@@ -115,24 +115,34 @@
   // ---------- Einstellungen ----------
   async function einstellungen() {
     const e = await K.einstellungen.lesen();
-    const d = oeffne(`<div class="dialogkopf">${figur('ruhend', 50)}<h2 class="h">Einstellungen</h2><div class="platz"></div><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
-      <div class="einstellzeile"><span class="lbl">Wer denkt für Kranich?</span>
-        <label class="reihe"><input type="radio" name="weg" value="claude" ${e.weg !== 'api' ? 'checked' : ''}> Claude über dein Konto (Claude Code auf diesem Rechner, angemeldet)</label>
-        <label class="reihe"><input type="radio" name="weg" value="api" ${e.weg === 'api' ? 'checked' : ''}> Claude über einen API-Schlüssel</label></div>
-      <div class="einstellzeile weg-claude"><label for="e-modell">Modell</label><select class="feld" id="e-modell">${['opus', 'sonnet', 'haiku'].map((m) => `<option ${e.claudeModell === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
-        <label for="e-prog">Programm (nur ändern, wenn „claude“ nicht gefunden wird)</label><input class="feld" id="e-prog" value="${esc(e.claudeProgramm)}"></div>
-      <div class="einstellzeile weg-api"><label for="e-key">API-Schlüssel</label><input class="feld" id="e-key" type="password" placeholder="${e.apiSchluesselGesetzt ? 'gespeichert – leer lassen zum Behalten' : 'sk-ant-…'}">
-        <label for="e-apimodell">Modell</label><input class="feld" id="e-apimodell" value="${esc(e.apiModell)}"></div>
-      <div class="fold"></div>
-      <div class="einstellzeile"><label class="reihe"><input type="checkbox" id="e-lokal" ${e.lokalAn ? 'checked' : ''}> Modell auf dem PC für kleine Änderungen nutzen (Ollama)</label>
-        <div class="reihe"><input class="feld" id="e-lokalmodell" value="${esc(e.lokalModell)}" style="width:180px" aria-label="Lokales Modell"><input class="feld" id="e-lokaladr" value="${esc(e.lokalAdresse)}" style="flex:1" aria-label="Adresse von Ollama"></div>
-        <span class="leise" style="font-size:12.5px">Kleine Wünsche an ein ausgewähltes Element gehen dann zuerst an den PC. Fällt Claude aus, springt der PC dafür ein.</span></div>
-      <div class="fold"></div>
-      <div class="einstellzeile"><label for="e-look">Eigene Hinweise zum Look der Familie</label><textarea class="feld" id="e-look" placeholder="z. B. „Hauptknöpfe immer rechts unten, keine Schatten“">${esc(e.lookHinweise)}</textarea>
-        <span class="leise" style="font-size:12.5px">Kranich hält sich bei jedem Entwurf daran.</span></div>
-      <div class="einstellzeile"><span class="lbl">Projektordner der Apps (für „In App-Projekt der Familie“)</span>
-        ${APPS.map(([k, t]) => `<div class="reihe"><b class="h" style="width:80px">${t}</b><input class="feld" data-app="${k}" value="${esc(e.appOrdner?.[k] || '')}" style="flex:1" placeholder="noch nicht gewählt"><button type="button" class="btn btn-s" data-appwahl="${k}">Wählen</button></div>`).join('')}</div>
-      <div class="dialogfuss"><span class="leise status" style="flex:1"></span><button type="button" class="btn" data-testen>Verbindung testen</button><button type="button" class="btn btn-p" data-speichern>Speichern</button></div>`, { schmal: true });
+    const karte = (id, ic, titel, unter, inhalt) => `<section class="ekarte paper" id="${id}"><div class="ekopf"><span class="eicon">${sym(ic, 18)}</span><div><b class="h">${titel}</b><span class="leise">${unter}</span></div></div>${inhalt}</section>`;
+    const d = oeffne(`<div class="einstellraster">
+      <nav class="enav"><span class="k-abschnitt">Bereiche</span>
+        ${[['e-hirn', 'zahnrad', 'Wer denkt'], ['e-pc', 'fenster', 'Modell auf dem PC'], ['e-lookk', 'farbe', 'Look der Familie'], ['e-ordner', 'ordner', 'App-Ordner']].map(([id, ic, t], i) => `<a class="navzeile" href="#${id}" aria-current="${i === 0}" data-sprung="${id}">${sym(ic, 17)}<span>${t}</span></a>`).join('')}
+        <div class="platz"></div><div class="eueber">${figur('ruhend', 40)}<span class="leise">Kranich · Teil von<br>„Selbst gfaltet“</span></div></nav>
+      <div class="einhalt">
+        <div class="dialogkopf"><div style="display:flex;flex-direction:column"><h2 class="h">Einstellungen</h2><span class="leise">Änderungen gelten sofort für alle Entwürfe.</span></div><div class="platz"></div><span class="hand" style="font-size:22px;transform:rotate(-2deg)">gilt auch für Eule &amp; Elster ↓</span><button type="button" class="btn btn-q" data-zu>${sym('schliessen', 16)} Schließen</button></div>
+        <div class="ekarten">
+        ${karte('e-hirn', 'zahnrad', 'Wer denkt für Kranich?', 'Claude über dein Konto oder einen Schlüssel', `
+          <div class="zweiknopf wegwahl"><label class="btn"><input type="radio" name="weg" value="claude" ${e.weg !== 'api' ? 'checked' : ''}> Dein Claude-Konto</label><label class="btn"><input type="radio" name="weg" value="api" ${e.weg === 'api' ? 'checked' : ''}> API-Schlüssel</label></div>
+          <div class="einstellzeile weg-claude"><label for="e-modell" class="lbl">Modell</label><select class="feld" id="e-modell">${['opus', 'sonnet', 'haiku'].map((m) => `<option ${e.claudeModell === m ? 'selected' : ''}>${m}</option>`).join('')}</select>
+            <label for="e-prog" class="lbl">Programm</label><input class="feld" id="e-prog" value="${esc(e.claudeProgramm)}"><span class="leise klein">Nur ändern, wenn „claude“ nicht gefunden wird.</span></div>
+          <div class="einstellzeile weg-api"><label for="e-key" class="lbl">API-Schlüssel</label><input class="feld" id="e-key" type="password" placeholder="${e.apiSchluesselGesetzt ? 'gespeichert – leer lassen zum Behalten' : 'sk-ant-…'}">
+            <label for="e-apimodell" class="lbl">Modell</label><input class="feld" id="e-apimodell" value="${esc(e.apiModell)}"></div>
+          <div class="reihe"><button type="button" class="btn" data-testen>Verbindung testen</button><span class="leise status klein" style="flex:1"></span></div>`)}
+        ${karte('e-pc', 'fenster', 'Modell auf dem PC', 'Ollama für kleine Änderungen', `
+          <label class="schalter"><input type="checkbox" id="e-lokal" ${e.lokalAn ? 'checked' : ''}><i></i><span>Für kleine Änderungen nutzen</span></label>
+          <label class="lbl" for="e-lokalmodell">Modell</label><input class="feld" id="e-lokalmodell" value="${esc(e.lokalModell)}" aria-label="Lokales Modell">
+          <label class="lbl" for="e-lokaladr">Adresse</label><input class="feld" id="e-lokaladr" value="${esc(e.lokalAdresse)}" aria-label="Adresse von Ollama">
+          <span class="leise klein">Kleine Wünsche an ein ausgewähltes Element gehen zuerst an den PC. Fällt Claude aus, springt der PC ein.</span>`)}
+        ${karte('e-lookk', 'farbe', 'Look der Familie', 'Eigene Regeln für jeden Entwurf', `
+          <textarea class="feld" id="e-look" rows="5" placeholder="z. B. „Hauptknöpfe immer rechts unten, keine Schatten“">${esc(e.lookHinweise)}</textarea>
+          <span class="leise klein">Kranich hält sich bei jedem Entwurf daran.</span>`)}
+        ${karte('e-ordner', 'ordner', 'Projektordner der Apps', 'Ziel für „In App-Projekt der Familie“', `
+          ${APPS.map(([k, t]) => `<div class="ordnerzeile"><b class="h">${t}</b><input class="feld" data-app="${k}" value="${esc(e.appOrdner?.[k] || '')}" placeholder="noch nicht gewählt"><button type="button" class="btn btn-s" data-appwahl="${k}">Wählen</button></div>`).join('')}`)}
+        </div>
+        <div class="dialogfuss"><div class="platz"></div><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-speichern>${sym('haken', 16, 2.4)} Speichern</button></div>
+      </div></div>`, { einstellungen: true });
     const el = d.el;
     const wegZeigen = () => {
       const weg = el.querySelector('input[name="weg"]:checked').value;
@@ -153,6 +163,11 @@
       lookHinweise: el.querySelector('#e-look').value,
       appOrdner: Object.fromEntries([...el.querySelectorAll('[data-app]')].map((i) => [i.dataset.app, i.value.trim()])),
     });
+    el.querySelectorAll('[data-sprung]').forEach((a) => a.addEventListener('click', (ev) => {
+      ev.preventDefault();
+      el.querySelector(`#${a.dataset.sprung}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.querySelectorAll('[data-sprung]').forEach((x) => x.setAttribute('aria-current', String(x === a)));
+    }));
     el.addEventListener('click', async (ev) => {
       const t = ev.target.closest('[data-appwahl],[data-testen],[data-speichern]');
       if (!t) return;

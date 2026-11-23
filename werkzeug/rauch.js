@@ -38,12 +38,15 @@ app.whenReady().then(async () => {
     await pruefe('Start zeigt vier Karten', "document.querySelectorAll('.startkarte').length === 4");
 
     // Format wählen
-    await js("document.querySelector('[data-lasche=\"neu\"]').click()");
-    await bisDa("document.querySelectorAll('.formatkarte').length >= 16");
-    await pruefe('Formatgalerie zeigt alle Formate', "document.querySelectorAll('.formatkarte').length === 16 && document.querySelectorAll('.formatgruppe').length === 5");
+    await js("document.querySelector('.blattkarte .btn-p').click()");
+    await bisDa("document.querySelectorAll('.formatkarte').length >= 5");
+    await pruefe('Formatauswahl zeigt Gruppen und App & Web', "document.querySelectorAll('.formatkarte').length === 5 && document.querySelectorAll('[data-aktion=\"format-gruppe\"]').length === 6");
+    await js("document.querySelector('[data-aktion=\"format-gruppe\"][data-g=\"Druck\"]').click()");
+    await pruefe('Gruppe Druck zeigt 4 Formate', "document.querySelectorAll('.formatkarte').length === 4");
     await js("document.getElementById('fsuche').value = 'story'; document.getElementById('fsuche').dispatchEvent(new Event('input'))");
     await pruefe('Suche filtert', "document.querySelectorAll('.formatkarte').length === 1");
     await js("document.getElementById('fsuche').value = ''; document.getElementById('fsuche').dispatchEvent(new Event('input'))");
+    await js("document.querySelector('[data-aktion=\"format-gruppe\"][data-g=\"App & Web\"]').click()");
     await js("document.querySelector('[data-aktion=\"format-waehlen\"][data-id=\"web\"]').click()");
     await foto('1b-format');
     // Neuer Entwurf über das Eingabefeld
@@ -139,7 +142,7 @@ app.whenReady().then(async () => {
       App.renderWerkbank();
     })()`);
     await warte(500);
-    await pruefe('Bild geöffnet', "Bild.z.breite === 1200 && document.querySelectorAll('.werkzeuge button').length === 8");
+    await pruefe('Bild geöffnet', "Bild.z.breite === 1200 && document.querySelectorAll('.werkzeuge button.wz').length === 8");
     await foto('9-bild');
     await js("document.getElementById('wunsch').value = 'Hintergrund weg und auf 1080×1080'; App.aktionen.senden()");
     await bisDa("App.S.kranich.zustand === 'fertig'", 15000);
@@ -168,6 +171,10 @@ app.whenReady().then(async () => {
     await warte(800);
     await foto('12-start-mit-projekt');
     await pruefe('Projekt in der Liste', "document.querySelectorAll('.projektkarte').length >= 1");
+    await js("document.querySelector('[data-lasche=\"alle\"]').click()");
+    await warte(400);
+    await foto('12b-oeffnen');
+    await pruefe('Öffnen zeigt Auswahl', "!!document.querySelector('.auswahlkarte [data-aktion=\"projekt-oeffnen\"]')");
     await js("document.querySelector('[data-aktion=\"projekt-oeffnen\"]').click()");
     await bisDa("App.S.ansicht === 'werkbank'");
     await warte(600);
@@ -182,7 +189,7 @@ app.whenReady().then(async () => {
     // Ganze App entwerfen
     await js("App.aktionen['zum-start']()");
     await bisDa("!!document.querySelector('#start')");
-    await js("document.querySelector('[data-lasche=\"app\"]').click()");
+    await js("document.querySelector('[data-aktion=\"neu\"][data-art=\"app\"]').click()");
     await bisDa("!!document.getElementById('appwunsch')");
     await js("document.getElementById('appwunsch').value = 'Eule – Schreibprogramm der origami-Familie'");
     await foto('15-app-auftrag');

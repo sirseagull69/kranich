@@ -53,12 +53,13 @@
         <span class="strich" aria-hidden="true"></span>
         <button type="button" class="btn btn-s btn-q" style="color:#4a2f9a" data-aktion="schnell-frei">Freier Wunsch…</button>
       </div>
-      <div class="uebersicht" aria-label="Übersicht der Leinwand"><span class="lbl" style="font-size:10.5px">Übersicht</span><div class="kartenflaeche"></div></div>
-      <div class="ansichtleiste"><span class="lbl" style="padding:0 6px">Ansicht</span>
-        <button type="button" class="btn btn-s btn-q" aria-label="Verkleinern" data-aktion="zoom-minus">−</button><b class="h zoomwert">100 %</b>
-        <button type="button" class="btn btn-s btn-q" aria-label="Vergrößern" data-aktion="zoom-plus">+</button>
-        <button type="button" class="btn btn-s btn-q" data-aktion="zoom-einpassen">Alles zeigen</button></div>
-      ${eselsohr(54)}`;
+      <button type="button" class="btn btn-p btn-gross board-hinzu" data-aktion="board-dazu">${sym('plus', 16, 2.4)} Board hinzufügen</button>
+      <div class="ansichtecke">
+        <div class="uebersicht paper" aria-label="Übersicht der Leinwand"><div class="kartenflaeche"></div></div>
+        <div class="ansichtleiste paper">
+          <button type="button" class="btn btn-s btn-q" aria-label="Verkleinern" data-aktion="zoom-minus">−</button><b class="h zoomwert">100 %</b>
+          <button type="button" class="btn btn-s btn-q" aria-label="Vergrößern" data-aktion="zoom-plus">+</button>
+          <span class="strich"></span><button type="button" class="btn btn-s btn-q" data-aktion="zoom-einpassen" title="Alles zeigen" aria-label="Alles zeigen">${sym('verschieben', 15)}</button></div></div>`;
     z.welt = leinwand.querySelector('.welt');
     z.menue = leinwand.querySelector('.schnellmenue');
     z.plus = leinwand.querySelector('.board-dazu');
@@ -70,7 +71,7 @@
       if (e.code !== 'Space' || e.repeat || !z.leinwand?.isConnected || /INPUT|TEXTAREA/.test(document.activeElement?.tagName) || document.activeElement?.isContentEditable) return;
       e.preventDefault(); z.leinwand.classList.add('greifbereit');
     });
-    window.addEventListener('keyup', (e) => { if (e.code === 'Space') z.leinwand?.classList.remove('greifbereit'); });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space' && !z.leinwand?.classList.contains('hand-an')) z.leinwand?.classList.remove('greifbereit'); });
     leinwand.addEventListener('pointerdown', (e) => {
       const frei = e.target === leinwand || e.target === z.welt || e.target.classList?.contains('boardstatus') || e.target.closest?.('.boardleer');
       const mitte = e.button === 1, leer = leinwand.classList.contains('greifbereit');
@@ -118,7 +119,7 @@
       b.iframe.style.width = `${s.breite}px`; b.iframe.style.height = `${s.hoehe}px`;
       b.leer.style.width = `${s.breite}px`; b.leer.style.height = `${s.hoehe}px`;
       b.koerper.style.width = `${s.breite}px`; b.koerper.style.height = `${s.hoehe}px`;
-      b.name.textContent = `${s.name} · ${s.mass || `${s.breite} × ${s.hoehe}`}`;
+      b.name.innerHTML = `<b>${H.esc(s.name)}</b><span>${H.esc(s.mass || `${s.breite} × ${s.hoehe}`)}</span>`;
       if (b.html !== s.html) {
         b.html = s.html;
         if (s.id === z.aktiv && z.auswahl) z.wiederWaehlen = z.auswahl.k;

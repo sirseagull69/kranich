@@ -65,63 +65,119 @@
   }
 
   function karteNeu(art, titel, text, bild) {
-    return `<button type="button" class="startkarte cardw" data-aktion="neu" data-art="${art}"><div class="card">
-      <div class="bildfeld">${bild}</div>
-      <div class="ktitel">${sym(art === 'bild' ? 'zuschneiden' : art === 'ausbild' ? 'mischen' : art === 'app' ? 'varianten' : 'seite', 18)}<span class="h">${titel}</span></div>
-      <span class="ktext">${text}</span></div></button>`;
+    return `<button type="button" class="startkarte mehrkarte" data-aktion="neu" data-art="${art}"><div class="card">
+      <div class="bildfeld vf">${bild}</div>
+      <div class="mtxt"><span class="ktitel h">${titel}</span><span class="ktext">${text}</span></div>${sym('rechts', 18)}</div></button>`;
   }
 
+  const ART = (p) => (p.art === 'bild' ? ['Bild', 'chip-gelb'] : p.app ? ['App', 'chip-gruen'] : ['Entwurf', 'chip-zart']);
   function projektKarte(p) {
     const url = S.vorschauen[p.id + p.geaendert];
+    const [art, artChip] = ART(p);
+    const info = p.art === 'bild' ? 'Bild' : p.boards > 1 ? `${p.boards} Boards` : [p.formatName, p.mass].filter(Boolean).join(' · ');
     return `<div class="projektkarte cardw"><button type="button" class="btn btn-s weg" data-aktion="projekt-weg" data-id="${p.id}" aria-label="Projekt löschen">${sym('muell', 14)}</button>
-      <button type="button" style="border:0;padding:0;background:transparent;width:100%;text-align:left;font:inherit;color:inherit" data-aktion="projekt-oeffnen" data-id="${p.id}"><div class="card">
-      <div class="vorschau" style="${url ? `background-image:url('${url}')` : ''}">${url ? '' : figur('ruhend', 40)}</div>
-      <span class="pname h">${esc(p.name)}${p.seite ? ` · ${esc(p.seite)}` : ''}</span>
-      <span class="pinfo"><span class="chip ${p.art === 'bild' ? 'chip-gelb' : p.app ? 'chip-gruen' : 'chip-zart'}">${p.art === 'bild' ? 'Bild' : p.app ? 'App' : 'Entwurf'}</span>${esc(H.wann(p.geaendert))}</span></div></button></div>`;
+      <button type="button" class="pk-knopf" data-aktion="projekt-oeffnen" data-id="${p.id}"><div class="card">
+      <div class="vorschau ${url ? 'mitbild' : 'vf'}" ${url ? `style="background-image:url('${url}')"` : ''}>${url ? '' : figur('ruhend', 44)}</div>
+      <span class="pname h">${esc(p.name)}</span><span class="pinfo">${esc(info)}</span>
+      <span class="pfuss"><span class="chip ${artChip}">${art}</span><span class="leise">${esc(H.wann(p.geaendert))}</span></span></div></button></div>`;
   }
+
+  function gruss() {
+    const h = new Date().getHours();
+    const name = (S.einstellungen?.name || 'Nils').split(' ')[0];
+    return `${h < 11 ? 'Guten Morgen' : h < 17 ? 'Hallo' : 'Guten Abend'}, ${name}`;
+  }
+
+  const PROBIER = ['Login-Seite für eine App', 'Post für die Bäckerei', 'Einladung zum 40.'];
 
   function renderStart() {
     const l = S.startLasche;
-    const projekteHtml = S.liste.length ? S.liste.map(projektKarte).join('') : '<div class="leerhinweis">Noch keine Projekte. Fang links mit einer Karte an.</div>';
-    let blatt;
+    let blatt, titel = '';
     if (l === 'start') {
-      blatt = `<div class="startoben"><div class="neu">
-          <div style="display:flex;align-items:baseline;gap:14px"><h1 class="h">Neu</h1><span class="hand" style="font-size:22px">womit fangen wir an?</span></div>
-          <div class="karten3">
-            ${karteNeu('entwurf', 'Oberfläche entwerfen', 'Eine App-Seite, ein Fenster oder eine Webseite von Grund auf.', '<div style="width:118px;height:80px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);display:flex;flex-direction:column;position:relative;z-index:1"><span style="height:16px;background:#4a2f9a"></span><span style="display:flex;flex-direction:column;gap:5px;padding:9px"><span style="height:5px;width:80%;background:#d6caf9"></span><span style="height:5px;width:60%;background:#d6caf9"></span></span><span style="position:absolute;right:9px;bottom:9px;width:34px;height:12px;background:#7c5cd6"></span></div>')}
-            ${karteNeu('bild', 'Bild bearbeiten', 'Zuschneiden, freistellen, Farben anpassen – per Wort oder Werkzeug.', '<span style="width:58px;height:54px;background:#4a2f9a;border-radius:5px 5px 16px 16px;position:relative;z-index:1"></span>')}
-            ${karteNeu('app', 'Ganze App entwerfen', 'Alle Bildschirme mit Plan, Abläufen und Zuständen.', `<div style="display:grid;grid-template-columns:repeat(3,30px);gap:6px;position:relative;z-index:1">${'<span style="height:22px;background:#fff;box-shadow:0 1px 3px rgba(30,40,70,.18)"></span>'.repeat(4)}<span style="height:22px;background:#7c5cd6"></span><span style="height:22px;background:#4a2f9a"></span></div>`)}
-            ${karteNeu('ausbild', 'Aus Bild eine Oberfläche', 'Screenshot oder Skizze rein, bearbeitbarer Entwurf raus.', `<div style="display:flex;align-items:center;gap:10px;position:relative;z-index:1"><div style="width:58px;height:58px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);transform:rotate(-4deg);padding:8px"><span style="display:block;height:4px;width:80%;background:#5b6170;margin-bottom:6px"></span><span style="display:block;height:4px;width:60%;background:#5b6170"></span></div><span style="color:#4a2f9a">${sym('senden', 18)}</span><div style="width:64px;height:64px;background:#fff;box-shadow:0 2px 6px rgba(30,40,70,.18);padding:8px;display:flex;flex-direction:column;gap:5px"><span style="height:7px;width:70%;background:#4a2f9a"></span><span style="height:5px;width:90%;background:#d9d0bc"></span><span style="margin-top:auto;height:10px;width:50%;background:#6243c4;align-self:flex-end"></span></div></div>`)}
-          </div>
-          <div class="hinweis">${figur('ruhend', 30)}<span>Kranich kennt den Look der origami-Familie und hält sich daran.</span></div>
+      blatt = `<div class="startraster">
+        <section class="paper heldkarte">
+          <span class="k-abschnitt">${esc(gruss())}</span>
+          <h1 class="h">Was soll heute entstehen?</h1>
+          <span class="leise">Sag Kranich in einem Satz, was du brauchst. Den Rest faltet er.</span>
+          <span class="hand notiz">Ein Satz reicht!</span>
+          <div class="heldeingabe"><input id="startwunsch" class="feld" placeholder="z. B. Ein Plakat für den Flohmarkt am Samstag, fröhlich und gut lesbar" aria-label="Was soll Kranich falten?">
+            <button type="button" class="btn btn-q" data-aktion="anhang" title="Bild oder Skizze anhängen" aria-label="Bild anhängen">${sym('klammer', 18)}</button>
+            <button type="button" class="btn btn-p btn-gross" data-aktion="start-falten">${figur('arbeitend', 18)} Entwerfen</button></div>
+          ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise">${esc(S.anhang.name || 'Bild')} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
+          <div class="probier"><span class="k-abschnitt">Probier mal</span>${PROBIER.map((t) => `<button type="button" class="btn btn-s" data-aktion="probier" data-text="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+          ${eselsohr(28, '#f6f1e7')}
+        </section>
+        <section class="paper blattkarte">
+          <button type="button" class="startkarte blattknopf" data-aktion="neu" data-art="entwurf"><div class="bildfeld vf"><span class="blattsym"><i></i></span><span class="plusrund">${sym('plus', 22, 2.6)}</span><span class="kreis"></span><span class="pille"></span></div>
+          <b class="h">Leeres Blatt</b><span class="leise">App-Seite, Webseite, Post, Plakat oder Folie wählen</span></button>
+          <button type="button" class="btn btn-p btn-gross btn-breit" data-aktion="neu" data-art="entwurf">${sym('plus', 16, 2.4)} Neuer Entwurf</button>
+          ${eselsohr(28, '#f6f1e7')}
+        </section>
+        <div class="mehrreihe">
+          ${karteNeu('app', 'Ganze App entwerfen', 'Alle Bildschirme mit Plan, Abläufen und Zuständen', `<div class="mini-app">${'<i></i>'.repeat(4)}<i class="v"></i><i class="f"></i></div>`)}
+          ${karteNeu('bild', 'Bild bearbeiten', 'Zuschneiden, freistellen, Farben – per Wort oder Werkzeug', '<span class="mini-bild"></span>')}
+          ${karteNeu('ausbild', 'Aus Bild eine Oberfläche', 'Screenshot oder Skizze rein, bearbeitbarer Entwurf raus', '<span class="mini-aus"><i></i><b></b></span>')}
         </div>
-        <div class="zuletzt"><div style="display:flex;align-items:baseline;justify-content:space-between"><h2 class="h">Zuletzt geöffnet</h2><button type="button" class="btn btn-s btn-q" data-aktion="lasche" data-lasche="alle">Alle Projekte</button></div>
-          <div class="projektliste">${S.liste.length ? S.liste.slice(0, 4).map(projektKarte).join('') : '<div class="leerhinweis">Noch nichts gefaltet.</div>'}</div></div></div>
-        <div class="falteingabe">${figur('ruhend', 30)}<input id="startwunsch" placeholder="Was soll Kranich falten?" aria-label="Was soll Kranich falten?">
-          ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
-          <button type="button" class="btn btn-q" data-aktion="anhang">${sym('klammer', 16)} Bild anhängen</button>
-          <button type="button" class="btn btn-q" disabled title="Sprechen kommt noch">${sym('mikro', 16)} Sprechen</button>
-          <button type="button" class="btn btn-p" data-aktion="start-falten">${figur('arbeitend', 18)} Falten</button></div>`;
+      </div>
+      <div class="zuletztkopf"><div class="laschen klein" role="tablist"><button type="button" role="tab" aria-selected="true">Zuletzt bearbeitet</button></div><div class="platz"></div>
+        ${S.liste.length ? `<button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="alle">Alle ${S.liste.length} Entwürfe ${sym('pfeilrechts', 16)}</button>` : ''}</div>
+      <div class="projektliste">${S.liste.length ? S.liste.slice(0, 4).map(projektKarte).join('') : `<div class="leerhinweis">${figur('ruhend', 40)}<span>Noch nichts gefaltet. Schreib oben einen Satz – oder nimm ein leeres Blatt.</span></div>`}</div>`;
     } else if (l === 'app') {
-      blatt = AppBau.renderAuftrag();
+      titel = 'Ganze App';
+      blatt = `<section class="paper startblatt">${AppBau.renderAuftrag()}${eselsohr(54, '#f6f1e7')}</section>`;
     } else if (l === 'alle') {
-      blatt = `<h1 class="h" style="margin:0;font-size:30px;font-weight:800">Alle Projekte</h1><div class="projektliste" style="grid-template-columns:repeat(4,1fr)">${projekteHtml}</div>`;
+      titel = 'Entwurf öffnen';
+      blatt = renderOeffnen();
     } else {
+      titel = 'Format wählen';
       blatt = renderFormate();
     }
-    app.innerHTML = `<section class="ansicht" id="start">
-      <header class="kopf"><div class="marke">${figur('ruhend', 34)}<span class="h">Kranich</span></div><span class="leise" style="font-size:13px">aus der origami-Familie</span><div class="platz"></div>
-        <button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="alle">${sym('ordner', 16)} Öffnen…</button>
+    app.innerHTML = `<section class="ansicht" id="start" data-lasche="${l}">
+      <header class="kopf k-kopf"><button type="button" class="marke" data-aktion="lasche" data-lasche="start" title="Start">${figur('ruhend', 34)}<span class="h">Kranich</span></button><span class="chip chip-rand">Selbst gfaltet</span>
+        ${l !== 'start' ? `<span class="trenner"></span><span class="brot"><span class="leise">${l === 'neu' ? 'Neues Board' : 'Kranich'}</span>${sym('rechts', 14)}<b class="h">${titel}</b></span>${l === 'neu' ? '<span class="chip chip-voll">1 · Format</span><span class="chip chip-rand">2 · Leinwand</span>' : ''}` : ''}
+        <div class="platz"></div>
+        ${l !== 'start' ? `<button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="start">${sym('links', 16)} Zurück</button>` : `<button type="button" class="btn btn-q" data-aktion="lasche" data-lasche="alle">${sym('ordner', 16)} Öffnen</button>`}
         <button type="button" class="btn btn-q" data-aktion="einstellungen">${sym('zahnrad', 16)} Einstellungen</button>
         <span class="avatar h" aria-label="Angemeldet als Nils">NP</span></header>
-      <div class="laschen" role="tablist">${[['start', 'Start'], ['neu', 'Neu'], ['app', 'Ganze App'], ['alle', 'Alle Projekte']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${l === k}" data-aktion="lasche" data-lasche="${k}">${t}</button>`).join('')}</div>
-      <section class="paper startblatt">${blatt}${eselsohr(54, '#f6f1e7')}</section></section>`;
+      <div class="startkoerper ${l}">${blatt}</div></section>`;
     document.getElementById('startwunsch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') aktionen['start-falten'](); });
     const suche = document.getElementById('fsuche');
     if (suche) {
       suche.value = S.formatSuche || '';
       suche.addEventListener('input', () => { S.formatSuche = suche.value; const pos = suche.selectionStart; renderStart(); const n = document.getElementById('fsuche'); n.focus(); n.setSelectionRange(pos, pos); });
     }
+    const psuche = document.getElementById('psuche');
+    if (psuche) {
+      psuche.value = S.projektSuche || '';
+      psuche.addEventListener('input', () => { S.projektSuche = psuche.value; const pos = psuche.selectionStart; renderStart(); const n = document.getElementById('psuche'); n.focus(); n.setSelectionRange(pos, pos); });
+    }
+  }
+
+  // ---------- Öffnen ----------
+  const ORDNER = [['zuletzt', 'Zuletzt geöffnet', 'uhr'], ['alle', 'Alle Entwürfe', 'liste'], ['entwurf', 'Oberflächen', 'seite'], ['app', 'Ganze Apps', 'varianten'], ['bild', 'Bilder', 'bild']];
+  function renderOeffnen() {
+    const filter = { zuletzt: (p, i) => i < 6, alle: () => true, entwurf: (p) => p.art === 'entwurf' && !p.app, app: (p) => p.app, bild: (p) => p.art === 'bild' };
+    const o = S.oeffnenOrdner || 'alle';
+    const q = (S.projektSuche || '').trim().toLowerCase();
+    const liste = S.liste.filter(filter[o]).filter((p) => !q || `${p.name} ${p.formatName}`.toLowerCase().includes(q));
+    const gew = S.liste.find((p) => p.id === S.oeffnenGewaehlt) || liste[0];
+    const url = gew && S.vorschauen[gew.id + gew.geaendert];
+    const info = gew ? [['Art', ART(gew)[0]], ['Format', gew.art === 'bild' ? 'Bild' : [gew.formatName, gew.mass].filter(Boolean).join(' · ')], ['Boards', gew.art === 'bild' ? '–' : String(gew.boards || 1)], ['Geändert', H.wann(gew.geaendert)]] : [];
+    return `<div class="dreispalt">
+      <nav class="spalte links" aria-label="Ordner"><span class="k-abschnitt">Schnellzugriff</span>
+        ${ORDNER.map(([k, t, ic]) => `<button type="button" class="navzeile" aria-current="${o === k}" data-aktion="oeffnen-ordner" data-o="${k}">${sym(ic, 17)}<span>${t}</span><b>${S.liste.filter(filter[k]).length}</b></button>`).join('')}
+        <div class="platz"></div><span class="hand notiz-unten">Ordner kommen bald ↓</span></nav>
+      <main class="spalte spmitte"><div class="spaltenkopf"><div><h1 class="h">Entwurf öffnen</h1><span class="leise">${liste.length} ${liste.length === 1 ? 'Entwurf' : 'Entwürfe'}</span></div><div class="platz"></div>
+        <label class="suchfeld">${sym('suche', 16)}<input id="psuche" placeholder="Entwurf suchen …" aria-label="Entwurf suchen"></label></div>
+        <div class="projektliste vier">${liste.map((p) => projektKarte(p).replace('class="projektkarte cardw"', `class="projektkarte cardw ${gew?.id === p.id ? 'gewaehlt' : ''}"`).replace('data-aktion="projekt-oeffnen"', 'data-aktion="projekt-waehlen"')).join('') || `<div class="leerhinweis">${figur('ruhend', 40)}<span>${q ? 'Nichts gefunden.' : 'Hier ist noch nichts.'}</span></div>`}</div></main>
+      <aside class="spalte rechts"><span class="k-abschnitt">Ausgewählt</span>
+        ${gew ? `<div class="paper auswahlkarte"><div class="vorschau ${url ? 'mitbild' : 'vf'}" ${url ? `style="background-image:url('${url}')"` : ''}>${url ? '' : figur('ruhend', 56)}</div>
+          <b class="h">${esc(gew.name)}</b><span><span class="chip ${ART(gew)[1]}">${ART(gew)[0]}</span></span>
+          <dl class="infoliste">${info.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
+          <div class="platz"></div>
+          <div class="reihe"><button type="button" class="btn btn-q" data-aktion="projekt-weg" data-id="${gew.id}">${sym('muell', 15)} Löschen</button><div class="platz"></div><button type="button" class="btn btn-p btn-gross" data-aktion="projekt-oeffnen" data-id="${gew.id}">${sym('ordner', 16)} Öffnen</button></div>
+          ${eselsohr(24, '#f6f1e7')}</div>` : '<span class="leise">Noch nichts ausgewählt.</span>'}
+      </aside></div>`;
   }
 
   // ---------- Formate ----------
@@ -142,22 +198,49 @@
     return gruppen || '<div class="leerhinweis">Kein Format passt. Leg unten rechts eine eigene Größe an.</div>';
   }
 
+  const GRUPPEN_SYM = { 'App & Web': 'handy', Social: 'bild', Druck: 'plakat', 'Präsentation': 'web', Marke: 'stern' };
+  function formatBild(f, max = 96) {
+    const v = Math.min(max / f.breite, (max * 0.82) / f.hoehe);
+    const b = Math.max(14, Math.round(f.breite * v)), h = Math.max(14, Math.round(f.hoehe * v));
+    return `<span class="fbild" style="width:${b}px;height:${h}px"><i></i><b></b></span>`;
+  }
+  const mmWerte = (f) => { const m = /(\d+)\s*×\s*(\d+)\s*mm/.exec(f.mass || ''); return m ? [Number(m[1]), Number(m[2])] : null; };
+
   function renderFormate() {
     const f = S.formate.find((x) => x.id === S.neuFormat) || S.formate.find((x) => x.id === 'web');
-    return `<div class="formatkopf"><div style="display:flex;flex-direction:column"><h1 class="h">Was gestalten wir?</h1><span class="hand" style="font-size:21px">such dir ein Blatt aus</span></div><div class="platz"></div>
-        <div style="display:flex;flex-direction:column;gap:3px;width:340px"><label for="fsuche" class="lbl">Format suchen</label><input id="fsuche" class="feld" placeholder="z. B. „Story“ oder „A4“"></div></div>
-      <div class="formatkoerper"><div class="formatgruppen">${formatKarten(f.id)}</div>
-        <div class="paper eigenekarte cardw"><b class="h" style="font-size:17px">Eigene Größe</b><span class="leise" style="font-size:13px">Wenn nichts davon passt.</span>
-          <div class="reihe"><label class="reihe" style="gap:4px">Breite <input class="feld" id="eigen-b" type="number" value="1200"></label></div>
-          <div class="reihe"><label class="reihe" style="gap:4px">Höhe <input class="feld" id="eigen-h" type="number" value="800"></label></div>
-          <div class="segment" role="group" aria-label="Einheit"><button type="button" aria-pressed="${S.eigenEinheit !== 'mm'}" data-aktion="einheit" data-e="px">Pixel</button><button type="button" aria-pressed="${S.eigenEinheit === 'mm'}" data-aktion="einheit" data-e="mm">Millimeter</button></div>
-          <button type="button" class="btn btn-p" data-aktion="eigen-anlegen">Anlegen</button>
-          <span class="hand" style="font-size:20px">ich falt jede Größe</span></div></div>
-      <div class="falteingabe">${figur('ruhend', 30)}<span class="chip chip-zart">${esc(f.name)} · ${esc(massText(f))}</span><input id="startwunsch" placeholder="Was soll Kranich falten?" aria-label="Was soll Kranich falten?">
-        ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
-        <button type="button" class="btn btn-q" data-aktion="anhang">${sym('klammer', 16)} Bild anhängen</button>
-        <button type="button" class="btn" data-aktion="leer-anlegen">Leer anlegen</button>
-        <button type="button" class="btn btn-p" data-aktion="start-falten">${figur('arbeitend', 18)} Falten</button></div>`;
+    const gruppe = S.formatGruppe || f.gruppe;
+    const q = (S.formatSuche || '').trim().toLowerCase();
+    const passt = (x) => `${x.name} ${x.gruppe} ${massText(x)}`.toLowerCase().includes(q) || (q === 'a4' && x.druck);
+    const liste = gruppe === 'Eigen' ? [] : S.formate.filter((x) => (q ? passt(x) : x.gruppe === gruppe));
+    const mm = mmWerte(f);
+    const quer = S.neuQuer ?? (f.breite > f.hoehe);
+    const [wb, wh] = mm || [f.breite, f.hoehe];
+    const dreh = quer !== (f.breite > f.hoehe) && f.breite !== f.hoehe;
+    const zeigeB = dreh ? wh : wb, zeigeH = dreh ? wb : wh;
+    const eigen = gruppe === 'Eigen';
+    return `<div class="dreispalt">
+      <nav class="spalte links" aria-label="Gruppen"><span class="k-abschnitt">Gruppen</span>
+        ${(S.gruppen || []).map((g) => `<button type="button" class="navzeile" aria-current="${!q && gruppe === g}" data-aktion="format-gruppe" data-g="${esc(g)}">${sym(GRUPPEN_SYM[g] || 'box', 17)}<span>${esc(g)}</span><b>${S.formate.filter((x) => x.gruppe === g).length}</b></button>`).join('')}
+        <button type="button" class="navzeile" aria-current="${!q && eigen}" data-aktion="format-gruppe" data-g="Eigen">${sym('lineal', 17)}<span>Eigene Maße</span></button>
+        <div class="platz"></div><span class="hand notiz-unten">Flyer, Visitenkarte?<br>Einfach eigene Maße!</span></nav>
+      <main class="spalte spmitte"><div class="spaltenkopf"><div><h1 class="h">${q ? 'Suche' : eigen ? 'Eigene Maße' : esc(gruppe)}</h1><span class="leise">${eigen ? 'Gib rechts Breite und Höhe ein – Kranich faltet jede Größe.' : `${liste.length} ${liste.length === 1 ? 'Format' : 'Formate'}${liste.some((x) => x.druck) ? ' · Druck in Millimetern' : ''}`}</span></div><div class="platz"></div>
+          <label class="suchfeld">${sym('suche', 16)}<input id="fsuche" placeholder="Format suchen …" aria-label="Format suchen"></label></div>
+        ${eigen ? `<div class="eigenhinweis vf">${figur('arbeitend', 80)}<span class="hand" style="font-size:26px">ich falt jede Größe</span></div>` : `<div class="formatgruppe"><div class="formatreihe">${liste.map((x) => `<button type="button" class="formatkarte cardw" aria-pressed="${x.id === f.id}" data-aktion="format-waehlen" data-id="${x.id}"><div class="card"><div class="fvor vf">${formatBild(x)}</div><span class="fname"><b class="h">${esc(x.name)}</b>${x.id === f.id ? '<span class="chip chip-voll">Gewählt</span>' : ''}</span><span class="m">${esc(massText(x))}</span></div></button>`).join('') || '<div class="leerhinweis">Kein Format passt. Nimm links „Eigene Maße“.</div>'}</div></div>`}
+        ${S.liste.length ? `<div class="fold" style="margin:22px 0 14px"></div><div class="zuletztformate"><span class="k-abschnitt">Zuletzt bei dir</span>${[...new Map(S.liste.filter((p) => p.mass && p.art !== 'bild').map((p) => [p.formatName + p.mass, p])).values()].slice(0, 3).map((p) => `<span class="chip chip-rand gross"><b class="h">${esc(p.formatName)}</b>${esc(p.mass)}</span>`).join('')}</div>` : ''}
+      </main>
+      <aside class="spalte rechts"><span class="k-abschnitt">Deine Auswahl</span>
+        <div class="paper auswahlkarte">
+          <div class="vorschau vf grossbild">${eigen ? figur('ruhend', 60) : formatBild(dreh ? { breite: f.hoehe, hoehe: f.breite } : f, 150)}</div>
+          <div class="reihe"><b class="h" style="font-size:19px">${eigen ? 'Eigene Größe' : esc(f.name)}</b>${!eigen && f.druck ? '<span class="chip chip-gruen">Druck</span>' : ''}</div>
+          <div class="massfelder"><label><span class="lbl">Breite</span><input class="feld" id="eigen-b" type="number" min="1" value="${eigen ? 1200 : zeigeB}"></label><span class="mal">×</span><label><span class="lbl">Höhe</span><input class="feld" id="eigen-h" type="number" min="1" value="${eigen ? 800 : zeigeH}"></label></div>
+          ${eigen ? `<div class="segment" role="group" aria-label="Einheit"><button type="button" aria-pressed="${S.eigenEinheit !== 'mm'}" data-aktion="einheit" data-e="px">Pixel</button><button type="button" aria-pressed="${S.eigenEinheit === 'mm'}" data-aktion="einheit" data-e="mm">Millimeter</button></div>`
+            : f.breite !== f.hoehe ? `<div class="zweiknopf"><button type="button" class="btn" aria-pressed="${!quer}" data-aktion="format-lage" data-quer="0">${sym('handy', 15)} Hochformat</button><button type="button" class="btn" aria-pressed="${quer}" data-aktion="format-lage" data-quer="1">${sym('web', 15)} Querformat</button></div>` : ''}
+          <label class="feldblock"><span class="lbl">Was soll drauf? <span class="leise" style="text-transform:none;letter-spacing:0;font-weight:500">(darf leer bleiben)</span></span><textarea class="feld" id="startwunsch" rows="3" placeholder="z. B. Startseite für eine Fahrrad-App"></textarea></label>
+          ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : `<button type="button" class="btn btn-s btn-q" style="align-self:flex-start" data-aktion="anhang">${sym('klammer', 14)} Bild als Vorlage</button>`}
+          <div class="platz"></div><div class="fold"></div>
+          <button type="button" class="btn btn-p btn-gross btn-breit" data-aktion="format-anlegen">${sym('plus', 16, 2.4)} Leinwand anlegen</button>
+          ${eselsohr(24, '#f6f1e7')}</div>
+      </aside></div>`;
   }
 
   // ---------- Projekt öffnen ----------
@@ -218,16 +301,19 @@
   // ---------- Werkbank ----------
   function kopfHtml(rechts) {
     const p = S.projekt;
-    const unten = S.ansicht === 'varianten' ? 'Varianten' : S.modus === 'bild' ? 'Bild 1' : seite()?.name;
-    return `<header class="kopf"><button type="button" class="marke btn-q" style="border:0;background:none;padding:0;color:inherit" data-aktion="zum-start" title="Zur Startseite">${figur('ruhend', 34)}<span class="h">Kranich</span></button>
+    const n = p.seiten?.length || 0;
+    const unter = S.ansicht === 'varianten' ? 'Varianten' : S.modus === 'bild' ? 'Bild bearbeiten' : n > 1 ? `${n} Boards` : (seite()?.name || '');
+    return `<header class="kopf k-kopf"><button type="button" class="marke" data-aktion="zum-start" title="Zur Startseite">${figur('ruhend', 34)}<span class="h">Kranich</span></button>
+      <button type="button" class="btn btn-q zurueckknopf" data-aktion="zum-start">${sym('links', 16)} Alle Entwürfe</button>
       <span class="trenner" aria-hidden="true"></span>
-      <div class="titel"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><span>/ ${esc(unten)}</span></div>
-      <span class="chip speicherchip chip-gruen">${sym('haken', 13)}Gespeichert</span>
+      <div class="titel"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><span class="unter">${esc(unter)}</span></div>
       <div class="platz"></div>
       <div class="modus" role="group" aria-label="Modus">
-        <button type="button" aria-pressed="${S.modus === 'entwurf'}" data-aktion="modus" data-modus="entwurf">Entwurf</button>
-        <button type="button" aria-pressed="${S.modus === 'bild'}" data-aktion="modus" data-modus="bild">Bild</button></div>
-      <div class="platz"></div><div class="reihe">${rechts}</div></header>`;
+        <button type="button" aria-pressed="${S.modus === 'entwurf'}" data-aktion="modus" data-modus="entwurf">${sym('seite', 15)} Entwurf</button>
+        <button type="button" aria-pressed="${S.modus === 'bild'}" data-aktion="modus" data-modus="bild">${sym('bild', 15)} Bild</button></div>
+      <div class="platz"></div>
+      <span class="chip speicherchip chip-gruen">${sym('haken', 13)}Gespeichert</span>
+      <div class="reihe">${rechts}</div><span class="avatar h" aria-label="Angemeldet als Nils">NP</span></header>`;
   }
 
   function kopfKnoepfe() {
@@ -244,7 +330,7 @@
     const bild = S.modus === 'bild';
     app.innerHTML = `<section class="ansicht" id="werkbank">${kopfHtml(kopfKnoepfe())}
       <div class="werkbank">
-        ${bild ? '<nav class="werkzeuge" aria-label="Werkzeuge"></nav>' : '<nav class="seitenleiste" aria-label="Seiten und Ebenen"></nav>'}
+        ${bild ? '<nav class="werkzeuge" aria-label="Werkzeuge"></nav>' : `<nav class="werkzeugleiste" aria-label="Werkzeuge">${schiene()}</nav><nav class="seitenleiste" aria-label="Boards und Ebenen" ${S.panelZu ? 'hidden' : ''}></nav>`}
         <main class="leinwand paper" aria-label="Leinwand"></main>
         ${bild ? '<div class="rechtsbild"><div class="paper reglerkarte" id="regler"></div><aside class="kranichleiste" aria-label="Kranich"></aside></div>' : '<aside class="kranichleiste" aria-label="Kranich"></aside>'}
       </div></section>`;
@@ -262,6 +348,7 @@
         beiBoard: (id) => waehleBoard(id),
         beiHtml: (id, html) => { const s = S.projekt?.seiten.find((x) => x.id === id); if (!s) return; s.html = html; if (s.verlauf?.[s.stand]) s.verlauf[s.stand].html = html; speichernSpaeter(); },
       });
+      if (S.hand) leinwand.classList.add('greifbereit', 'hand-an');
       zeigeBoards();
       AppBau.zeigeLauf();
     }
@@ -310,18 +397,56 @@
     return b;
   }
 
+  function schiene() {
+    const s = seite();
+    const offen = s?.pruefung?.offen?.length || 0;
+    const k = (aktion, ic, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 19)}</button>`;
+    return `${k('werkzeug-zeiger', 'zeiger', 'Auswählen', `aria-pressed="${!S.hand}"`)}
+      ${k('werkzeug-hand', 'hand', 'Verschieben (Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
+      <span class="schienenfalz"></span>
+      ${k('panel', 'ebenen', 'Boards und Ebenen', `aria-pressed="${!S.panelZu}"`)}
+      ${k('board-dazu', 'plus', 'Board hinzufügen')}
+      ${k('app-pruefung', 'haken', 'Selbstprüfung', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
+      ${k('alle-groessen', 'mischen', 'Alle Größen', s?.html && !S.projekt?.app?.plan ? '' : 'disabled')}
+      <div class="platz"></div>
+      ${k('modus', 'bild', 'Bild bearbeiten', 'data-modus="bild"')}`;
+  }
+
+  function boardZeile(x, aktiv, mehrere, klein) {
+    const st = x.html ? (x.pruefung?.offen?.length ? ['gelb', `${x.pruefung.offen.length} offen`] : ['gruen', 'fertig']) : ['leer', 'leer'];
+    return `<button type="button" class="boardzeile ${klein ? 'klein' : ''}" aria-current="${aktiv}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} – Doppelklick zum Umbenennen">
+      ${klein ? '' : `<span class="bz-bild"><i style="aspect-ratio:${x.breite}/${x.hoehe};${x.breite >= x.hoehe ? 'width:34px' : 'height:28px'}"></i></span>`}<span class="bz-txt"><span class="bz-name">${esc(klein ? (x.name.split(' · ')[1] || x.name) : x.name)}</span>${klein ? '' : `<small>${esc(x.mass || `${x.breite} × ${x.hoehe}`)}</small>`}</span>
+      <i class="punkt ${st[0]}" title="${st[1]}"></i>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`;
+  }
+
   function renderSeitenleiste() {
     const nav = app.querySelector('.seitenleiste');
+    const rail = app.querySelector('.werkzeugleiste');
+    if (rail && S.projekt) rail.innerHTML = schiene();
     if (!nav || !S.projekt) return;
     const s = seite();
-    const mehrere = S.projekt.seiten.length > 1;
-    nav.innerHTML = `<span class="lbl" style="padding:0 0 2px 2px">Boards</span>
-      <div class="seitenlaschen">${S.projekt.seiten.map((x) => `<button type="button" aria-current="${x.id === s.id}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} – Doppelklick zum Umbenennen">${formatSymbol(x, 12)}<span>${esc(x.name)}</span>${mehrere ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`).join('')}</div>
-      <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="board-dazu">${sym('plus', 14)} Board dazu</button>
-      <button type="button" class="btn btn-s btn-q" style="align-self:flex-start;color:#4a2f9a" data-aktion="app-pruefung" ${s.html ? '' : 'disabled'}>${sym('haken', 14)} Selbstprüfung${s.pruefung?.offen?.length ? ` <span class="chip chip-gelb">${s.pruefung.offen.length}</span>` : ''}</button>
-      <div class="fold" style="margin:14px 16px 10px 0"></div>
-      <span class="lbl" style="padding:0 0 4px 2px">Ebenen · ${esc(s.name)}</span>
-      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 16}px">${sym(['button', 'a', 'input'].includes(e.tag) ? 'box' : /^h\d|p|label$/.test(e.tag) ? 'text' : ['ul', 'ol', 'nav', 'table'].includes(e.tag) ? 'liste' : 'box', 14)}<span>${esc(e.name)}</span></button>`).join('') : '<span class="leise" style="font-size:13px;padding:0 4px">Noch leer</span>'}</div>`;
+    const alle = S.projekt.seiten;
+    const mehrere = alle.length > 1;
+    let liste;
+    if (S.projekt.app?.plan && alle.some((x) => x.bildschirm)) {
+      const gruppen = new Map();
+      for (const x of alle) { const g = x.bildschirm || x.id; if (!gruppen.has(g)) gruppen.set(g, []); gruppen.get(g).push(x); }
+      liste = [...gruppen.values()].map((g) => {
+        const haupt = g.find((x) => !x.zustand) || g[0];
+        const rest = g.filter((x) => x !== haupt);
+        const offen = g.some((x) => x.id === s.id);
+        return `<div class="boardgruppe ${offen ? 'offen' : ''}">${boardZeile(haupt, haupt.id === s.id, mehrere)}${rest.length ? `<div class="zustandsreihe">${rest.map((x) => boardZeile(x, x.id === s.id, false, true)).join('')}</div>` : ''}</div>`;
+      }).join('');
+    } else {
+      liste = alle.map((x) => boardZeile(x, x.id === s.id, mehrere)).join('');
+    }
+    const fertig = alle.filter((x) => x.html).length;
+    nav.innerHTML = `<div class="panelkopf"><span class="k-abschnitt">Boards</span><span class="chip chip-grau">${fertig}/${alle.length}</span><div class="platz"></div><button type="button" class="btn btn-s btn-q" data-aktion="board-dazu" aria-label="Board dazu" title="Board dazu">${sym('plus', 16, 2.4)}</button></div>
+      <div class="seitenlaschen">${liste}</div>
+      <div class="fold"></div>
+      <div class="panelkopf"><span class="k-abschnitt">Ebenen</span><span class="leise ebenenname">${esc(s.name)}</span></div>
+      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px">${sym(['button', 'a', 'input'].includes(e.tag) ? 'box' : /^h\d|p|label$/.test(e.tag) ? 'text' : ['ul', 'ol', 'nav', 'table'].includes(e.tag) ? 'liste' : 'box', 14)}<span>${esc(e.name)}</span></button>`).join('') : '<span class="leise" style="font-size:13px;padding:2px 8px">Noch leer – sobald Kranich faltet, stehen hier die Teile.</span>'}</div>`;
+    nav.querySelector('.boardzeile[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
   }
 
   // Overlays auf der Entwurfsleinwand: leer, denkt, fertig, Fehler
@@ -365,10 +490,9 @@
     if (!aside || !S.projekt) return;
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
-    aside.innerHTML = `<div class="leistenlaschen" role="tablist"><button type="button" role="tab" aria-selected="${!verlaufAn}" data-aktion="leiste" data-lasche="kranich">Kranich</button><button type="button" role="tab" aria-selected="${verlaufAn}" data-aktion="leiste" data-lasche="verlauf">Verlauf</button></div>
-      <div class="paper leistenblatt">
-        ${S.modus === 'bild' ? '' : `<div class="figurkopf">${figur(haltung, 78)}<div class="txt"><span class="chip ${chipArt}">${chip}</span><span class="hand" style="font-size:20px">${hand}</span></div></div><div class="fold"></div>`}
-        ${S.modus === 'bild' ? `<div class="figurkopf" style="gap:8px">${figur(haltung, 44)}<div class="txt" style="padding-bottom:4px"><span class="chip ${chipArt}">${chip}</span></div></div>` : ''}
+    aside.innerHTML = `<div class="leistenkopf"><span class="leistenfigur">${figur(haltung, 34)}</span><div class="lk-txt"><b class="h">Kranich hilft mit</b><span class="hand">${hand}</span></div><span class="chip ${chipArt}">${chip}</span></div>
+      <div class="leistenlaschen" role="tablist"><button type="button" role="tab" aria-selected="${!verlaufAn}" data-aktion="leiste" data-lasche="kranich">Kranich</button><button type="button" role="tab" aria-selected="${verlaufAn}" data-aktion="leiste" data-lasche="verlauf">Verlauf</button></div>
+      <div class="leistenblatt">
         <div class="verlauf" aria-live="polite"></div>
         <div class="wunschfeld"></div>
       </div>`;
@@ -418,16 +542,15 @@
       ? `<span class="chip chip-zart" style="align-self:flex-start">Auswahl: ${esc(S.auswahl.name)}<button type="button" style="border:0;background:transparent;color:inherit;font:inherit;padding:0 0 0 4px" data-aktion="auswahl-weg">Entfernen</button></span>`
       : S.modus === 'bild' && Bild.z.auswahl ? '<span class="chip chip-zart" style="align-self:flex-start">Auswahl im Bild wird mitgeschickt</span>' : '';
     const denkt = S.kranich.zustand === 'denkt';
-    el.innerHTML = `<label for="wunsch" class="lbl">Dein Wunsch an Kranich</label>${auswahlChip}
+    el.innerHTML = `${auswahlChip}
       ${S.anhang && S.modus === 'entwurf' ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise" style="font-size:12.5px">${esc(S.anhang.name)} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
-      <textarea id="wunsch" rows="2" placeholder="${S.modus === 'bild' ? 'z. B. „Hintergrund weg und auf 1080 × 1080“' : 'z. B. „Mach den Hintergrund heller“'}"></textarea>
-      <div style="display:flex;align-items:center;gap:4px">
-        <button type="button" class="btn btn-s btn-q" data-aktion="${S.modus === 'bild' ? 'bild-einfuegen' : 'anhang'}">${sym('klammer', 15)} Bild</button>
-        <button type="button" class="btn btn-s btn-q" disabled title="Sprechen kommt noch" aria-label="Sprechen (kommt noch)">${sym('mikro', 15)}</button>
-        <div class="platz"></div>
-        <button type="button" class="btn btn-s btn-p" data-aktion="senden" ${denkt ? 'disabled' : ''}>${sym('senden', 15, 2.4)} Senden</button></div>`;
+      <div class="wunschzeile"><div class="wunschbox"><textarea id="wunsch" rows="1" aria-label="Dein Wunsch an Kranich" placeholder="${S.modus === 'bild' ? 'z. B. „Hintergrund weg, 1080 × 1080“' : S.auswahl ? `Was soll mit „${esc(S.auswahl.name)}“ passieren?` : 'Was soll Kranich entwerfen?'}"></textarea>
+        <button type="button" class="btn btn-s btn-q" data-aktion="${S.modus === 'bild' ? 'bild-einfuegen' : 'anhang'}" title="Bild anhängen" aria-label="Bild anhängen">${sym('klammer', 16)}</button></div>
+        <button type="button" class="btn btn-p sendeknopf" data-aktion="senden" aria-label="Senden" title="Senden (Enter)" ${denkt ? 'disabled' : ''}>${sym('pfeilrechts', 18, 2.4)}</button></div>`;
     const ta = el.querySelector('textarea');
     ta.value = alt;
+    const hoehe = () => { ta.style.height = 'auto'; ta.style.height = `${Math.min(120, ta.scrollHeight)}px`; };
+    ta.addEventListener('input', hoehe); hoehe();
     ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); aktionen.senden(); } });
   }
 
@@ -601,31 +724,51 @@
     S.ansicht = 'varianten';
     const s = seite();
     const v = S.varianten;
+    const NAMEN = ['Ruhig', 'Mutig', 'Kompakt'];
+    const BU = ['A', 'B', 'C'];
     const karten = (v || [null, null, null]).map((x, i) => {
-      const name = x?.name || ['Ruhig', 'Mutig', 'Kompakt'][i];
-      if (!x) return `<div class="variante"><span class="h" style="font-weight:800;font-size:18px">${name}</span><div class="card cardw"><div class="rahmen" style="display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px">${S.variantenLaeuft ? `<div class="faltblatt"></div><span class="leise">Kranich faltet „${name}“ …</span>` : '<span class="leise">Noch nicht gefaltet</span>'}</div></div></div>`;
-      if (x.fehler) return `<div class="variante"><span class="h" style="font-weight:800;font-size:18px">${name}</span><div class="card cardw"><div class="rahmen" style="display:flex;align-items:center;justify-content:center;padding:20px;text-align:center"><span class="leise">Diese Variante hat nicht geklappt: ${esc(x.fehler.nachricht)}</span></div></div></div>`;
+      const name = x?.name || NAMEN[i];
+      const kopf = `<div class="vkopf"><b class="h">${BU[i]} · ${esc(name)}</b>${x && !x.fehler ? '<span class="leise">gerade eben</span>' : ''}</div>`;
+      if (!x) return `<div class="variante cardw"><div class="card"><div class="rahmen vf leerrahmen">${S.variantenLaeuft ? `<div class="faltblatt"></div><span class="leise">Kranich faltet „${name}“ …</span>` : '<span class="leise">Noch nicht gefaltet</span>'}</div>${kopf}</div></div>`;
+      if (x.fehler) return `<div class="variante cardw"><div class="card"><div class="rahmen vf leerrahmen"><span class="leise" style="padding:20px;text-align:center">Hat nicht geklappt: ${esc(x.fehler.nachricht)}</span></div>${kopf}</div></div>`;
       const gew = S.mischen.has(i);
-      return `<div class="variante ${gew ? 'gewaehlt' : ''}"><span class="h" style="font-weight:800;font-size:18px">${esc(name)}</span>
-        <div class="card cardw"><div class="rahmen" data-i="${i}"><iframe sandbox="allow-same-origin" title="Variante ${esc(name)}" style="width:${s.breite}px;height:${s.hoehe}px"></iframe></div>
-        <span class="leise" style="font-size:13px">${esc(x.notiz || x.hinweis)}</span>
-        <div class="vfuss"><button type="button" class="btn btn-s ${gew ? '' : 'btn-q'}" aria-pressed="${gew}" data-aktion="mischen-waehlen" data-i="${i}">${gew ? sym('haken', 14) : ''} Zum Mischen wählen</button><div class="platz"></div><button type="button" class="btn btn-s btn-p" data-aktion="variante-nehmen" data-i="${i}">Nehmen</button></div></div></div>`;
+      return `<div class="variante cardw ${gew ? 'gewaehlt' : ''}"><div class="card">
+        <div class="rahmen vf" data-i="${i}"><iframe sandbox="allow-same-origin" title="Variante ${esc(name)}" style="width:${s.breite}px;height:${s.hoehe}px"></iframe></div>
+        ${kopf}<p class="vnotiz">${esc(x.notiz || x.hinweis || '')}</p>
+        <div class="vfuss"><button type="button" class="btn ${i === 1 ? 'btn-p' : ''} btn-breit" data-aktion="variante-nehmen" data-i="${i}">Diese übernehmen</button>
+          <button type="button" class="btn merkknopf" aria-pressed="${gew}" data-aktion="mischen-waehlen" data-i="${i}" title="Zum Mischen merken" aria-label="Zum Mischen merken"><svg width="15" height="15" viewBox="0 0 24 24" fill="${gew ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3h12v18l-6-4-6 4z"/></svg></button></div></div></div>`;
     }).join('');
-    app.innerHTML = `<section class="ansicht">${kopfHtml(`<button type="button" class="btn btn-q" data-aktion="zur-werkbank">${sym('zurueck', 16)} Zurück zur Werkbank</button><button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`)}
-      <section class="paper variantenblatt">
-        <div class="variantenkopf">${figur(S.variantenLaeuft ? 'arbeitend' : 'fertig', 60)}<div style="display:flex;flex-direction:column"><h1 class="h">3 Varianten für „${esc(s.name)}“</h1><span class="hand" style="font-size:21px">nimm eine – oder misch dir was zusammen</span></div><div class="platz"></div><span class="chip chip-grau">Aus: „${esc(S.variantenWunsch)}“</span></div>
-        <div class="variantenreihe">${karten}</div>
-        <div class="variantenfuss"><button type="button" class="btn btn-p" data-aktion="mischen" ${S.mischen.size >= 2 ? '' : 'disabled'}>${sym('mischen', 16)} Mischen (${S.mischen.size} gewählt)</button>
-          <span class="leise" style="flex:1;font-size:13px">Wähl zwei oder drei Karten und sag Kranich unten, was woher kommen soll, z. B. Kopfzeile aus „Mutig“ und Liste aus „Ruhig“.</span>
-          <input class="feld" id="mischwunsch" placeholder="Was woher?" style="width:260px">
-          <button type="button" class="btn btn-q" data-aktion="zur-werkbank">Alle verwerfen</button>
-          <button type="button" class="btn" data-aktion="noch-drei" ${S.variantenLaeuft ? 'disabled' : ''}>Noch drei</button></div>
-        ${eselsohr(54)}</section></section>`;
+    const p = S.projekt;
+    app.innerHTML = `<section class="ansicht" id="varianten">
+      <header class="kopf k-kopf"><button type="button" class="marke" data-aktion="zum-start" title="Zur Startseite">${figur('ruhend', 34)}<span class="h">Kranich</span></button><span class="trenner"></span>
+        <div class="titel"><b class="h">${esc(p.name)}</b><span class="unter">${esc(s.name)} · ${esc(s.mass || `${s.breite} × ${s.hoehe}`)}</span></div>
+        <span class="chip chip-rand">3 Fassungen</span><span class="chip speicherchip chip-gruen">${sym('haken', 13)}Gespeichert</span><div class="platz"></div>
+        <button type="button" class="btn" data-aktion="zur-werkbank">${sym('links', 16)} Zurück zur Leinwand</button></header>
+      <div class="variantenraster">
+        <aside class="spalte links vlinks"><span class="k-abschnitt">Dein Wunsch</span>
+          <blockquote class="wunschzitat">„${esc(S.variantenWunsch)}“</blockquote>
+          <span class="k-abschnitt">Fassungen</span>
+          ${(v || [null, null, null]).map((x, i) => `<div class="navzeile ${S.mischen.has(i) ? 'gemerkt' : ''}"><span class="bu">${BU[i]}</span><span>${esc(x?.name || NAMEN[i])}</span>${S.mischen.has(i) ? '<b>gemerkt</b>' : ''}</div>`).join('')}
+          <div class="fold" style="margin:14px 0"></div>
+          <span class="k-abschnitt">Mischen</span>
+          <span class="leise" style="font-size:13px">Merk dir zwei oder drei Fassungen (Lesezeichen) und sag, was woher kommen soll.</span>
+          <input class="feld" id="mischwunsch" placeholder="z. B. Kopf aus B, Liste aus A">
+          <button type="button" class="btn" data-aktion="mischen" ${S.mischen.size >= 2 ? '' : 'disabled'}>${sym('mischen', 16)} Mischen (${S.mischen.size})</button>
+          <div class="platz"></div>
+          <span class="hand notiz-unten">nichts dabei? einfach nochmal!</span>
+          <button type="button" class="btn" data-aktion="noch-drei" ${S.variantenLaeuft ? 'disabled' : ''}>${sym('zurueck', 15)} Drei neue Fassungen</button>
+        </aside>
+        <main class="vmitte">
+          <div class="spaltenkopf"><div><h1 class="h">Fassungen vergleichen</h1><span class="leise">Kranich hat „${esc(s.name)}“ dreimal neu gefaltet. Such dir eine aus – die anderen landen nicht auf der Leinwand.</span></div></div>
+          <div class="variantenreihe">${karten}</div>
+          <div class="vunten"><span class="leise">Übernehmen legt die Fassung als neuen Stand aufs Board – mit Rückgängig kommst du zurück.</span><div class="platz"></div><button type="button" class="btn btn-q" data-aktion="zur-werkbank">Alle verwerfen</button></div>
+        </main>
+      </div></section>`;
     zeigeSpeicherchip();
     app.querySelectorAll('.variante .rahmen[data-i]').forEach((r) => {
       const x = v[Number(r.dataset.i)];
       const f = r.querySelector('iframe');
-      const passe = () => { const z = Math.min(r.clientWidth / s.breite, r.clientHeight / s.hoehe); f.style.transform = `scale(${z})`; f.style.left = `${(r.clientWidth - s.breite * z) / 2}px`; };
+      const passe = () => { const pad = 18; const z = Math.min((r.clientWidth - pad * 2) / s.breite, (r.clientHeight - pad * 2) / s.hoehe); f.style.transform = `scale(${z})`; f.style.left = `${(r.clientWidth - s.breite * z) / 2}px`; f.style.top = `${(r.clientHeight - s.hoehe * z) / 2}px`; };
       f.srcdoc = Entwurf.vorbereiten(x.html);
       new ResizeObserver(passe).observe(r);
       passe();
@@ -639,9 +782,12 @@
     const nav = app.querySelector('.werkzeuge');
     if (!nav) return;
     const z = Bild.z;
-    nav.innerHTML = `<span class="lbl" style="align-self:flex-start;padding:0 0 2px">Werkzeuge</span>
-      ${WERKZEUGE.map(([k, t]) => `<button type="button" aria-pressed="${z.werkzeug === k}" data-aktion="werkzeug" data-w="${k}" ${!Bild.hatBild() || z.laeuft ? 'disabled' : ''}>${sym(k, 20)}${t}</button>`).join('')}
-      <label style="align-self:center;margin-top:8px;display:flex;flex-direction:column;align-items:center;gap:4px" class="lbl">Farbe<input type="color" class="farbknopf" id="bildfarbe" value="${z.farbe}"></label>`;
+    nav.innerHTML = `<span class="k-abschnitt">Werkzeuge</span>
+      ${WERKZEUGE.map(([k, t]) => `<button type="button" class="wz" aria-pressed="${z.werkzeug === k}" data-aktion="werkzeug" data-w="${k}" ${!Bild.hatBild() || z.laeuft ? 'disabled' : ''}>${sym(k, 18)}${t}</button>`).join('')}
+      <label class="farbzeile"><input type="color" class="farbknopf" id="bildfarbe" value="${z.farbe}"> Malfarbe</label>
+      <div class="fold" style="margin:12px 0 10px"></div>
+      <span class="k-abschnitt">Bisherige Schritte</span>
+      <div class="schritte">${z.verlauf.length ? z.verlauf.map((v, i) => `<button type="button" aria-current="${i === z.stand}" class="${i > z.stand ? 'zukunft' : ''}" data-aktion="bild-springe" data-i="${i}"><span>${esc(v.was)}</span><small>${i + 1}</small></button>`).reverse().join('') : '<span class="leise" style="font-size:13px;padding:0 10px">Noch keine.</span>'}</div>`;
     nav.querySelector('#bildfarbe').addEventListener('input', (e) => Bild.setzeFarbe(e.target.value));
   }
 
@@ -684,6 +830,7 @@
   }
 
   function renderSchrittband() {
+    renderWerkzeuge();
     const L = app.querySelector('.leinwand');
     if (!L || S.modus !== 'bild') return;
     L.querySelector('.schrittband')?.remove();
@@ -752,14 +899,37 @@
 
   // ---------- Aktionen ----------
   const aktionen = {
-    'lasche': (el) => { S.startLasche = el.dataset.lasche; renderStart(); },
+    'lasche': (el) => { S.startLasche = el.dataset.lasche; if (S.ansicht !== 'start') return zeigeStart(); renderStart(); },
     'neu': (el) => {
       if (el.dataset.art === 'entwurf') { S.startLasche = 'neu'; renderStart(); return; }
       if (el.dataset.art === 'app') { S.startLasche = 'app'; renderStart(); return; }
       if (el.dataset.art === 'ausbild') return aktionen.anhang(null, { danach: (b) => neuesProjekt('entwurf', { anhang: b }) });
       return neuesProjekt(el.dataset.art);
     },
-    'format-waehlen': (el) => { S.neuFormat = el.dataset.id; const w = document.getElementById('startwunsch')?.value; renderStart(); if (w) document.getElementById('startwunsch').value = w; },
+    'format-waehlen': (el) => { S.neuFormat = el.dataset.id; S.neuQuer = null; const w = document.getElementById('startwunsch')?.value; renderStart(); if (w) document.getElementById('startwunsch').value = w; },
+    'format-gruppe': (el) => { S.formatGruppe = el.dataset.g; S.formatSuche = ''; const w = document.getElementById('startwunsch')?.value; renderStart(); if (w) document.getElementById('startwunsch').value = w; },
+    'format-lage': (el) => { S.neuQuer = el.dataset.quer === '1'; const w = document.getElementById('startwunsch')?.value; renderStart(); if (w) document.getElementById('startwunsch').value = w; },
+    'format-anlegen': async () => {
+      const f = S.formate.find((x) => x.id === (S.neuFormat || 'web'));
+      const b = Number(document.getElementById('eigen-b').value), h = Number(document.getElementById('eigen-h').value);
+      const wunsch = document.getElementById('startwunsch')?.value.trim();
+      const anhang = S.anhang; S.anhang = null;
+      let format;
+      if (S.formatGruppe === 'Eigen') {
+        format = await K.formate.eigen(b, h, S.eigenEinheit || 'px');
+      } else {
+        const mm = mmWerte(f);
+        const [ob, oh] = mm || [f.breite, f.hoehe];
+        if (b === ob && h === oh) format = f;
+        else if (b === oh && h === ob) format = { ...f, breite: f.hoehe, hoehe: f.breite, mass: mm ? `${oh} × ${ob} mm` : undefined };
+        else format = await K.formate.eigen(b, h, mm ? 'mm' : 'px');
+      }
+      if (format?.fehler) { H.meldung(format.fehler.nachricht, { art: 'fehler' }); return; }
+      return neuesProjekt('entwurf', { format, wunsch, anhang });
+    },
+    'probier': (el) => { const i = document.getElementById('startwunsch'); i.value = el.dataset.text; i.focus(); },
+    'oeffnen-ordner': (el) => { S.oeffnenOrdner = el.dataset.o; S.oeffnenGewaehlt = null; renderStart(); },
+    'projekt-waehlen': (el) => { if (S.oeffnenGewaehlt === el.dataset.id) return oeffne(el.dataset.id); S.oeffnenGewaehlt = el.dataset.id; renderStart(); },
     'einheit': (el) => { S.eigenEinheit = el.dataset.e; const b = document.getElementById('eigen-b').value, h = document.getElementById('eigen-h').value; renderStart(); document.getElementById('eigen-b').value = b; document.getElementById('eigen-h').value = h; },
     'eigen-anlegen': async () => {
       const f = await K.formate.eigen(document.getElementById('eigen-b').value, document.getElementById('eigen-h').value, S.eigenEinheit || 'px');
@@ -803,6 +973,9 @@
       feld.addEventListener('keydown', (e) => { if (e.key === 'Enter') feld.blur(); if (e.key === 'Escape') { feld.value = S.projekt.name; feld.blur(); } });
     },
     'modus': (el) => { if (S.modus === el.dataset.modus && S.ansicht === 'werkbank') return; S.modus = el.dataset.modus; S.kranich.zustand = 'bereit'; renderWerkbank(); },
+    'panel': () => { S.panelZu = !S.panelZu; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = S.panelZu; renderSeitenleiste(); },
+    'werkzeug-hand': () => { S.hand = true; app.querySelector('.leinwand')?.classList.add('greifbereit', 'hand-an'); renderSeitenleiste(); },
+    'werkzeug-zeiger': () => { S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); renderSeitenleiste(); },
     'leiste': (el) => { S.leisteLasche = el.dataset.lasche; renderLeiste(); },
     'senden': () => {
       const ta = document.getElementById('wunsch');

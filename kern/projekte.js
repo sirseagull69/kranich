@@ -60,6 +60,9 @@ class Projekte {
           id: p.id, name: p.name, art: p.art, geaendert: p.geaendert, app: Boolean(p.app),
           seite: p.art === 'entwurf' ? (p.seiten?.length > 1 ? `${p.seiten.length} Boards` : p.seiten?.[0]?.name || (p.app ? 'Plan' : '')) : 'Bild 1',
           vorschau: fs.existsSync(this.pfad(name, 'vorschau.png')),
+          boards: p.seiten?.length || 0,
+          mass: p.seiten?.[0] ? (p.seiten[0].mass || `${p.seiten[0].breite} × ${p.seiten[0].hoehe}`) : '',
+          formatName: p.seiten?.[0]?.name || '',
         });
       } catch { /* kaputte Projekte überspringen */ }
     }
