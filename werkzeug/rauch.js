@@ -197,6 +197,12 @@ app.whenReady().then(async () => {
     await bisDa("App.S.projekt.seiten.length === 5", 4000);
     await warte(700);
     await foto('17-app-baut');
+    // Mitten im Bau zum Start und zurück: Bau läuft weiter
+    await js("window.__pid = App.S.projekt.id; App.aktionen['zum-start']()");
+    await warte(600);
+    await js("App.aktionen['projekt-oeffnen']({ dataset: { id: window.__pid } })");
+    await warte(500);
+    await pruefe('Zurück im Projekt: Bau läuft noch sichtbar', "App.S.kranich.zustand === 'denkt' && !!document.querySelector('.hinweisband')");
     await bisDa("App.S.kranich.zustand === 'fertig'", 30000);
     await warte(800);
     await js("Entwurf.einpassen()");

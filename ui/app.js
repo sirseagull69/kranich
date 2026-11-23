@@ -162,6 +162,17 @@
 
   // ---------- Projekt öffnen ----------
   async function oeffne(id, { modus } = {}) {
+    const l = AppBau.laufFuer(id);
+    if (l) {
+      // Bau läuft noch: dasselbe Projekt im Speicher weiterzeigen, nicht neu laden
+      S.projekt = l.p; S.modus = 'entwurf'; S.seiteId = l.p.seiten[0]?.id;
+      S.auswahl = null; S.varianten = null; S.mischen.clear();
+      S.kranich = { zustand: 'denkt', schritte: [], letzter: null, fehler: null, anpassen: l.jobs, titel: l.titel, meldung: l.meldung() };
+      S.ansicht = 'werkbank';
+      renderWerkbank();
+      AppBau.zeigeLauf();
+      return;
+    }
     const p = await K.projekte.laden(id);
     if (p?.fehler) { H.meldung(p.fehler.nachricht, { art: 'fehler' }); return; }
     S.projekt = p;
@@ -252,6 +263,7 @@
         beiHtml: (id, html) => { const s = S.projekt?.seiten.find((x) => x.id === id); if (!s) return; s.html = html; if (s.verlauf?.[s.stand]) s.verlauf[s.stand].html = html; speichernSpaeter(); },
       });
       zeigeBoards();
+      AppBau.zeigeLauf();
     }
     renderLeiste();
     zeigeSpeicherchip();

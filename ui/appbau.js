@@ -184,6 +184,9 @@
     return baue();
   }
 
+  // Läuft gerade ein Bau? Bleibt am Leben, auch wenn man zum Start geht.
+  let lauf = null;
+
   async function baue() {
     const p = S.projekt;
     const plan = p.app.plan;
@@ -193,41 +196,57 @@
     if (!p.app.css) jobs.push({ board: { id: '__bausteine' }, format: { name: 'Bausteine', mass: 'Farben, Schrift, Knöpfe' }, zustand: 'wartet' });
     for (const b of offen) jobs.push({ board: b, format: { name: b.name, breite: b.breite, hoehe: b.hoehe }, zustand: 'wartet' });
     if (!jobs.length) { H.meldung('Alle Boards sind schon gefaltet.'); return; }
-    App.chat({ wer: 'ich', text: `Falte alle Bildschirme von „${plan.name}“` });
-    App.setzeKranich('denkt', { anpassen: jobs, titel: `Ich baue „${plan.name}“: ${offen.length} Boards`, meldung: `0 von ${offen.length}` });
-    App.renderKopfKnoepfe();
-    for (const b of offen) Entwurf.setzeStatus(b.id, 'wartet');
-    Entwurf.einpassen();
+
+    // nur anfassen, was gerade zu sehen ist
+    const hier = () => S.projekt === p && S.ansicht === 'werkbank';
+    const status = (id, st) => { if (hier()) Entwurf.setzeStatus(id, st); };
+    const sag = (e) => { if (S.projekt === p) App.chat(e); else p.chat.push({ zeit: new Date().toISOString(), modus: 'entwurf', ...e }); };
+    const sichern = () => { if (S.projekt === p) App.geaendert({ vorschau: false }); else K.projekte.speichern(p); };
+    const kranich = (zustand, extra) => {
+      if (S.projekt === p) { App.setzeKranich(zustand, extra); if (hier()) { App.renderKopfKnoepfe(); App.renderSeitenleiste(); } }
+    };
+    let fertig = 0, repariert = 0, offenGesamt = 0;
+    const boardJobs = jobs.filter((j) => j.board.id !== '__bausteine');
+    const meldung = () => (p.app.css ? `${fertig} von ${boardJobs.length} fertig · 2 gleichzeitig, ca. 1 Minute pro Board` : 'Erst die Bausteine (Farben, Schrift, Knöpfe), dann gehts los mit den Boards');
+    const titel = `Ich baue „${plan.name}“: ${offen.length} Boards`;
+    lauf = { p, nr, jobs, titel, meldung, laeuft: () => nr === App.auftragNr };
+
+    sag({ wer: 'ich', text: `Falte alle Bildschirme von „${plan.name}“` });
+    kranich('denkt', { anpassen: jobs, titel, meldung: meldung() });
+    for (const b of offen) status(b.id, 'wartet');
+    if (hier()) Entwurf.einpassen();
+
+    const ende = () => { if (lauf?.nr === nr) lauf = null; };
 
     // Bausteine zuerst
     if (!p.app.css) {
       const j = jobs[0];
-      j.zustand = 'laeuft'; App.renderVerlauf();
+      j.zustand = 'laeuft'; if (hier()) App.renderVerlauf();
       const r = await K.app.bausteine({ plan });
-      if (nr !== App.auftragNr) return;
+      if (nr !== App.auftragNr) return ende();
       if (r?.fehler) {
         j.zustand = 'fehler';
-        for (const b of offen) Entwurf.setzeStatus(b.id, null);
-        App.chat({ wer: 'kranich', fehler: true, titel: 'Die Bausteine haben nicht geklappt', text: `${r.fehler.nachricht} Drück „Weiter falten“, wenn du es nochmal versuchen willst.` });
-        App.setzeKranich('fehler', { anpassen: null, titel: null, fehler: r.fehler });
-        App.renderKopfKnoepfe();
+        for (const b of offen) status(b.id, null);
+        ende();
+        sag({ wer: 'kranich', fehler: true, titel: 'Die Bausteine haben nicht geklappt', text: `${r.fehler.nachricht} Drück „Weiter falten“, wenn du es nochmal versuchen willst.` });
+        kranich('fehler', { anpassen: null, titel: null, fehler: r.fehler });
         return;
       }
       p.app.css = r.css; p.app.bausteineHtml = r.html;
       j.zustand = 'fertig'; j.notiz = r.notiz || 'steht';
-      App.geaendert({ vorschau: false });
+      sichern();
+      if (S.projekt === p) S.kranich.meldung = meldung();
+      if (hier()) { App.renderVerlauf(); App.renderMitte(); }
     }
 
     // Boards, zwei gleichzeitig
-    const boardJobs = jobs.filter((j) => j.board.id !== '__bausteine');
-    let fertig = 0, repariert = 0, offenGesamt = 0;
     const eins = async (j) => {
-      j.zustand = 'laeuft'; Entwurf.setzeStatus(j.board.id, 'laeuft'); App.renderVerlauf();
       const b = j.board;
+      j.zustand = 'laeuft'; status(b.id, 'laeuft'); if (hier()) App.renderVerlauf();
       const r = await K.app.board({ plan, board: { id: b.id, bildschirm: b.bildschirm, zustand: b.zustand, name: b.name, breite: b.breite, hoehe: b.hoehe }, css: p.app.css });
       if (nr !== App.auftragNr) return;
-      if (r?.fehler) { j.zustand = 'fehler'; j.notiz = r.fehler.nachricht; Entwurf.setzeStatus(b.id, 'fehler'); App.renderVerlauf(); return; }
-      const pr = await App.pruefeUndRepariere(b, r.html, nr);
+      if (r?.fehler) { j.zustand = 'fehler'; j.notiz = r.fehler.nachricht; status(b.id, 'fehler'); if (hier()) App.renderVerlauf(); return; }
+      const pr = await App.pruefeUndRepariere(b, r.html, nr, { status: hier() });
       if (nr !== App.auftragNr) return;
       b.html = pr.html;
       b.verlauf = [{ html: pr.html, was: 'Aus dem Plan gefaltet', zeit: new Date().toISOString() }];
@@ -237,27 +256,41 @@
       j.zustand = pr.gefunden.length && pr.repariert ? 'repariert' : 'fertig';
       j.notiz = App.pruefBericht(pr);
       fertig++;
-      Entwurf.zeigeAlle(p.seiten, App.seite().id);
-      Entwurf.setzeStatus(b.id, 'fertig');
-      S.kranich.meldung = `${fertig} von ${boardJobs.length}`;
-      App.renderVerlauf(); App.renderSeitenleiste();
-      App.geaendert({ vorschau: false });
+      if (S.projekt === p) S.kranich.meldung = meldung();
+      if (hier()) {
+        Entwurf.zeigeAlle(p.seiten, App.seite().id);
+        for (const x of boardJobs) if (x.zustand === 'wartet' || x.zustand === 'laeuft') Entwurf.setzeStatus(x.board.id, x.zustand);
+        Entwurf.setzeStatus(b.id, 'fertig');
+        App.renderVerlauf(); App.renderSeitenleiste(); App.renderMitte();
+      }
+      sichern();
     };
     const warteschlange = [...boardJobs];
     const arbeiter = async () => { while (warteschlange.length && nr === App.auftragNr) await eins(warteschlange.shift()); };
     await Promise.all([arbeiter(), arbeiter()]);
+    ende();
     if (nr !== App.auftragNr) return;
     const schief = boardJobs.filter((j) => j.zustand === 'fehler');
-    App.chat({
+    sag({
       wer: 'kranich', fehler: schief.length === boardJobs.length, titel: 'Das Falten hat nicht geklappt',
       text: schief.length
         ? `${fertig} von ${boardJobs.length} Boards sind fertig. Nicht geklappt: ${schief.map((j) => j.board.name).join(', ')}. „Weiter falten“ versucht die übrigen nochmal.`
         : `Fertig: „${plan.name}“ hat ${fertig} Boards. Klick auf „Abspielen“, um dich durchzuklicken.`,
       chips: [repariert || offenGesamt ? `Selbstprüfung: ${[repariert ? `${repariert} repariert` : '', offenGesamt ? `${offenGesamt} offen` : ''].filter(Boolean).join(', ')}` : 'Selbstprüfung ohne Befund'],
     });
-    App.setzeKranich(schief.length === boardJobs.length ? 'fehler' : 'fertig', { anpassen: null, titel: null, fehler: schief.length === boardJobs.length ? { nachricht: schief[0].notiz } : null });
-    App.renderKopfKnoepfe(); App.renderSeitenleiste();
-    App.geaendert();
+    kranich(schief.length === boardJobs.length ? 'fehler' : 'fertig', { anpassen: null, titel: null, fehler: schief.length === boardJobs.length ? { nachricht: schief[0].notiz } : null });
+    sichern();
+    if (S.projekt !== p) H.meldung(`„${plan.name}“ ist fertig gefaltet.`);
+  }
+
+  // Beim Öffnen: läuft für dieses Projekt noch ein Bau? Dann denselben Stand weiterzeigen.
+  function laufFuer(id) {
+    if (!lauf || lauf.p.id !== id || !lauf.laeuft()) return null;
+    return lauf;
+  }
+  function zeigeLauf() {
+    if (!lauf || S.projekt !== lauf.p) return;
+    for (const j of lauf.jobs) if (j.board.id !== '__bausteine' && (j.zustand === 'wartet' || j.zustand === 'laeuft')) Entwurf.setzeStatus(j.board.id, j.zustand);
   }
 
   function kopfKnoepfe(kannZurueck) {
@@ -527,5 +560,5 @@
     'app-uebergabe': () => uebergabe(),
   });
 
-  window.AppBau = { renderAuftrag, renderPlan, kopfKnoepfe, abspielen, zeigePruefung, uebergabe, baue };
+  window.AppBau = { laufFuer, zeigeLauf, renderAuftrag, renderPlan, kopfKnoepfe, abspielen, zeigePruefung, uebergabe, baue };
 })();
