@@ -25,7 +25,7 @@ const VOEGEL = {
     rolleFarbe: {},
   },
   albatros: {
-    basis: { schwanz: '16,66 2,58 28,62', koerper: '16,66 70,66 50,44', fluegel: '28,58 62,58 8,38', hals: '60,62 78,42 72,66', kopf: '78,42 95,48 78,52', bein: '40,66 44,66 42,84', bein2: '50,66 54,66 55,84' },
+    basis: { schwanz: '16,66 2,58 28,62', koerper: '16,66 70,66 50,44', fluegel: '28,58 62,58 16,36', hals: '60,62 78,42 72,66', kopf: '78,42 95,48 78,52', bein: '40,66 44,66 42,84', bein2: '50,66 54,66 55,84' },
     farben: { '#c2410c': '#1d5e3a', '#ff8a4c': '#2f8a55', '#ffc9a8': '#a8dcbb', '#2d1a10': '#1d2742', '#e8590c': '#2f8a55', '#fff0e6': '#e6f4eb', '#7a3a1c': '#14472b' },
     rolleFarbe: { schwanz: '#1d5e3a', koerper: '#2f8a55', fluegel: '#a8dcbb', hals: '#f3faf5', kopf: '#e8a53a', bein: '#1d5e3a' },
   },
@@ -40,7 +40,15 @@ function wandle(svg, vogel) {
     const pts = P(s);
     if (papier(pts)) return s;
     if (rolle === 'kopf') { const a = pts[0]; const a2 = A.hals.an(a); return S(pts.map((p) => { const l = A.kopf.lin([p[0] - a[0], p[1] - a[1]]); return [a2[0] + l[0], a2[1] + l[1]]; })); }
-    if (rolle === 'bein2') return S(pts.map(A2.an));
+    if (rolle === 'bein' || rolle === 'bein2') {
+      // Kiel von Ori → Beine. Ist der Kiel eingeklappt oder liegt er quer (Flug, Papierflieger), ziehen wir die Beine ein.
+      const [b1, b2, sp] = pts; const mx = (b1[0] + b2[0]) / 2, my = (b1[1] + b2[1]) / 2;
+      const h = sp[1] - my, dx = sp[0] - mx;
+      const M = rolle === 'bein2' ? A2 : A.bein;
+      const neu = pts.map(M.an);
+      if (h < 6 || Math.abs(dx) > h * 1.1) { const oben = [(neu[0][0] + neu[1][0]) / 2, (neu[0][1] + neu[1][1]) / 2]; return S([neu[0], neu[1], oben]); }
+      return S(neu);
+    }
     return S(pts.map(A[rolle].an));
   };
   // Vogel-Polygone finden: Folge tail, body, wing, neck, head+, leg
