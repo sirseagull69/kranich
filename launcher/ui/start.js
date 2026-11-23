@@ -4,7 +4,7 @@
   const N = window.nest;
   const app = document.getElementById('app');
   const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const S = { apps: [], zuletzt: [], einst: {} };
+  const S = { apps: [], zuletzt: [], einst: {}, updates: {}, laedt: {} };
 
   const vogel = (id, anim, g) => {
     const v = window.VOEGEL?.[id]?.[anim];
@@ -37,18 +37,25 @@
   const LOS = { bereit: 'Öffnen →', adresse: 'Einrichten', bald: '', fehlt: 'Installieren' };
 
   function karte(a) {
-    const [st, art] = STATUS[a.status] || STATUS.fehlt;
+    let [st, art] = STATUS[a.status] || STATUS.fehlt;
+    const u = S.updates[a.id] || {};
+    const pct = S.laedt[a.id];
+    let los = LOS[a.status] || '';
+    if (pct != null) { st = pct >= 100 ? 'Installiert …' : `Lädt ${pct} %`; art = ''; los = ''; }
+    else if (u.update) { st = `Update ${u.neu}`; art = 'update'; los = '<span class="updknopf" data-update="' + a.id + '">Aktualisieren</span>'; }
+    else if (a.status === 'fehlt' && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
+    else if (a.status === 'fehlt') los = '';
     const bild = window.VOEGEL?.[a.id] ? vogel(a.id, 'ruhezustand-3', 140) : '<span class="papier"></span>';
     return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
       <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}</span>
-      <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${LOS[a.status] || ''}</span></span></button>`;
+      <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${los}</span></span></button>`;
   }
 
   function render() {
     const origami = S.apps.find((a) => a.id === 'origami');
     app.innerHTML = `<header><div class="marke"><span class="blatt"><i></i></span><b class="h">Selbst gfaltet</b></div><div class="platz"></div>
         <button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></header>
-      <main>
+      <main>${S.updates.start?.update ? `<div class="band"><b class="h">Neue Version vom Startfenster (${esc(S.updates.start.neu)})</b><span class="leise">Dauert nur ein paar Sekunden.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-update="start">${S.laedt.start != null ? `Lädt ${S.laedt.start} %` : 'Jetzt aktualisieren'}</button></div>` : ''}
         <div class="gruss"><span class="hand">${esc(gruss())} – welcher Vogel darf heute?</span><h1>Was machen wir heute?</h1></div>
         <div class="voegel">${S.apps.map(karte).join('')}</div>
         <div class="zeile2">
@@ -69,7 +76,7 @@
     const bild = karteEl?.querySelector('.bild');
     if (bild && window.VOEGEL?.[id]) bild.innerHTML = vogel(id, 'senden', 140);
     const r = await N.starte(id, args);
-    if (r?.fehler === 'fehlt') meldung(`${a.name} ist noch nicht installiert – die Download-Seite ist offen.`);
+    if (r?.fehler === 'fehlt') { if (S.updates[id]?.installierbar) aktualisiere(id); else meldung(`${a.name} ist noch nicht installiert.`); }
     else if (r?.fehler === 'adresse') einstellungen();
     else if (r?.fehler) meldung(r.fehler);
     else meldung(`${a.name} startet …`);
@@ -107,7 +114,19 @@
     s.querySelector('#e-adr').focus();
   }
 
+  async function aktualisiere(id) {
+    if (S.laedt[id] != null) return;
+    S.laedt[id] = 0; render();
+    const r = await N.updateLaden(id);
+    if (r?.fehler) { delete S.laedt[id]; render(); meldung(r.fehler); return; }
+    S.laedt[id] = 100; render();
+    meldung(r.mac ? 'Download fertig – zieh das Programm in den Programme-Ordner.' : id === 'start' ? 'Wird installiert, das Startfenster geht gleich neu auf.' : 'Wird installiert … (falls es offen ist: vorher schließen)');
+    if (id !== 'start') setTimeout(async () => { delete S.laedt[id]; await laden(); }, 9000);
+  }
+
   app.addEventListener('click', (e) => {
+    const u = e.target.closest('[data-update]');
+    if (u) { e.stopPropagation(); return aktualisiere(u.dataset.update); }
     const d = e.target.closest('[data-datei]');
     if (d) return starte(d.dataset.app, [`--oeffne=${d.dataset.datei}`]);
     const v = e.target.closest('.vogel');
@@ -128,6 +147,19 @@
   async function laden() {
     [S.apps, S.zuletzt] = await Promise.all([N.apps(), N.zuletzt()]);
     render();
+    const u = await N.updates();
+    if (u && !u.fehler) { S.updates = u; render(); }
   }
+  N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; const el = document.querySelector(`.vogel[data-app="${id}"] .chip`); if (el && id !== 'start') el.lastChild.textContent = `Lädt ${pct} %`; else render(); });
   laden();
+  // Zwischendurch macht ein Vogel von selbst etwas
+  setInterval(() => {
+    if (document.hidden) return;
+    const v = [...document.querySelectorAll('.vogel:not(.bald)')].filter((x) => window.VOEGEL?.[x.dataset.app] && !x.dataset.winkt);
+    const k = v[Math.floor(Math.random() * v.length)];
+    if (!k) return;
+    k.dataset.winkt = '1';
+    k.querySelector('.bild').innerHTML = vogel(k.dataset.app, Math.random() < 0.5 ? 'winkt' : 'erledigt', 140);
+    setTimeout(() => { if (k.isConnected) k.querySelector('.bild').innerHTML = vogel(k.dataset.app, 'ruhezustand-3', 140); delete k.dataset.winkt; }, 3400);
+  }, 11000);
 })();

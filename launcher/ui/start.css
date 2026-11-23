@@ -75,3 +75,8 @@ main{flex:1;min-height:0;overflow:auto;padding:22px 28px 26px;display:flex;flex-
 .meldung{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--tinte);color:#fff;padding:10px 16px;border-radius:10px;font:600 14px 'Bricolage Grotesque',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.2)}
 @media (max-width:980px){.voegel{grid-template-columns:repeat(2,minmax(0,1fr))}.zeile2{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){.vogel{transition:none}}
+
+.chip.update{background:#1d2742;color:#fff}.chip.update i{background:#7dd3a0}
+.updknopf{display:inline-flex;align-items:center;min-height:30px;padding:0 12px;border-radius:8px;background:var(--farbe);color:#fff;font:700 13px 'Bricolage Grotesque',sans-serif}
+.updknopf:hover{filter:brightness(.93)}
+.band{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;background:#fffdf9;box-shadow:var(--schatten);border-left:4px solid #7c5cd6}

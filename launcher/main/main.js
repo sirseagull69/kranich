@@ -1,7 +1,8 @@
 'use strict';
 // Selbst gfaltet – das Startfenster der Familie.
 // Findet die installierten Vögel, startet sie und zeigt die zuletzt bearbeiteten Dateien.
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, net } = require('electron');
+const os = require('os');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -58,6 +59,74 @@ function zuletzt() {
   return liste.sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 12);
 }
 
+// ---------- Updates (aus dem öffentlichen Download-Repo) ----------
+const DOWNLOADS = 'https://api.github.com/repos/sirseagull69/selbst-gfaltet-downloads/releases?per_page=60';
+const PRAEFIX = { kranich: 'kranich-v', albatros: 'albatros-v', schreiben: 'schreiben-v', start: 'start-v' };
+const neuer = (a, b) => { const x = String(a).split('.').map(Number), y = String(b || '0').split('.').map(Number); for (let i = 0; i < 3; i++) { if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) > (y[i] || 0); } return false; };
+function passendeDatei(assets) {
+  if (WIN) return assets.find((a) => /\.exe$/i.test(a.name));
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  return assets.find((a) => a.name.endsWith(`${arch}.dmg`)) || assets.find((a) => /\.dmg$/i.test(a.name));
+}
+function installiert(id) {
+  if (id === 'start') return app.getVersion();
+  const a = APPS.find((x) => x.id === id);
+  if (!a || a.art !== 'programm' || !fs.existsSync(pfadVon(a))) return null;
+  try { return JSON.parse(fs.readFileSync(path.join(app.getPath('appData'), a.datei, 'version.json'), 'utf8')).version || '0'; } catch { return '0'; }
+}
+let neueste = {};
+async function pruefeUpdates() {
+  try {
+    const r = await net.fetch(DOWNLOADS, { headers: { 'User-Agent': 'Selbst-gfaltet', Accept: 'application/vnd.github+json' } });
+    if (!r.ok) return { fehler: `GitHub antwortet nicht (${r.status}).` };
+    const releases = await r.json();
+    neueste = {};
+    for (const rel of releases) {
+      if (rel.draft) continue;
+      for (const [id, pre] of Object.entries(PRAEFIX)) {
+        if (!rel.tag_name.startsWith(pre)) continue;
+        const v = rel.tag_name.slice(pre.length);
+        const datei = passendeDatei(rel.assets || []);
+        if (datei && (!neueste[id] || neuer(v, neueste[id].version))) neueste[id] = { version: v, url: datei.browser_download_url, name: datei.name, groesse: datei.size };
+      }
+    }
+    const aus = {};
+    for (const id of Object.keys(PRAEFIX)) {
+      const hier = installiert(id), da = neueste[id];
+      aus[id] = { installiert: hier, neu: da?.version || null, update: !!(da && hier && neuer(da.version, hier)), installierbar: !!(da && !hier) };
+    }
+    return aus;
+  } catch (f) { return { fehler: 'Keine Verbindung zum Update-Server.' }; }
+}
+async function ladeUndInstalliere(id, sender) {
+  const da = neueste[id];
+  if (!da) return { fehler: 'Kein Download gefunden.' };
+  const ziel = path.join(os.tmpdir(), da.name.replace(/[^\w.-]/g, '_'));
+  const r = await net.fetch(da.url, { headers: { 'User-Agent': 'Selbst-gfaltet' } });
+  if (!r.ok || !r.body) return { fehler: `Download klappt nicht (${r.status}).` };
+  const gesamt = Number(r.headers.get('content-length')) || da.groesse || 0;
+  const aus = fs.createWriteStream(ziel);
+  let geladen = 0, zuletzt = 0;
+  const leser = r.body.getReader();
+  for (;;) {
+    const { done, value } = await leser.read();
+    if (done) break;
+    aus.write(Buffer.from(value));
+    geladen += value.length;
+    const pct = gesamt ? Math.round((geladen / gesamt) * 100) : 0;
+    if (pct !== zuletzt) { zuletzt = pct; sender.send('update:fortschritt', { id, pct }); }
+  }
+  await new Promise((ok) => aus.end(ok));
+  if (WIN) {
+    const kind = spawn(ziel, ['/S', '--force-run'], { detached: true, stdio: 'ignore' });
+    kind.on('error', () => {}); kind.unref();
+  } else {
+    await shell.openPath(ziel);
+  }
+  if (id === 'start') setTimeout(() => app.quit(), 800);
+  return { ok: true, mac: !WIN };
+}
+
 // ---------- Starten ----------
 function starte(id, args = []) {
   const a = APPS.find((x) => x.id === id);
@@ -70,10 +139,7 @@ function starte(id, args = []) {
     return { ok: true };
   }
   const p = pfadVon(a);
-  if (!fs.existsSync(p)) {
-    if (a.release) shell.openExternal(a.release);
-    return { fehler: a.bald ? 'bald' : 'fehlt' };
-  }
+  if (!fs.existsSync(p)) return { fehler: a.bald ? 'bald' : 'fehlt' };
   const kind = WIN ? spawn(p, args, { detached: true, stdio: 'ignore' }) : spawn('open', ['-a', p, '--args', ...args], { detached: true, stdio: 'ignore' });
   kind.on('error', () => {});
   kind.unref();
@@ -86,6 +152,9 @@ function registriere() {
   ipcMain.handle('zuletzt', () => zuletzt());
   ipcMain.handle('starte', (_e, id, args) => starte(id, Array.isArray(args) ? args.filter((x) => typeof x === 'string').slice(0, 4) : []));
   ipcMain.handle('einst', () => einst());
+  ipcMain.handle('updates', () => pruefeUpdates());
+  ipcMain.handle('update:laden', (e, id) => (PRAEFIX[id] ? ladeUndInstalliere(id, e.sender) : { fehler: 'Unbekannt.' }));
+  ipcMain.handle('version', () => app.getVersion());
   ipcMain.handle('einst:setzen', (_e, neu) => einstSetzen({ origamiAdresse: String(neu?.origamiAdresse ?? einst().origamiAdresse).trim().slice(0, 300), nachStartSchliessen: neu?.nachStartSchliessen ?? einst().nachStartSchliessen, pfade: typeof neu?.pfade === 'object' ? neu.pfade : einst().pfade }));
 }
 
