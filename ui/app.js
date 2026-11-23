@@ -378,7 +378,7 @@
           <nav class="seitenleiste sk-mitte" aria-label="Boards und Ebenen"></nav>
           <button type="button" class="kl-leise wb-bild" data-aktion="modus" data-modus="bild">${sym('bild', 16)} Bild bearbeiten</button>
         </aside>
-        <main class="wb-mitte leinwandspalte"><div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main></div></main>
+        <main class="wb-mitte leinwandspalte"><div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main><aside class="eigenschaften paper" aria-label="Eigenschaften" hidden></aside></div></main>
         <aside class="kl-blatt kranichleiste chatspalte" aria-label="Kranich"></aside>
       </div></section>`;
     const leinwand = app.querySelector('.leinwand');
@@ -390,13 +390,18 @@
       if (!Bild.hatBild()) renderBildLeer();
     } else {
       Entwurf.montiere(leinwand, {
-        beiAuswahl: (a) => { S.auswahl = a; renderSeitenleiste(); renderWunschfeld(); },
+        beiAuswahl: (a) => { S.auswahl = a; renderSeitenleiste(); renderWunschfeld(); Direkt.zeichne(); Entwurf.zeigeAuswahl(); },
+        beimSetzen: (b, el) => (['text', 'rechteck', 'bild'].includes(S.werkzeug) ? (Direkt.setze(b, el), true) : false),
+        beimDoppelklick: (b, el) => Direkt.tippen(b, el),
+        beimLeinwandKlick: (e) => (S.werkzeug === 'notiz' && e.button === 0 ? (Direkt.notizDazu(e), true) : false),
+        beiDirekt: (id, html, was) => direktGeaendert(id, html, was),
         beiEbenen: (l) => { S.ebenen = l; renderSeitenleiste(); },
         beiBoard: (id) => waehleBoard(id),
         beiHtml: (id, html) => { const s = S.projekt?.seiten.find((x) => x.id === id); if (!s) return; s.html = html; if (s.verlauf?.[s.stand]) s.verlauf[s.stand].html = html; speichernSpaeter(); },
       });
       if (S.hand) leinwand.classList.add('greifbereit', 'hand-an');
       zeigeBoards();
+      Direkt.montiert(app, leinwand);
       AppBau.zeigeLauf();
     }
     renderLeiste();
@@ -450,8 +455,15 @@
     const s = seite();
     const offen = s?.pruefung?.offen?.length || 0;
     const k = (aktion, ic, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 18)}</button>`;
-    return `${k('werkzeug-zeiger', 'zeiger', 'Wählen: Element anklicken, dann Kranich sagen, was sich ändern soll', `aria-pressed="${!S.hand}"`)}
-      ${k('werkzeug-hand', 'hand', 'Hand: Leinwand verschieben (auch mit Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
+    const w = S.werkzeug || 'zeiger';
+    const kw = (id, d, titel) => `<button type="button" class="schienenknopf" data-aktion="werkzeug" data-w="${id}" title="${titel}" aria-label="${titel}" aria-pressed="${w === id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></button>`;
+    return `${k('werkzeug-zeiger', 'zeiger', 'Wählen (V): Element anklicken – Eigenschaften erscheinen rechts', `aria-pressed="${!S.hand && w === 'zeiger'}"`)}
+      ${k('werkzeug-hand', 'hand', 'Hand (H): Leinwand verschieben (auch mit Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
+      <span class="schienenstrich"></span>
+      ${kw('text', 'M5 6V4h14v2M12 4v16M9 20h6', 'Text (T): ins Board klicken')}
+      ${kw('rechteck', 'M4 6h16v12H4z', 'Rechteck (R): ins Board klicken')}
+      ${kw('bild', 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01', 'Bild (B): ins Board klicken, dann Bild wählen')}
+      ${kw('notiz', 'M5 4h14v11l-5 5H5zM14 20v-5h5', 'Notiz (N): auf die Leinwand klicken')}
       <span class="schienenstrich"></span>
       ${k('app-pruefung', 'haken', 'Prüfen: Kranich misst das Board nach', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}`;
   }
@@ -489,6 +501,7 @@
       <div class="seitenlaschen">${liste}</div>
       <span class="sk-titel hand">Ebenen <small>${esc(s.name)}</small></span>
       <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
+      ${S.modus === 'entwurf' ? Direkt.bausteinLeiste() : ''}
       <button type="button" class="versteckt" data-aktion="board-dazu" tabindex="-1" aria-hidden="true"></button>`;
     nav.querySelector('.boardzeile[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
   }
@@ -613,6 +626,25 @@
   }
 
   // ---------- Entwurf: Aufträge ----------
+  function setzeWerkzeug(w) {
+    S.werkzeug = w || 'zeiger';
+    if (S.werkzeug !== 'zeiger') { S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); }
+    app.querySelector('.leinwand')?.classList.toggle('setzt', S.werkzeug !== 'zeiger');
+    const rail = app.querySelector('.werkzeugleiste'); if (rail) rail.innerHTML = schiene();
+    if (S.werkzeug === 'notiz') H.meldung('Klick auf eine freie Stelle der Leinwand für die Notiz.');
+    else if (S.werkzeug !== 'zeiger') H.meldung('Klick ins Board, wo es hin soll.');
+  }
+  // Direkte Änderung (Eigenschaften, Bausteine, Text) → neue Fassung, Rückgängig geht
+  function direktGeaendert(id, html, was) {
+    const s = S.projekt.seiten.find((x) => x.id === id); if (!s) return;
+    S.seiteId = id;
+    if (!s.verlauf?.length && s.html) neueFassung(s.html, 'Ausgangsstand');
+    const letzte = s.verlauf?.[s.stand];
+    if (letzte && letzte.was === was && Date.now() - new Date(letzte.zeit).getTime() < 2500) { letzte.html = html; letzte.zeit = new Date().toISOString(); s.html = html; }
+    else neueFassung(html, was);
+    geaendert(); renderKopfKnoepfe(); renderVerlauf();
+  }
+
   // Ein Element (Ebene) aus dem Board entfernen – Strg+Z holt es zurück
   function loescheEbene(k) {
     const s = seite();
@@ -1037,8 +1069,9 @@
     'modus': (el) => { if (S.modus === el.dataset.modus && S.ansicht === 'werkbank') return; S.modus = el.dataset.modus; S.kranich.zustand = 'bereit'; renderWerkbank(); },
     'panel': () => { S.panelAuf = !S.panelAuf; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = !S.panelAuf; renderSeitenleiste(); },
     'mehr': (el) => { const m = el.nextElementSibling; m.hidden = !m.hidden; el.setAttribute('aria-expanded', String(!m.hidden)); if (!m.hidden) setTimeout(() => document.addEventListener('click', () => { m.hidden = true; el.setAttribute('aria-expanded', 'false'); }, { once: true }), 0); },
-    'werkzeug-hand': () => { S.hand = true; app.querySelector('.leinwand')?.classList.add('greifbereit', 'hand-an'); renderSeitenleiste(); },
-    'werkzeug-zeiger': () => { S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); renderSeitenleiste(); },
+    'werkzeug': (el) => setzeWerkzeug(el.dataset.w),
+    'werkzeug-hand': () => { S.werkzeug = 'zeiger'; S.hand = true; app.querySelector('.leinwand')?.classList.add('greifbereit', 'hand-an'); renderSeitenleiste(); },
+    'werkzeug-zeiger': () => { S.werkzeug = 'zeiger'; app.querySelector('.leinwand')?.classList.remove('setzt'); S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); renderSeitenleiste(); },
     'leiste': (el) => { S.leisteLasche = el.dataset.lasche; renderLeiste(); },
     'senden': () => {
       const ta = document.getElementById('wunsch');
@@ -1227,14 +1260,19 @@
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); S.startLasche = 'neu'; if (S.ansicht === 'start') renderStart(); else aktionen['zum-start']().then(() => { S.startLasche = 'neu'; renderStart(); }); return; }
     if (S.ansicht !== 'werkbank') return;
-    const tippt = /input|textarea/i.test(document.activeElement?.tagName || '');
+    const tippt = /input|textarea/i.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !tippt) { e.preventDefault(); aktionen.rueckgaengig(); }
     if (S.modus === 'bild' && !tippt) {
       if (e.key === 'Enter' && Bild.z.zuschnitt) { aktionen['zuschnitt-an'](); }
       if ((e.key === 'Delete' || e.key === 'Backspace') && Bild.z.auswahl) Bild.auswahlLoeschen();
       if (e.key === 'Escape') { Bild.zuschnittAbbrechen(); Bild.auswahlAufheben(); renderWerkzeugOptionen(); }
     }
-    if (S.modus === 'entwurf' && e.key === 'Escape' && !tippt) Entwurf.waehle(null);
+    if (S.modus === 'entwurf' && e.key === 'Escape' && !tippt) { Entwurf.waehle(null); setzeWerkzeug('zeiger'); }
+    if (S.modus === 'entwurf' && !tippt && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      const t = { v: 'zeiger', t: 'text', r: 'rechteck', b: 'bild', n: 'notiz' }[e.key.toLowerCase()];
+      if (t) { e.preventDefault(); if (t === 'zeiger') aktionen['werkzeug-zeiger'](); else setzeWerkzeug(t); }
+      if (e.key.toLowerCase() === 'h') { e.preventDefault(); aktionen['werkzeug-hand'](); }
+    }
     if (S.modus === 'entwurf' && (e.key === 'Delete' || e.key === 'Backspace') && !tippt && S.auswahl?.k) { e.preventDefault(); loescheEbene(S.auswahl.k); }
   });
 
@@ -1246,6 +1284,9 @@
     zeigeBoards, waehleBoard, geaendert, mehrMenue, speichernSpaeter, pruefeUndRepariere, pruefBericht, formatSymbol,
     get auftragNr() { return auftragNr; }, neuerAuftrag: () => ++auftragNr,
   };
+
+  Direkt.init({ S, sende: (t) => sendeEntwurf(t), loesche: (k) => loescheEbene(k), speichern: () => geaendert({ vorschau: false }), werkzeug: (w) => (w === 'zeiger' ? aktionen['werkzeug-zeiger']() : setzeWerkzeug(w)), waehleBoard: (id) => waehleBoard(id) });
+  Direkt.verbindeApp(app);
 
   (async () => {
     S.einstellungen = await K.einstellungen.lesen();

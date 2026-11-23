@@ -3,7 +3,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
-const ExcelJS = require('exceljs');
+// Fertig gebündelte Excel-Bibliothek (MIT), damit im Installer nichts fehlt
+const ExcelJS = require('./fremd/exceljs.min.js');
 const F = require('../ui/formeln');
 
 const leeresBlatt = (name = 'Blatt 1') => ({ name, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} });
@@ -79,7 +80,7 @@ function csvSchreiben(blatt) {
 // ---------- Excel ----------
 async function xlsxLesen(datei) {
   const wb = new ExcelJS.Workbook();
-  await wb.xlsx.readFile(datei);
+  await wb.xlsx.load(fs.readFileSync(datei));
   const blaetter = [];
   wb.eachSheet((ws) => {
     const b = leeresBlatt(ws.name);
@@ -134,7 +135,7 @@ async function xlsxSchreiben(tabelle, datei) {
     }
     for (const [sp, px] of Object.entries(b.breiten || {})) ws.getColumn(F.spalteZuNr(sp) + 1).width = Math.max(6, Math.round(px / 7.5));
   }
-  await wb.xlsx.writeFile(datei);
+  fs.writeFileSync(datei, Buffer.from(await wb.xlsx.writeBuffer()));
 }
 
 async function importieren(datei) {

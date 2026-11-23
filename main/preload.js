@@ -40,5 +40,6 @@ contextBridge.exposeInMainWorld('kranich', {
     entwurf: rufe('export:entwurf'),
     bild: rufe('export:bild'),
     paket: rufe('export:paket'),
+    sammlung: rufe('export:sammlung'),
   },
 });

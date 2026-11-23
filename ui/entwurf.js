@@ -74,6 +74,8 @@
     });
     window.addEventListener('keyup', (e) => { if (e.code === 'Space' && !z.leinwand?.classList.contains('hand-an')) z.leinwand?.classList.remove('greifbereit'); });
     leinwand.addEventListener('pointerdown', (e) => {
+      if (e.target.closest?.('.notiz, .eigenschaften')) return;
+      if (z.cb.beimLeinwandKlick?.(e)) return;
       const frei = e.target === leinwand || e.target === z.welt || e.target.classList?.contains('boardstatus') || e.target.closest?.('.boardleer');
       const mitte = e.button === 1, leer = leinwand.classList.contains('greifbereit');
       if (!frei && !mitte && !leer) return;
@@ -172,12 +174,15 @@
       if (!el.dataset.k) { el.dataset.k = `k${++n}`; neu++; }
     });
     doc.addEventListener('click', (e) => {
+      if (e.target.isContentEditable) return;
       e.preventDefault();
       if (z.aktiv !== b.seite.id) z.cb.beiBoard?.(b.seite.id);
+      if (z.cb.beimSetzen?.(b, ziel(e.target), e)) return;
       const el = ziel(e.target);
       waehleEl(el && el !== doc.body ? el : null, b);
     }, true);
     doc.addEventListener('submit', (e) => e.preventDefault(), true);
+    doc.addEventListener('dblclick', (e) => { const el = ziel(e.target); if (el && el !== doc.body) z.cb.beimDoppelklick?.(b, el, e); }, true);
     doc.addEventListener('mousemove', (e) => {
       const el = ziel(e.target);
       if (!el || el === doc.body) { b.huelle.hidden = true; return; }
@@ -254,9 +259,11 @@
     const y = z.pan.y + (s.y + r.top) * z.zoom;
     z.menue.hidden = false;
     const mb = z.menue.offsetWidth;
-    z.menue.style.left = `${Math.max(8, Math.min(z.leinwand.clientWidth - mb - 8, x - mb))}px`;
+    const rechts = z.leinwand.clientWidth - (z.leinwand.parentElement?.querySelector('.eigenschaften:not([hidden])') ? 296 : 0);
+    z.menue.style.left = `${Math.max(8, Math.min(rechts - mb - 8, x - mb))}px`;
     z.menue.style.top = `${Math.max(8, y - 60)}px`;
     zeigePlus();
+    z.cb.beiRahmen?.();
   }
 
   function zeigePlus() {
@@ -380,7 +387,37 @@
     bar.firstChild.style.width = `${pct}%`;
   }
 
-  window.Entwurf = { setzeProzent,
+  // ---------- Für direktes Bearbeiten (direkt.js) ----------
+  function aktiv() { const b = z.boards.get(z.aktiv); const doc = b?.iframe.contentDocument; return b && doc?.body ? { b, doc } : null; }
+  function element(k) { const a = aktiv(); return k && a ? a.doc.querySelector(`[data-k="${k}"]`) : null; }
+  function kennzeichne(doc, el) {
+    let n = doc.querySelectorAll('[data-k]').length + 1;
+    const frei = () => { while (doc.querySelector(`[data-k="k${n}"]`)) n++; return `k${n++}`; };
+    [el, ...el.querySelectorAll('*')].forEach((x) => { if (x.closest('svg') && x.localName !== 'svg') return; x.dataset.k = frei(); });
+  }
+  function speichereDirekt(b, was) {
+    const doc = b.iframe.contentDocument;
+    b.html = serialisiere(doc);
+    z.cb.beiDirekt?.(b.seite.id, b.html, was);
+    if (b.seite.id === z.aktiv) z.cb.beiEbenen?.(ebenen(doc));
+    zeigeAuswahl();
+  }
+  // Bildschirmpunkt → Board und Punkt im Board
+  function punktAufBoard(x, y) {
+    for (const b of z.boards.values()) {
+      if (b.iframe.hidden) continue;
+      const r = b.iframe.getBoundingClientRect();
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return { b, x: (x - r.left) / z.zoom, y: (y - r.top) / z.zoom };
+    }
+    return null;
+  }
+  function weltPunkt(x, y) { const r = z.leinwand.getBoundingClientRect(); return { x: (x - r.left - z.pan.x) / z.zoom, y: (y - r.top - z.pan.y) / z.zoom }; }
+  const welt = () => z.welt;
+  const zoomWert = () => z.zoom;
+  function hervorheben(b, el) { if (!b) return; if (!el) { b.huelle.hidden = true; return; } setzeRahmen(b.huelle, el); }
+
+  window.Entwurf = { aktiv, element, kennzeichne, speichereDirekt, punktAufBoard, weltPunkt, welt, zoomWert, hervorheben, ziel, waehleEl, zeigeAuswahl, nameVon,
+    setzeProzent,
     montiere, zeigeAlle, setzeAktiv, waehle, einpassen, zoom, vorbereiten, serialisiere, setzeStatus,
     get auswahl() { return z.auswahl; },
     zeigeBoard(id) {

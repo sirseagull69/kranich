@@ -73,6 +73,27 @@ app.whenReady().then(async () => {
     await js("App.aktionen.rueckgaengig()");
     await pruefe('Rückgängig springt zurück', "App.S.projekt.seiten[0].stand === 0");
 
+    // Direkt bearbeiten: Eigenschaften, Bausteine, Notiz
+    await warte(600);
+    await js("document.querySelector('.leinwand iframe').contentDocument.querySelector('button').click()");
+    await warte(300);
+    await pruefe('Eigenschaften sichtbar', "!document.querySelector('.eigenschaften').hidden");
+    await js("{ const f = document.querySelector('.eigenschaften input[data-stil=fontSize]'); f.value = 22; f.dispatchEvent(new Event('input', {bubbles:true})); f.dispatchEvent(new Event('change', {bubbles:true})); }");
+    await warte(200);
+    await pruefe('Schriftgröße direkt geändert', "/font-size: 22px/.test(App.S.projekt.seiten[0].html) && App.S.projekt.seiten[0].stand >= 1");
+    await js("document.querySelector('.bst[data-baustein=karte]').click()");
+    await warte(300);
+    await pruefe('Baustein eingefügt', "/Neue Karte/.test(App.S.projekt.seiten[0].html)");
+    await js("{ const r = document.querySelector('.leinwand').getBoundingClientRect(); Direkt.notizDazu({ clientX: r.left + 60, clientY: r.top + r.height - 160 }); }");
+    await warte(300);
+    await pruefe('Notiz liegt auf der Leinwand', "App.S.projekt.notizen.length === 1 && !!document.querySelector('.notiz')");
+    await js("document.querySelector('.leinwand iframe').contentDocument.querySelector('button').click()");
+    await warte(300);
+    await foto('4b-direkt');
+    await js("App.aktionen.rueckgaengig(); App.aktionen.rueckgaengig();");
+    await warte(400);
+    await pruefe('Rückgängig nimmt Direktes zurück', "!/font-size: 22px/.test(App.S.projekt.seiten[0].html)");
+
     // Varianten
     await js("App.aktionen.varianten()");
     await bisDa("App.S.varianten && App.S.varianten.length === 3", 8000);

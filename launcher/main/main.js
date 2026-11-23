@@ -114,11 +114,13 @@ async function pruefeUpdates() {
 async function ladeUndInstalliere(id, sender) {
   const da = neueste[id];
   if (!da) return { fehler: 'Kein Download gefunden.' };
-  const ziel = path.join(os.tmpdir(), da.name.replace(/[^\w.-]/g, '_'));
+  const ziel = path.join(os.tmpdir(), `${Date.now().toString(36)}-${da.name.replace(/[^\w.-]/g, '_')}`);
   const r = await net.fetch(da.url, { headers: { 'User-Agent': 'Selbst-gfaltet' } });
   if (!r.ok || !r.body) return { fehler: `Download klappt nicht (${r.status}).` };
   const gesamt = Number(r.headers.get('content-length')) || da.groesse || 0;
   const aus = fs.createWriteStream(ziel);
+  let schreibFehler = null;
+  aus.on('error', (f) => { schreibFehler = f; });
   let geladen = 0, zuletzt = 0;
   const leser = r.body.getReader();
   for (;;) {
@@ -130,6 +132,7 @@ async function ladeUndInstalliere(id, sender) {
     if (pct !== zuletzt) { zuletzt = pct; sender.send('update:fortschritt', { id, pct }); }
   }
   await new Promise((ok) => aus.end(ok));
+  if (schreibFehler) return { fehler: `Konnte den Download nicht speichern (${schreibFehler.code || schreibFehler.message}).` };
   if (WIN) {
     const kind = spawn(ziel, ['/S', '--force-run'], { detached: true, stdio: 'ignore' });
     kind.on('error', () => {}); kind.unref();
@@ -166,7 +169,13 @@ function registriere() {
   ipcMain.handle('starte', (_e, id, args) => starte(id, Array.isArray(args) ? args.filter((x) => typeof x === 'string').slice(0, 4) : []));
   ipcMain.handle('einst', () => einst());
   ipcMain.handle('updates', () => pruefeUpdates());
-  ipcMain.handle('update:laden', (e, id) => (PRAEFIX[id] ? ladeUndInstalliere(id, e.sender) : { fehler: 'Unbekannt.' }));
+  const laeuft = new Set();
+  ipcMain.handle('update:laden', async (e, id) => {
+    if (!PRAEFIX[id]) return { fehler: 'Unbekannt.' };
+    if (laeuft.has(id)) return { fehler: 'Läuft schon.' };
+    laeuft.add(id);
+    try { return await ladeUndInstalliere(id, e.sender); } catch (f) { return { fehler: f.message || 'Download klappt nicht.' }; } finally { laeuft.delete(id); }
+  });
   ipcMain.handle('version', () => app.getVersion());
   ipcMain.handle('claude:status', () => Claude.status());
   ipcMain.handle('claude:laden', async (e) => { try { return { ok: true, version: await Claude.laden((u, o) => net.fetch(u, { ...(o || {}), headers: { 'User-Agent': 'Selbst-gfaltet' } }), (pct) => e.sender.send('claude:fortschritt', pct)) }; } catch (f) { return { fehler: f.message }; } });

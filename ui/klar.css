@@ -78,3 +78,57 @@
 /* Hinweis (baut, Fehler) unten links statt über den Werkzeugen */
 .leinwandrahmen .hinweisband{top:auto!important;bottom:14px;left:14px!important;transform:none!important;width:min(560px,calc(100% - 214px))!important}
 .werkzeugleiste.schwebend{z-index:8!important}
+
+/* ---------- Direkt bearbeiten ---------- */
+.eigenschaften{position:absolute;right:14px;top:14px;z-index:9;width:268px;max-height:calc(100% - 92px);overflow:auto;padding:14px;border-radius:12px!important;background:#fffdf9;box-shadow:0 2px 4px rgba(30,40,70,.08),0 14px 34px rgba(30,40,70,.14);display:flex;flex-direction:column;gap:12px;animation:aufklappen .35s var(--sanft) both;transform-origin:top right}
+.leinwandrahmen:has(.eigenschaften:not([hidden])) .ansichtecke .uebersicht{display:none}
+.eigenschaften .ek{display:flex;flex-direction:column}
+.eigenschaften .ek b{font-size:16px;color:var(--tinte);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.eigenschaften .ek small{font:500 11.5px ui-monospace,Consolas,monospace;color:var(--leise)}
+.eftext{display:flex;flex-direction:column;gap:4px}
+.eftext span,.efreihe>span{font:700 11px 'Bricolage Grotesque',sans-serif;text-transform:uppercase;letter-spacing:.06em;color:#9a9486}
+.eftext textarea{border:1px solid #e6dfd0;border-radius:8px;padding:7px 9px;font:14px/1.4 'Source Serif 4',serif;resize:vertical;min-height:44px;background:#fff;color:var(--tinte)}
+.ef2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ef{display:flex;align-items:center;gap:6px;border:1px solid #e6dfd0;border-radius:8px;padding:0 8px;background:#fff;min-height:36px}
+.ef span{font:700 11.5px 'Bricolage Grotesque',sans-serif;color:#9a9486;min-width:34px}
+.ef input{flex:1;min-width:0;border:0;outline:0;background:transparent;font:600 14px 'Bricolage Grotesque',sans-serif;color:var(--tinte);text-align:right;-moz-appearance:textfield}
+.ef input::-webkit-inner-spin-button{opacity:.4}
+.ef i{font:500 11px ui-monospace,Consolas,monospace;color:#b0a898;font-style:normal}
+.ef:focus-within,.eftext textarea:focus{border-color:#7c5cd6;box-shadow:0 0 0 3px rgba(124,92,214,.14);outline:0}
+.efreihe{display:flex;flex-direction:column;gap:6px}
+.kleckse{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.klecks{width:26px;height:26px;border-radius:7px;border:1.5px solid rgba(0,0,0,.08);cursor:pointer;padding:0;position:relative;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#9a9486;background:#fff}
+.klecks.an{box-shadow:0 0 0 2px #fff,0 0 0 4px #7c5cd6}
+.klecks.frei{background:conic-gradient(#e8743b,#f2c94c,#2f8a55,#5b8fb9,#7c5cd6,#e8743b);overflow:hidden}
+.klecks.frei input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.efknopf{min-width:30px;height:30px;border:1px solid #e6dfd0;border-radius:8px;background:#fff;font:700 13px 'Bricolage Grotesque',sans-serif;color:var(--tinte);padding:0 8px}
+.efknopf:hover{background:#f6f2ea}
+.efknopf.an{background:#ece6fd;border-color:#cfc2f7;color:#4a2f9a}
+.efknopf.breit{flex:1}
+.efknopf.rot{color:#c0392b}
+.efknopf.rot:hover{background:#fbe9e7}
+.efaktionen{display:flex;gap:6px}
+.vorschlaege{display:flex;flex-direction:column;gap:8px;border-top:1.5px dashed #e6dfd0;padding-top:10px}
+.vorschlaege .vk{display:flex;align-items:center;gap:6px;font:700 12px 'Bricolage Grotesque',sans-serif;color:#4a2f9a}
+.vorschlag2{border-left:3px solid #e8743b;background:#fff7f1;border-radius:0 10px 10px 0;padding:9px 10px;display:flex;flex-direction:column;gap:4px;animation:hoch .4s var(--sanft) both}
+.vorschlag2 b{font-size:14px;color:#a5491b}
+.vorschlag2>span{font-size:13px;line-height:1.4;color:var(--leise)}
+.vorschlag2 .btn-p{background:#c95f27!important;border-color:#c95f27!important}
+.bausteine{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:2px 4px 8px}
+.bst{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px 8px;border:1px solid #ebe5d8;border-radius:10px;background:#fff;font:700 12px 'Bricolage Grotesque',sans-serif;color:#4a2f9a;cursor:grab}
+.bst:hover{border-color:#cfc2f7;background:#f8f5ff;transform:translateY(-1px)}
+.bst:active{cursor:grabbing}
+.leinwand.bausteinzug iframe{pointer-events:none}
+.leinwand.bausteinzug{outline:2px dashed #b9a7f2;outline-offset:-8px}
+.leinwand.setzt,.leinwand.setzt .board{cursor:crosshair!important}
+.notiz{position:absolute;z-index:4;width:200px;min-height:90px;padding:22px 14px 14px;background:#fff6b8;box-shadow:0 2px 3px rgba(0,0,0,.08),0 10px 22px rgba(0,0,0,.12);rotate:-1.5deg;font:600 24px/1.15 'Caveat',cursive;color:#5b3fc4}
+.notiz::before{content:"";position:absolute;left:50%;top:-9px;width:64px;height:18px;translate:-50% 0;background:rgba(201,184,247,.75);rotate:2deg}
+.nz-griff{position:absolute;left:0;right:26px;top:0;height:20px;cursor:move}
+.nz-weg{position:absolute;right:4px;top:3px;border:0;background:transparent;color:#a08d3c;font-size:13px;opacity:0;cursor:pointer}
+.notiz:hover .nz-weg{opacity:.8}
+.nz-text{outline:0;white-space:pre-wrap;word-break:break-word}
+.eigenschaften{overflow-x:hidden}
+.eigenschaften *{box-sizing:border-box}
+.ef{min-width:0}
+.ef input{width:100%;padding:0}
+.ef2 .ef span{min-width:0;flex:none}

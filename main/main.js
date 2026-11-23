@@ -283,6 +283,38 @@ function registriere() {
     return { datei: paket };
   });
 
+  // Weitergeben: alle gewählten Boards als Bilder, als PDF-Mappe oder als Code
+  handle('export:sammlung', async ({ name, boards, art, faktor = 2, ziel, app: appName, ordner }) => {
+    const basis = zielOrdner(ziel, appName, ordner);
+    if (!Array.isArray(boards) || !boards.length) throw new Error('Keine Boards gewählt.');
+    if (art === 'mappe') {
+      const seiten = [];
+      for (const b of boards.slice(0, 80)) {
+        const bild = await fotografiere(htmlFuerApp(b.html, { namenBehalten: true }), b.breite, b.hoehe, 1.5);
+        seiten.push({ name: b.name, src: `data:image/png;base64,${bild.toPNG().toString('base64')}` });
+      }
+      const esc = (t) => String(t).replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const html = `<!doctype html><html><head><meta charset="utf-8"><style>@page{size:A4 landscape;margin:12mm}body{margin:0;font:12px sans-serif;color:#1d2742}.s{page-break-after:always;height:180mm;display:flex;flex-direction:column;gap:6mm}.s:last-child{page-break-after:auto}.s b{font-size:15px}.s img{flex:1;min-height:0;width:100%;object-fit:contain;border:1px solid #e6dfd0}</style></head><body>${seiten.map((x) => `<div class="s"><b>${esc(x.name)}</b><img src="${x.src}"></div>`).join('')}</body></html>`;
+      const tmp = path.join(os.tmpdir(), `kranich-mappe-${Date.now()}.html`);
+      fs.writeFileSync(tmp, html, 'utf8');
+      const w = new BrowserWindow({ show: false, webPreferences: { javascript: false, sandbox: true } });
+      try {
+        await w.loadFile(tmp);
+        const pdf = await w.webContents.printToPDF({ landscape: true, printBackground: true, pageSize: 'A4' });
+        return { datei: schreibeExport(basis, `${name}-mappe`, 'pdf', pdf) };
+      } finally { w.destroy(); fs.rmSync(tmp, { force: true }); }
+    }
+    let ziel2 = path.join(basis, `${dateiname(name)}-${art === 'code' ? 'code' : 'bilder'}`);
+    for (let i = 2; fs.existsSync(ziel2) && i < 100; i++) ziel2 = path.join(basis, `${dateiname(name)}-${art === 'code' ? 'code' : 'bilder'}-${i}`);
+    fs.mkdirSync(ziel2, { recursive: true });
+    for (const [i, b] of boards.slice(0, 120).entries()) {
+      const nr = String(i + 1).padStart(2, '0');
+      if (art === 'code') fs.writeFileSync(path.join(ziel2, `${nr}-${dateiname(b.name)}.html`), htmlFuerApp(b.html), 'utf8');
+      else fs.writeFileSync(path.join(ziel2, `${nr}-${dateiname(b.name)}.png`), (await fotografiere(htmlFuerApp(b.html, { namenBehalten: true }), b.breite, b.hoehe, Math.max(1, Math.min(3, Number(faktor) || 2)))).toPNG());
+    }
+    return { datei: ziel2 };
+  });
+
   handle('export:bild', async ({ dataUrl, format, ziel, app: appName, ordner, name, breite, hoehe }) => {
     const zielPfad = zielOrdner(ziel, appName, ordner);
     const { puffer } = dataUrlZuPuffer(dataUrl);
