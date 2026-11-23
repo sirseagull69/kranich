@@ -3,7 +3,7 @@
 (function () {
   const ZWISCHENDURCH = ['winkt', 'sassy', 'gemerkt', 'applaus', 'triumph', 'seufzt', 'ruhezustand-2', 'ruhezustand-4', 'neuer-chat', 'aufwachen', 'ungeduldig'];
   const DAUER = (name) => (/ruhezustand|ungeduldig/.test(name) ? 5000 : name === 'aufwachen' ? 3800 : 3400);
-  const ZIELE = '.sk-marke, .chatfigur, .figurecke';
+  const ZIELE = '.sk-marke, .kl-marke, .chatfigur, .kl-leer';
 
   function ruhig(box) {
     if (!box.matches('.chatfigur')) return true;

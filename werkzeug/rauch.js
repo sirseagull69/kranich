@@ -35,10 +35,10 @@ app.whenReady().then(async () => {
     console.log(gut.length === 0 ? 'OK  ' : 'FEHL', 'Selbstprüfung lässt sauberen Entwurf in Ruhe', JSON.stringify(gut.map((f) => f.text)));
     await bisDa("!!document.querySelector('#start')");
     await foto('1-start');
-    await pruefe('Start zeigt vier Karten', "document.querySelectorAll('.startkarte').length === 4");
+    await pruefe('Start zeigt vier Karten', "document.querySelectorAll('.kl-karte').length === 4");
 
     // Format wählen
-    await js("document.querySelector('.sk-neu').click()");
+    await js("document.querySelector('.kl-karte[data-art=entwurf]').click()");
     await bisDa("document.querySelectorAll('.formatkarte').length >= 5");
     await pruefe('Formatauswahl zeigt Gruppen und App & Web', "document.querySelectorAll('.formatkarte').length === 5 && document.querySelectorAll('[data-aktion=\"format-gruppe\"]').length === 6");
     await js("document.querySelector('[data-aktion=\"format-gruppe\"][data-g=\"Druck\"]').click()");

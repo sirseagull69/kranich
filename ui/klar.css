@@ -1,0 +1,47 @@
+/* Klar: der aufgeräumte Look wie im Startfenster „Selbst gfaltet“ */
+.ansicht.klar{height:100%;display:flex;flex-direction:column;background:#f4f0e8;background-image:radial-gradient(rgba(29,39,66,.10) 1px,transparent 1.3px);background-size:18px 18px;overflow:hidden}
+.kl-kopf{display:flex;align-items:center;gap:10px;padding:16px 28px 0}
+.kl-marke{display:flex;align-items:center;gap:8px;border:0;background:transparent;padding:4px 8px 4px 2px;border-radius:10px;cursor:pointer;color:var(--tinte)}
+.kl-marke b{font-size:21px;font-weight:800;letter-spacing:-.02em}
+.kl-status{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;background:#fffdf9;box-shadow:0 1px 2px rgba(30,40,70,.08);font:700 12.5px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.kl-status i{width:7px;height:7px;border-radius:50%;background:#2f9e5b}
+.kl-rund{width:40px;height:40px;border:0;border-radius:10px;background:transparent;display:flex;align-items:center;justify-content:center;color:var(--leise);cursor:pointer}
+.kl-rund:hover{background:rgba(29,39,66,.06);color:var(--tinte)}
+.kl-inhalt{flex:1;min-height:0;overflow:auto;width:100%;max-width:1240px;margin:0 auto;padding:20px 28px 28px;display:flex;flex-direction:column;gap:22px}
+.kl-gruss .hand{font-size:25px;color:#7c5cd6;display:block}
+.kl-gruss h1{margin:0;font:800 40px/1.08 'Bricolage Grotesque',sans-serif;letter-spacing:-.025em;color:var(--tinte)}
+.kl-eingabe{background:#fffdf9;border-radius:6px;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);padding:14px 16px 12px;display:flex;flex-direction:column;gap:10px}
+.kl-eingabe input{border:0;border-bottom:1.5px dashed #e6dfd0;outline:0;background:transparent;font:17px/1.4 'Source Serif 4',serif;color:var(--tinte);padding:8px 2px 12px}
+.kl-leise{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border:0;border-radius:9px;background:transparent;color:var(--leise);font:600 14px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.kl-leise:hover{background:rgba(29,39,66,.06);color:var(--tinte)}
+.kl-los{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 20px;border:0;border-radius:10px;background:#5b3fc4;color:#fff;font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.kl-los:hover{background:#4a2f9a}
+.kl-karten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kl-karte{display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:10px 10px 14px;border:0;border-radius:4px;background:#fffdf9;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);text-align:left;cursor:pointer;transition:transform .15s,box-shadow .15s;color:var(--tinte)}
+.kl-karte:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(30,40,70,.10),0 18px 36px rgba(30,40,70,.14)}
+.kl-karte:focus-visible{outline:3px solid #7c5cd6;outline-offset:3px}
+.kl-bild{height:136px;border-radius:3px;background:var(--hell);display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden}
+.kl-karte b{font-size:18px;font-weight:800;padding:0 6px}
+.kl-karte .leise{padding:0 6px;font-size:14px}
+.kl-zeile2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+.kl-blatt{background:#fffdf9;border-radius:4px;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);padding:16px 18px;display:flex;flex-direction:column}
+.kl-blatt h2{margin:0 0 8px;font:800 17px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.kl-idee{display:flex;align-items:center;gap:10px;padding:10px 6px;border:0;border-bottom:1px solid #eee7da;background:transparent;text-align:left;cursor:pointer;border-radius:3px;color:var(--leise)}
+.kl-idee:last-child{border-bottom:0}
+.kl-idee span{flex:1;display:flex;flex-direction:column}
+.kl-idee b{font-size:15px;color:var(--tinte)}
+.kl-idee small{font-size:13px}
+.kl-idee:hover{background:#f8f5ee;color:#5b3fc4}
+.ansicht.klar .kl-datei{display:flex;align-items:center;gap:12px;min-height:0;padding:8px 6px;border:0;border-bottom:1px solid #eee7da;background:transparent;text-align:left;border-radius:3px;cursor:pointer;font:inherit;color:inherit}
+.ansicht.klar .kl-datei:last-child{border-bottom:0}
+.ansicht.klar .kl-datei:hover{background:#f8f5ee}
+.kl-vor{width:64px;height:44px;flex:none;border-radius:3px;background:#ece6fd center/contain no-repeat;box-shadow:inset 0 0 0 1px #eee7da}
+.kl-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.kl-txt b{font-size:15px;color:var(--tinte);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kl-txt small{font-size:13px;color:var(--leise)}
+.kl-wann{font-size:13px;color:var(--leise);white-space:nowrap}
+.ansicht.klar .kl-datei .loesch{margin-left:0;opacity:0;width:30px;height:30px}
+.ansicht.klar .kl-datei:hover .loesch{opacity:.75}
+.kl-leer{display:flex;align-items:center;gap:12px;padding:10px 6px}
+@media (max-width:1000px){.kl-karten{grid-template-columns:repeat(2,minmax(0,1fr))}.kl-zeile2{grid-template-columns:1fr}}
+.kl-karte .leise,.kl-idee small{font-family:'Source Serif 4',serif}

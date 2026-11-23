@@ -120,33 +120,37 @@
   function renderStart() {
     const l = S.startLasche;
     if (l === 'start') {
-      app.innerHTML = `<section class="ansicht papier" id="start" data-lasche="start">
-        ${seitenkarte(projektListe())}
-        <main class="hauptblatt">
-          <header class="blattkopf"><b class="h">Neuer Entwurf</b><div class="platz"></div><span class="pille statuspille"><i></i> ${esc(S.einstellungen?.weg === 'api' ? 'API' : 'Claude')} bereit</span></header>
-          <div class="startmitte">
-            <div class="startheld"><div><span class="hand dachzeile">${esc(gruss())} – na, was falten wir?</span>
-              <h1 class="h">Was soll heute <mark>entstehen?</mark></h1>
-              <p class="leise">Ein Satz reicht. Kranich faltet Oberflächen, Posts, Plakate und ganze Apps.</p></div>
-              <div class="figurecke">${figur('ruhend', 120)}<span class="hand">Ich hab Papier<br>und Zeit.</span></div></div>
-            <div class="kacheln">
-              ${[['app', 'varianten', 'Ganze App', 'mit Plan'], ['bild', 'bild', 'Bild bearbeiten', 'freistellen & Co.'], ['ausbild', 'mischen', 'Aus Bild', 'Screenshot rein']].map(([art, ic, t, x]) => `<button type="button" class="kachel startkarte" data-aktion="neu" data-art="${art}">${sym(ic, 20)}<span><b class="h">${t}</b><small>${x}</small></span></button>`).join('')}
-              <button type="button" class="kachel startkarte" data-aktion="neu" data-art="entwurf">${sym('seite', 20)}<span><b class="h">Leeres Blatt</b><small>Format wählen</small></span></button>
-            </div>
-            <div class="vorschlagraster">${PROBIER.concat(['Startseite für eine Fahrrad-App']).map((t, i) => `<button type="button" class="vorschlag" data-aktion="probier" data-text="${esc(t)}"><b class="h">${esc(t)}</b><small>${['App-Bildschirm', 'Instagram-Post', 'Karte A6', 'Webseite'][i]}</small></button>`).join('')}</div>
-          </div>
-          <div class="eingabekarte"><span class="klebe rechts"></span>
+      const e = S.einstellungen || {};
+      const hirn = e.weg === 'api' ? 'API' : `Claude · ${e.claudeModell || 'opus'}`;
+      const KARTEN = [
+        ['app', 'plant', 'Ganze App', 'Mit Plan, alle Bildschirme', '#ece6fd'],
+        ['bild', 'bild', 'Bild bearbeiten', 'Freistellen, zuschneiden & Co.', '#f3eefe'],
+        ['ausbild', 'webseite', 'Aus Bild', 'Screenshot rein, Entwurf raus', '#e9e3fb'],
+        ['entwurf', 'folien', 'Leeres Blatt', 'Format wählen und loslegen', '#f5f1fd'],
+      ];
+      const IDEEN = [['Login-Seite für eine App', 'App-Bildschirm'], ['Post für die Bäckerei', 'Instagram-Post'], ['Einladung zum 40.', 'Karte A6'], ['Startseite für eine Fahrrad-App', 'Webseite']];
+      const zuletzt = S.liste.slice(0, 6);
+      app.innerHTML = `<section class="ansicht klar" id="start" data-lasche="start">
+        <header class="kl-kopf"><button type="button" class="kl-marke" data-aktion="lasche" data-lasche="start">${figur(S.erstesMal === false ? 'ruhend' : 'landet', 34)}<b class="h">Kranich</b></button><div class="platz"></div>
+          <span class="kl-status"><i></i>${esc(hirn)}</span>
+          <button type="button" class="kl-rund" data-aktion="lasche" data-lasche="alle" title="Alle Entwürfe" aria-label="Alle Entwürfe">${sym('ordner', 18)}</button>
+          <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button></header>
+        <main class="kl-inhalt">
+          <div class="kl-gruss"><span class="hand">${esc(gruss())} – na, was falten wir?</span><h1 class="h">Was soll heute entstehen?</h1></div>
+          <div class="kl-eingabe">
             ${S.anhang ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise">${esc(S.anhang.name || 'Bild')} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
-            <input id="startwunsch" placeholder="Was soll Kranich falten? z. B. ein Plakat für den Flohmarkt am Samstag" aria-label="Was soll Kranich falten?">
-            <div class="ek-leiste"><button type="button" class="btn btn-q" data-aktion="anhang">${sym('klammer', 16)} Bild</button>
-              <button type="button" class="btn btn-q" data-aktion="neu" data-art="entwurf">${sym('lineal', 16)} Format wählen</button>
-              <div class="platz"></div><button type="button" class="btn btn-dunkel" data-aktion="start-falten">Falten ${sym('senden', 16, 2.4)}</button></div></div>
+            <input id="startwunsch" placeholder="Ein Satz reicht, z. B. „Plakat für den Flohmarkt am Samstag“" aria-label="Was soll Kranich falten?">
+            <div class="reihe"><button type="button" class="kl-leise" data-aktion="anhang">${sym('klammer', 16)} Bild</button><button type="button" class="kl-leise" data-aktion="neu" data-art="entwurf">${sym('lineal', 16)} Format</button><div class="platz"></div>
+              <button type="button" class="kl-los" data-aktion="start-falten">Falten ${sym('senden', 16, 2.4)}</button></div></div>
+          <div class="kl-karten">${KARTEN.map(([art, anim, t, x, hell]) => `<button type="button" class="kl-karte" style="--hell:${hell}" data-aktion="neu" data-art="${art}" data-anim="${anim}"><span class="kl-bild">${figur(anim, 104)}</span><b class="h">${t}</b><span class="leise">${x}</span></button>`).join('')}</div>
+          <div class="kl-zeile2">
+            <section class="kl-blatt"><h2 class="h">Zum Ausprobieren</h2>${IDEEN.map(([t, x]) => `<button type="button" class="kl-idee" data-aktion="probier" data-text="${esc(t)}"><span><b class="h">${esc(t)}</b><small>${esc(x)}</small></span>${sym('rechts', 16)}</button>`).join('')}</section>
+            <section class="kl-blatt"><div class="reihe"><h2 class="h" style="flex:1">Zuletzt bearbeitet</h2>${S.liste.length > 6 ? '<button type="button" class="kl-leise" data-aktion="lasche" data-lasche="alle">Alle anzeigen</button>' : ''}</div>
+              ${zuletzt.length ? zuletzt.map((p) => { const url = S.vorschauen[p.id + p.geaendert]; const info = p.art === 'bild' ? 'Bild' : p.app ? 'Ganze App' : p.boards > 1 ? `${p.boards} Boards` : [p.formatName, p.mass].filter(Boolean).join(' · '); return `<button type="button" class="kl-datei sk-zeile" data-aktion="projekt-oeffnen" data-id="${p.id}" title="${esc(p.name)}"><span class="kl-vor" ${url ? `style="background-image:url('${url}')"` : ''}></span><span class="kl-txt"><b class="h">${esc(p.name)}</b><small>${esc(info || 'Entwurf')}</small></span><span class="kl-wann">${esc(H.wann(p.geaendert))}</span><span class="loesch" role="button" tabindex="-1" title="Löschen" aria-label="Projekt löschen" data-aktion="projekt-weg-liste" data-id="${p.id}">${sym('muell', 15)}</span></button>`; }).join('') : `<div class="kl-leer">${figur('ruhend', 48)}<span class="leise">Noch nichts gefaltet. Schreib oben einfach los.</span></div>`}</section>
+          </div>
         </main></section>`;
       S.erstesMal = false;
-      document.getElementById('startwunsch')?.addEventListener('keydown', (e) => { if (e.key === 'Enter') aktionen['start-falten'](); });
-      const ps = document.getElementById('psuche');
-      ps.value = S.projektSuche || '';
-      ps.addEventListener('input', () => { S.projektSuche = ps.value; app.querySelector('.sk-mitte').innerHTML = projektListe(); });
+      document.getElementById('startwunsch')?.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') aktionen['start-falten'](); });
       return;
     }
     let blatt, titel = '';
@@ -1075,7 +1079,7 @@
       const name = el.closest('.sk-zeile')?.title || 'Projekt';
       if (!window.confirm(`„${name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
       await K.projekte.loeschen(el.dataset.id);
-      renderStart();
+      await zeigeStart();
       H.meldung('Projekt gelöscht.');
     },
     'seite': (el, e) => {
