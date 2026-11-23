@@ -75,3 +75,6 @@
 .wb .chatspalte .pille{border:0;background:#f0f7f2;font-size:12px}
 .wb .chatspalte .eingabekarte{box-shadow:none!important;border:1px solid #eee7da;border-radius:10px!important}
 .wb .chatspalte .eingabekarte .klebe,.wb .klebe{display:none}
+/* Hinweis (baut, Fehler) unten links statt über den Werkzeugen */
+.leinwandrahmen .hinweisband{top:auto!important;bottom:14px;left:14px!important;transform:none!important;width:min(560px,calc(100% - 214px))!important}
+.werkzeugleiste.schwebend{z-index:8!important}

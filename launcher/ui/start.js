@@ -183,6 +183,7 @@
   }
   N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; const el = document.querySelector(`.vogel[data-app="${id}"] .chip`); if (el && id !== 'start') el.lastChild.textContent = `Lädt ${pct} %`; else render(); });
   laden();
+  setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
   // Zwischendurch macht ein Vogel von selbst etwas
   setInterval(() => {
     if (document.hidden) return;
