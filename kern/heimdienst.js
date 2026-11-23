@@ -53,6 +53,7 @@ function starte({ port = 4747, code, version = '', frageClaude, einstellungen })
           system: String(a.system || ''), auftrag: String(a.auftrag || ''), bilder,
           modell: a.schnell ? 'sonnet' : (/^(opus|sonnet|haiku)$/.test(a.modell) ? a.modell : 'opus'),
           programm: e.claudeProgramm || 'claude',
+          zeitlimitMs: 600000,
         });
         antworte(200, { text });
       } catch (f) {
@@ -63,7 +64,7 @@ function starte({ port = 4747, code, version = '', frageClaude, einstellungen })
       }
     });
   });
-  server.requestTimeout = 360000;
+  server.requestTimeout = 720000;
   server.listen(port, '0.0.0.0');
   return server;
 }

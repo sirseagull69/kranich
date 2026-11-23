@@ -148,15 +148,15 @@ async function frageLokal({ system, auftrag, bilder = [], modell = 'gemma4:26b',
 }
 
 // Claude Code auf diesem Rechner; fehlt es, das eingebaute Claude vom Startfenster.
-async function frageClaudeHier(auftrag, e, schnell) {
+async function frageClaudeHier(auftrag, e, schnell, zeitlimitMs) {
   const modell = schnell ? 'sonnet' : (e.claudeModell || 'opus');
   try {
-    return { text: await frageClaude({ ...auftrag, modell, programm: e.claudeProgramm || 'claude' }), weg: 'claude' };
+    return { text: await frageClaude({ ...auftrag, modell, programm: e.claudeProgramm || 'claude', ...(zeitlimitMs ? { zeitlimitMs } : {}) }), weg: 'claude' };
   } catch (f) {
     if (f.art !== 'nicht-installiert') throw f;
     const eb = Eingebaut.aufruf();
     if (!eb) throw new HirnFehler('nicht-installiert', 'Hier ist kein Claude da. Im Startfenster „Selbst gfaltet“ unter Einstellungen → „Claude einrichten“ geht es ohne Installation.');
-    return { text: await frageClaude({ ...auftrag, modell, programm: eb.programm, env: eb.env }), weg: 'eingebaut' };
+    return { text: await frageClaude({ ...auftrag, modell, programm: eb.programm, env: eb.env, ...(zeitlimitMs ? { zeitlimitMs } : {}) }), weg: 'eingebaut' };
   }
 }
 
@@ -187,7 +187,7 @@ async function frageHeim({ system, auftrag, bilder = [], modell = 'opus', schnel
 // eingeschaltetem lokalem Modell wird zuerst lokal gefragt; scheitert Claude
 // an der Verbindung, springt das lokale Modell ein, wenn erlaubt.
 // "schnell": Sonnet statt Opus – für Zustands-Boards und Reparaturen.
-async function frage(auftrag, einstellungen = {}, { klein = false, schnell = false } = {}) {
+async function frage(auftrag, einstellungen = {}, { klein = false, schnell = false, zeitlimitMs = 0 } = {}) {
   const e = einstellungen;
   const lokalErlaubt = Boolean(e.lokalAn);
   const lokal = () => frageLokal({ ...auftrag, modell: e.lokalModell || 'gemma4:26b', adresse: e.lokalAdresse || 'http://127.0.0.1:11434' });
@@ -200,12 +200,12 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
   }
   if (e.weg === 'heim') {
     try {
-      return { text: await frageHeim({ ...auftrag, modell: e.claudeModell || 'opus', schnell, adresse: e.heimAdresse, code: e.heimCode }), weg: 'heim' };
+      return { text: await frageHeim({ ...auftrag, modell: e.claudeModell || 'opus', schnell, adresse: e.heimAdresse, code: e.heimCode, ...(zeitlimitMs ? { zeitlimitMs: zeitlimitMs + 60000 } : {}) }), weg: 'heim' };
     } catch (heimFehler) {
       if (heimFehler.art !== 'keine-verbindung' && heimFehler.art !== 'nicht-angemeldet') throw heimFehler;
       // Heim-PC nicht da: Claude Code hier oder das eingebaute Claude
       try {
-        return await frageClaudeHier(auftrag, e, schnell);
+        return await frageClaudeHier(auftrag, e, schnell, zeitlimitMs);
       } catch (f) {
         if (f.art === 'nicht-installiert') throw heimFehler;
         throw f;
@@ -213,7 +213,7 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
     }
   }
   try {
-    if (e.weg !== 'api') return await frageClaudeHier(auftrag, e, schnell);
+    if (e.weg !== 'api') return await frageClaudeHier(auftrag, e, schnell, zeitlimitMs);
     return { text: await gross(), weg: 'api' };
   } catch (fehler) {
     if (lokalErlaubt && fehler.art === 'keine-verbindung' && klein) {

@@ -158,7 +158,7 @@ function registriere() {
     }
     try {
       const klein = Boolean(html && auswahl && wunsch.length < 80);
-      const { text, weg } = await hirn.frage({ system, auftrag, bilder }, e, { klein });
+      const { text, weg } = await hirn.frage({ system, auftrag, bilder }, e, { klein, zeitlimitMs: 480000 });
       return { ...A.leseEntwurf(text), weg };
     } finally {
       for (const b of bilder) fs.rm(b, { force: true }, () => {});
@@ -182,7 +182,7 @@ function registriere() {
       let auftrag = AP.auftragPlan({ beschreibung, geraet, zustaende });
       if (look === 'eigen') auftrag += '\nLook: eigener Look für diese App (nicht die Farben der Familie), aber gleich gute Qualität.';
       if (bilder.length) auftrag += '\nEine Skizze oder ein Bild von Nils ist angehängt; richte den Plan daran aus.';
-      const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag, bilder }, e);
+      const { text, weg } = await hirn.frage({ system: AP.systemPlan(e), auftrag, bilder }, e, { zeitlimitMs: 600000 });
       const plan = AP.lesePlanApp(text, { geraet });
       return { plan, weg };
     } finally {
@@ -192,14 +192,14 @@ function registriere() {
   handle('kranich:appBoards', (plan) => ({ boards: AP.legeBoards(AP.boardsAusPlan(plan)) }));
   handle('kranich:bausteine', async ({ plan }) => {
     const e = einstellungen.alle();
-    const { text } = await hirn.frage({ system: AP.systemBausteine(e), auftrag: AP.auftragBausteine(plan) }, e);
+    const { text } = await hirn.frage({ system: AP.systemBausteine(e), auftrag: AP.auftragBausteine(plan) }, e, { zeitlimitMs: 600000 });
     return AP.leseBausteine(text);
   });
   handle('kranich:appBoard', async ({ plan, board, css }) => {
     const e = einstellungen.alle();
     // Hauptbildschirme mit Opus, Zustände (leer, lädt, fehler …) mit dem schnelleren Sonnet
     const schnell = Boolean(board.zustand) && board.zustand !== 'fertig';
-    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: AP.auftragAppBoard({ plan, board, css }) }, e, { schnell });
+    const { text } = await hirn.frage({ system: A.systemEntwurf(e), auftrag: AP.auftragAppBoard({ plan, board, css }) }, e, { schnell, zeitlimitMs: 480000 });
     return A.leseEntwurf(text);
   });
   handle('kranich:pruefen', async ({ html, format: f }) => ({ funde: await pruefe(html, typeof f === 'string' ? formatVon(f) : f) }));
