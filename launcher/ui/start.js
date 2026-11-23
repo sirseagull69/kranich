@@ -90,6 +90,7 @@
 
   async function einstellungen() {
     const e = await N.einst();
+    const cs = await N.claudeStatus();
     const kranich = S.apps.find((a) => a.id === 'kranich');
     const s = document.createElement('div');
     s.className = 'schleier';
@@ -97,11 +98,38 @@
       <div class="ezeile"><div class="t"><b>Adresse von origami</b><span>Wo origami läuft, z. B. die Adresse deines Heim-PCs.</span></div><input class="feld" id="e-adr" value="${esc(e.origamiAdresse)}" placeholder="http://…"></div>
       <div class="ezeile"><div class="t"><b>Nach dem Start schließen</b><span>Das Startfenster geht zu, sobald ein Vogel startet.</span></div><label class="schalter"><input type="checkbox" id="e-zu" ${e.nachStartSchliessen ? 'checked' : ''}><i></i></label></div>
       <div class="ezeile"><div class="t"><b>Wo liegt Kranich?</b><span>Nur ändern, wenn Kranich woanders installiert ist.</span></div><input class="feld" id="e-kranich" value="${esc(e.pfade?.kranich || '')}" placeholder="${esc(kranich?.pfad || '')}"></div>
+      <div class="ezeile" style="flex-wrap:wrap"><div class="t"><b>Claude für alle Vögel</b><span id="c-info">${cs.da ? (cs.token ? `Eingerichtet (Version ${esc(cs.version)}). Läuft ohne Installation, auch auf dem Arbeits-Notebook.` : 'Heruntergeladen – fehlt noch der Anmelde-Token.') : 'Für Geräte ohne Claude Code: einmal laden (ca. 175 MB), dann nutzen alle Vögel es.'}</span></div>
+        <button type="button" class="btn" style="background:#5b3fc4" data-claude-laden>${cs.da ? 'Neu laden' : 'Claude einrichten'}</button>
+        <div id="c-token" style="flex-basis:100%;display:${cs.da && !cs.token ? 'flex' : 'none'};flex-direction:column;gap:8px;padding-top:10px">
+          <span class="leise" style="font-size:13px">Am PC mit Claude Code im Terminal <b>claude setup-token</b> eingeben, anmelden und den Code (beginnt mit sk-ant-) hier einfügen.</span>
+          <div class="reihe"><input class="feld" id="c-tokfeld" type="password" placeholder="sk-ant-…" style="flex:1;width:auto"><button type="button" class="btn" style="background:#1d2742" data-claude-token>Prüfen</button></div></div>
+        ${cs.token ? '<button type="button" class="btn q" style="margin-left:auto" data-claude-ab>Abmelden</button>' : ''}</div>
       <div class="reihe" style="justify-content:flex-end;padding-top:14px"><button type="button" class="btn q" data-zu>Abbrechen</button><button type="button" class="btn" style="background:#1d2742" data-speichern>Speichern</button></div></div>`;
     document.body.appendChild(s);
     const zu = () => s.remove();
     s.addEventListener('click', async (ev) => {
       if (ev.target === s || ev.target.closest('[data-zu]')) return zu();
+      const info = s.querySelector('#c-info');
+      if (ev.target.closest('[data-claude-laden]')) {
+        const b = ev.target.closest('[data-claude-laden]'); b.disabled = true;
+        N.beiClaudeFortschritt((p) => { info.textContent = `Lädt … ${p} %`; });
+        const r = await N.claudeLaden();
+        b.disabled = false;
+        if (r.fehler) { info.textContent = `Klappt nicht: ${r.fehler}`; return; }
+        info.textContent = `Geladen (Version ${r.version}). Jetzt noch der Token:`;
+        s.querySelector('#c-token').style.display = 'flex';
+        return;
+      }
+      if (ev.target.closest('[data-claude-token]')) {
+        info.textContent = 'Prüfe den Token …';
+        const r = await N.claudeToken(s.querySelector('#c-tokfeld').value);
+        if (r.fehler) { info.textContent = `Klappt nicht: ${r.fehler}`; return; }
+        info.textContent = 'Fertig! Claude läuft jetzt für alle Vögel.';
+        s.querySelector('#c-token').style.display = 'none';
+        meldung('Claude ist eingerichtet.');
+        return;
+      }
+      if (ev.target.closest('[data-claude-ab]')) { await N.claudeAbmelden(); info.textContent = 'Abgemeldet.'; return; }
       if (ev.target.closest('[data-speichern]')) {
         const pfade = { ...(e.pfade || {}) };
         const k = s.querySelector('#e-kranich').value.trim();

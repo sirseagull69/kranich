@@ -3,6 +3,7 @@
 // Findet die installierten Vögel, startet sie und zeigt die zuletzt bearbeiteten Dateien.
 const { app, BrowserWindow, ipcMain, shell, net } = require('electron');
 const os = require('os');
+const Claude = require('./claude');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -155,6 +156,10 @@ function registriere() {
   ipcMain.handle('updates', () => pruefeUpdates());
   ipcMain.handle('update:laden', (e, id) => (PRAEFIX[id] ? ladeUndInstalliere(id, e.sender) : { fehler: 'Unbekannt.' }));
   ipcMain.handle('version', () => app.getVersion());
+  ipcMain.handle('claude:status', () => Claude.status());
+  ipcMain.handle('claude:laden', async (e) => { try { return { ok: true, version: await Claude.laden((u, o) => net.fetch(u, { ...(o || {}), headers: { 'User-Agent': 'Selbst-gfaltet' } }), (pct) => e.sender.send('claude:fortschritt', pct)) }; } catch (f) { return { fehler: f.message }; } });
+  ipcMain.handle('claude:token', (_e, t) => Claude.setzeToken(t));
+  ipcMain.handle('claude:abmelden', () => Claude.abmelden());
   ipcMain.handle('einst:setzen', (_e, neu) => einstSetzen({ origamiAdresse: String(neu?.origamiAdresse ?? einst().origamiAdresse).trim().slice(0, 300), nachStartSchliessen: neu?.nachStartSchliessen ?? einst().nachStartSchliessen, pfade: typeof neu?.pfade === 'object' ? neu.pfade : einst().pfade }));
 }
 

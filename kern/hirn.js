@@ -13,6 +13,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
+const Eingebaut = require('./eingebaut');
 
 class HirnFehler extends Error {
   constructor(art, nachricht, details) {
@@ -28,7 +29,7 @@ function zitiereWin(wert) {
 
 // Ruft "claude -p" auf. Auftrag und Systemtext gehen über stdin bzw. eine
 // Datei, damit lange Entwürfe nicht an der Länge der Befehlszeile scheitern.
-function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm = 'claude', zeitlimitMs = 240000, _spawn = spawn }) {
+function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm = 'claude', env = null, zeitlimitMs = 240000, _spawn = spawn }) {
   return new Promise((resolve, reject) => {
     const ordner = fs.mkdtempSync(path.join(os.tmpdir(), 'kranich-'));
     const systemDatei = path.join(ordner, 'system.txt');
@@ -54,8 +55,8 @@ function frageClaude({ system, auftrag, bilder = [], modell = 'opus', programm =
 
     const win = process.platform === 'win32';
     const kind = win
-      ? _spawn([programm, ...args].map((a) => (a === '' ? '""' : zitiereWin(a))).join(' '), { shell: true, windowsHide: true })
-      : _spawn(programm, args, { env: process.env });
+      ? _spawn([programm, ...args].map((a) => (a === '' ? '""' : zitiereWin(a))).join(' '), { shell: true, windowsHide: true, env: env || process.env })
+      : _spawn(programm, args, { env: env || process.env });
 
     let aus = '';
     let fehler = '';
@@ -146,6 +147,19 @@ async function frageLokal({ system, auftrag, bilder = [], modell = 'gemma4:26b',
   return daten.message?.content || '';
 }
 
+// Claude Code auf diesem Rechner; fehlt es, das eingebaute Claude vom Startfenster.
+async function frageClaudeHier(auftrag, e, schnell) {
+  const modell = schnell ? 'sonnet' : (e.claudeModell || 'opus');
+  try {
+    return { text: await frageClaude({ ...auftrag, modell, programm: e.claudeProgramm || 'claude' }), weg: 'claude' };
+  } catch (f) {
+    if (f.art !== 'nicht-installiert') throw f;
+    const eb = Eingebaut.aufruf();
+    if (!eb) throw new HirnFehler('nicht-installiert', 'Hier ist kein Claude da. Im Startfenster „Selbst gfaltet“ unter Einstellungen → „Claude einrichten“ geht es ohne Installation.');
+    return { text: await frageClaude({ ...auftrag, modell, programm: eb.programm, env: eb.env }), weg: 'eingebaut' };
+  }
+}
+
 // Fragt Kranich auf dem Heim-PC (Heim-Dienst), der dort Claude Code benutzt.
 async function frageHeim({ system, auftrag, bilder = [], modell = 'opus', schnell = false, adresse, code, zeitlimitMs = 330000, _fetch = fetch }) {
   if (!adresse) throw new HirnFehler('keine-verbindung', 'Keine Adresse vom Heim-PC eingetragen.');
@@ -189,9 +203,9 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
       return { text: await frageHeim({ ...auftrag, modell: e.claudeModell || 'opus', schnell, adresse: e.heimAdresse, code: e.heimCode }), weg: 'heim' };
     } catch (heimFehler) {
       if (heimFehler.art !== 'keine-verbindung' && heimFehler.art !== 'nicht-angemeldet') throw heimFehler;
-      // Heim-PC nicht da: Claude Code auf diesem Rechner versuchen
+      // Heim-PC nicht da: Claude Code hier oder das eingebaute Claude
       try {
-        return { text: await frageClaude({ ...auftrag, modell: schnell ? 'sonnet' : (e.claudeModell || 'opus'), programm: e.claudeProgramm || 'claude' }), weg: 'claude' };
+        return await frageClaudeHier(auftrag, e, schnell);
       } catch (f) {
         if (f.art === 'nicht-installiert') throw heimFehler;
         throw f;
@@ -199,7 +213,8 @@ async function frage(auftrag, einstellungen = {}, { klein = false, schnell = fal
     }
   }
   try {
-    return { text: await gross(), weg: e.weg === 'api' ? 'api' : 'claude' };
+    if (e.weg !== 'api') return await frageClaudeHier(auftrag, e, schnell);
+    return { text: await gross(), weg: 'api' };
   } catch (fehler) {
     if (lokalErlaubt && fehler.art === 'keine-verbindung' && klein) {
       return { text: await lokal(), weg: 'lokal' };
