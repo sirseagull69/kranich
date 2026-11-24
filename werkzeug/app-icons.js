@@ -36,10 +36,11 @@ for (const [ordner, hell, farbe, quelle, x0, y0, g0] of APPS) {
   console.log(ordner, 'ok');
 }
 
-// Startfenster: cremefarbene Karte, Eselsohr in Tinte, die vier Vögel als Familie
-const KREIS = [['kranich', '#ece6fd', 300, 330], ['albatros', '#dcf0e3', 600, 330], ['schwalbe', '#dbe6f7', 300, 630], ['specht', '#f8e2dc', 600, 630]];
+// Startfenster: cremefarbene Karte, Eselsohr in Tinte, darauf die vier Apps als kleine Kacheln (wie ein App-Ordner)
+const KACHEL = 262; const LUECKE = 30; const X0 = 196; const Y0 = 286;
+const KREIS = [['kranich', '#ece6fd', '#7c5cd6', 0, 0], ['albatros', '#dcf0e3', '#2f8a55', 1, 0], ['schwalbe', '#dbe6f7', '#2c5aa0', 0, 1], ['specht', '#f8e2dc', '#b23a28', 1, 1]];
 const [fx, fy, fs2] = LAGEN.startfenster || [0, 0, 1];
-const familie = KREIS.map(([id, hell, cx, cy]) => `<circle cx="${cx + 62}" cy="${cy + 62}" r="140" fill="${hell}"/>${platziere(vogel(id), cx - 78, cy - 78, 280)}`).join('');
+const familie = KREIS.map(([id, hell, farbe, sp, ze]) => { const x = X0 + sp * (KACHEL + LUECKE); const y = Y0 + ze * (KACHEL + LUECKE); return `<rect x="${x}" y="${y}" width="${KACHEL}" height="${KACHEL}" rx="62" fill="${hell}"/><path d="M${x + KACHEL - 70} ${y} H${x + KACHEL - 62} A62 62 0 0 1 ${x + KACHEL} ${y + 62} V${y + 70} Z" fill="${farbe}"/>${platziere(vogel(id), x + 22, y + 26, KACHEL - 44)}`; }).join('');
 const famGruppe = `<g transform="translate(${fx} ${fy}) scale(${fs2})">${familie}</g>`;
 if (NUR_VOGEL) { fs.writeFileSync('/tmp/vogel-startfenster.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">${famGruppe}</svg>`); execFileSync('rsvg-convert', ['-w', '1024', '-h', '1024', '-o', '/tmp/vogel-startfenster.png', '/tmp/vogel-startfenster.svg']); process.exit(0); }
 const start = karte('#fbf3e4', '#1d2742', famGruppe);
