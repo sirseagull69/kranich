@@ -128,7 +128,7 @@
         ['bild', 'bild', 'Bild bearbeiten', 'Freistellen, zuschneiden & Co.', '#f3eefe'],
         ['ausbild', 'webseite', 'Aus Bild', 'Screenshot rein, Entwurf raus', '#e9e3fb'],
         ['entwurf', 'folien', 'Leeres Blatt', 'Format wählen und loslegen', '#f5f1fd'],
-        ['pptx', 'applaus', 'PowerPoint öffnen', 'Klicken oder .pptx einfach aufs Fenster ziehen', '#efe9fd'],
+        ['pptx', 'applaus', 'PowerPoint öffnen', 'Folien rein, bearbeiten, vortragen', '#efe9fd'],
       ];
       const IDEEN = [['Login-Seite für eine App', 'App-Bildschirm'], ['Post für die Bäckerei', 'Instagram-Post'], ['Einladung zum 40.', 'Karte A6'], ['Startseite für eine Fahrrad-App', 'Webseite']];
       const zuletzt = S.liste.slice(0, 6);
@@ -149,6 +149,9 @@
             <section class="kl-blatt"><h2 class="h">Zum Ausprobieren</h2>${IDEEN.map(([t, x]) => `<button type="button" class="kl-idee" data-aktion="probier" data-text="${esc(t)}"><span><b class="h">${esc(t)}</b><small>${esc(x)}</small></span>${sym('rechts', 16)}</button>`).join('')}</section>
             <section class="kl-blatt"><div class="reihe"><h2 class="h" style="flex:1">Zuletzt bearbeitet</h2>${S.liste.length > 6 ? '<button type="button" class="kl-leise" data-aktion="lasche" data-lasche="alle">Alle anzeigen</button>' : ''}</div>
               ${zuletzt.length ? zuletzt.map((p) => { const url = S.vorschauen[p.id + p.geaendert]; const info = p.art === 'bild' ? 'Bild' : p.app ? 'Ganze App' : p.boards > 1 ? `${p.boards} Boards` : [p.formatName, p.mass].filter(Boolean).join(' · '); return `<button type="button" class="kl-datei sk-zeile" data-aktion="projekt-oeffnen" data-id="${p.id}" title="${esc(p.name)}"><span class="kl-vor" ${url ? `style="background-image:url('${url}')"` : ''}></span><span class="kl-txt"><b class="h">${esc(p.name)}</b><small>${esc(info || 'Entwurf')}</small></span><span class="kl-wann">${esc(H.wann(p.geaendert))}</span><span class="loesch" role="button" tabindex="-1" title="Löschen" aria-label="Projekt löschen" data-aktion="projekt-weg-liste" data-id="${p.id}">${sym('muell', 15)}</span></button>`; }).join('') : `<div class="kl-leer">${figur('ruhend', 48)}<span class="leise">Noch nichts gefaltet. Schreib oben einfach los.</span></div>`}</section>
+            <section class="kl-blatt kl-mitgebracht"><h2 class="h">PowerPoint mitgebracht?</h2>
+              <button type="button" class="kl-ablage" data-aktion="pptx-neu"><b class="h">Datei hierher ziehen</b><small>.pptx oder ein Bild</small></button>
+              <button type="button" class="kl-oeffnen" data-aktion="pptx-neu">${sym('ordner', 16)} Datei öffnen</button></section>
           </div>
         </main></section>`;
       S.erstesMal = false;
@@ -1393,6 +1396,7 @@
   // Dateien aufs Fenster ziehen: deutliche Rückmeldung, PowerPoint überall, Bilder auf der Startseite
   let ziehUhr = null;
   const ziehAnzeige = (an) => {
+    document.body.classList.toggle('zieht-datei', an);
     let z = document.querySelector('.zieh-hinweis');
     if (an && !z) { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${figur('fertig', 70)}<b>Loslassen zum Öffnen</b><small>${S.ansicht === 'werkbank' ? 'Bild kommt in den Entwurf · PowerPoint wird angehängt' : 'PowerPoint (.pptx) oder Bild'}</small></div>`; document.body.appendChild(z); }
     if (!an) z?.remove();

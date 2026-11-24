@@ -23,7 +23,7 @@
 .kl-bild{height:136px;border-radius:3px;background:var(--hell);display:flex;align-items:center;justify-content:center;margin-bottom:10px;overflow:hidden}
 .kl-karte b{font-size:18px;font-weight:800;padding:0 6px}
 .kl-karte .leise{padding:0 6px;font-size:14px}
-.kl-zeile2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:start}
+.kl-zeile2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(0,.85fr);gap:16px;align-items:start}
 .kl-blatt{background:#fffdf9;border-radius:4px;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);padding:16px 18px;display:flex;flex-direction:column}
 .kl-blatt h2{margin:0 0 8px;font:800 17px 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
 .kl-idee{display:flex;align-items:center;gap:10px;padding:10px 6px;border:0;border-bottom:1px solid #eee7da;background:transparent;text-align:left;cursor:pointer;border-radius:3px;color:var(--leise)}
@@ -301,3 +301,14 @@ body{background:var(--oo-kraft)}
 .zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:#3d2a8a}
 .zieh-hinweis small{color:#6b6f80}
 .zieh-hinweis.lade{border-style:solid}
+
+/* Ablagefeld auf der Startseite */
+.kl-mitgebracht{gap:10px}
+.kl-ablage{border:2px dashed #b9a8ee;border-radius:8px;background:#f4f0fe;padding:22px 12px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;color:#3d2a8a;transition:transform .15s,background .15s,box-shadow .15s}
+.kl-ablage b{font:700 15px 'Bricolage Grotesque',sans-serif}
+.kl-ablage small{color:var(--leise,#6b6f80)}
+.kl-ablage:hover{background:#ece6fd}
+.kl-oeffnen{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid #e6dfd0;background:#fff;border-radius:8px;padding:10px;font:700 14px 'Bricolage Grotesque',sans-serif;color:var(--tinte,#1d2742);cursor:pointer}
+.kl-oeffnen:hover{background:#f6f2ea}
+body.zieht-datei .kl-ablage{background:#ece6fd;border-color:#7c5cd6;transform:scale(1.02);box-shadow:0 0 0 6px rgba(124,92,214,.15)}
+@media (max-width:1150px){.kl-zeile2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.kl-mitgebracht{grid-column:1/-1}}
