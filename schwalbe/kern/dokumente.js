@@ -21,8 +21,8 @@ class Dokumente {
     }
     return aus.sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert)));
   }
-  neu(name = 'Neues Dokument', html = '<h1>Neues Dokument</h1><p></p>') {
-    const d = { id: crypto.randomUUID().slice(0, 18), name: String(name).slice(0, 120), html: String(html), erstellt: new Date().toISOString(), geaendert: new Date().toISOString() };
+  neu(name = 'Neues Dokument', html = '<h1>Neues Dokument</h1><p></p>', extra = {}) {
+    const d = { id: crypto.randomUUID().slice(0, 18), name: String(name).slice(0, 120), html: String(html), kopf: String(extra.kopf || ''), fuss: String(extra.fuss || ''), seitenzahlen: Boolean(extra.seitenzahlen), erstellt: new Date().toISOString(), geaendert: new Date().toISOString() };
     fs.writeFileSync(this.pfad(d.id), JSON.stringify(d), 'utf8');
     return d;
   }
@@ -30,6 +30,8 @@ class Dokumente {
   speichern(d) {
     const alt = (() => { try { return this.lesen(d.id); } catch { return {}; } })();
     const neu = { ...alt, id: d.id, name: String(d.name || 'Dokument').slice(0, 120), html: String(d.html || ''), geaendert: new Date().toISOString() };
+    for (const k of ['kopf', 'fuss']) if (k in d) neu[k] = String(d[k] || '').slice(0, 300);
+    if ('seitenzahlen' in d) neu.seitenzahlen = Boolean(d.seitenzahlen);
     fs.writeFileSync(this.pfad(d.id), JSON.stringify(neu), 'utf8');
     return { ok: true, geaendert: neu.geaendert };
   }

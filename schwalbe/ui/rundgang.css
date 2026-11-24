@@ -20,3 +20,8 @@
 .rg-weiter:focus-visible{outline:3px solid color-mix(in srgb,var(--rg-farbe) 40%,transparent);outline-offset:2px}
 .oo-hilfe{width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font:800 14px 'Bricolage Grotesque',sans-serif;cursor:pointer;-webkit-app-region:no-drag}
 .oo-hilfe:hover{background:rgba(255,255,255,.3)}
+/* Knöpfe passen immer rein: Punkte in eigener Zeile, Knöpfe rechtsbündig darunter */
+.rg-blase{width:360px}
+.rg-fuss{flex-wrap:wrap;justify-content:flex-end;gap:6px}
+.rg-punkte{flex:1 0 100%;margin-bottom:6px}
+.rg-blase button{white-space:nowrap}

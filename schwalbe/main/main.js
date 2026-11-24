@@ -54,23 +54,26 @@ function registriere() {
       datei = r.filePaths[0];
     }
     const name = path.basename(datei).replace(/\.[^.]+$/, '');
-    let html;
-    if (/\.docx$/i.test(datei)) html = await docxLesen(fs.readFileSync(datei));
-    else html = fs.readFileSync(datei, 'utf8').split(/\r?\n\r?\n/).map((p) => `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\r?\n/g, '<br>')}</p>`).join('');
+    if (/\.docx$/i.test(datei)) { const r = await docxLesen(fs.readFileSync(datei)); return dokumente.neu(name, r.html, r); }
+    const html = fs.readFileSync(datei, 'utf8').split(/\r?\n\r?\n/).map((p) => `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\r?\n/g, '<br>')}</p>`).join('');
     return dokumente.neu(name, html);
   });
-  handle('datei:docx', async ({ bloecke, name }) => {
+  handle('datei:docx', async ({ bloecke, name, opt }) => {
     const r = await dialog.showSaveDialog(fenster, { title: 'Als Word-Datei speichern', defaultPath: path.join(app.getPath('documents'), `${sauber(name)}.docx`), filters: [{ name: 'Word', extensions: ['docx'] }] });
     if (r.canceled || !r.filePath) return { abgebrochen: true };
-    fs.writeFileSync(r.filePath, await docxSchreiben(Array.isArray(bloecke) ? bloecke : [], name));
+    fs.writeFileSync(r.filePath, await docxSchreiben(Array.isArray(bloecke) ? bloecke : [], name, opt || {}));
     return { ok: true, datei: r.filePath };
   });
-  handle('datei:pdf', async ({ html, name }) => {
+  handle('datei:pdf', async ({ html, name, kopf, fuss, seitenzahlen }) => {
     const r = await dialog.showSaveDialog(fenster, { title: 'Als PDF speichern', defaultPath: path.join(app.getPath('documents'), `${sauber(name)}.pdf`), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (r.canceled || !r.filePath) return { abgebrochen: true };
     const w = await druckFenster(html);
     try {
-      fs.writeFileSync(r.filePath, await w.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'none' }, displayHeaderFooter: true, headerTemplate: '<span></span>', footerTemplate: '<div style="font-size:8px;width:100%;text-align:center;color:#888"><span class="pageNumber"></span> / <span class="totalPages"></span></div>' }));
+      const e = (t) => String(t || '').replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+      const stil = 'font-family:Arial,sans-serif;font-size:8px;color:#666;width:100%;padding:0 22mm;display:flex;justify-content:space-between';
+      fs.writeFileSync(r.filePath, await w.webContents.printToPDF({ pageSize: 'A4', printBackground: true, margins: { marginType: 'none' }, displayHeaderFooter: true,
+        headerTemplate: `<div style="${stil}"><span>${e(kopf)}</span></div>`,
+        footerTemplate: `<div style="${stil}"><span>${e(fuss)}</span><span>${seitenzahlen ? 'Seite <span class="pageNumber"></span> von <span class="totalPages"></span>' : ''}</span></div>` }));
     } finally { w.destroy(); }
     return { ok: true, datei: r.filePath };
   });
@@ -80,6 +83,7 @@ function registriere() {
     return { ok: true };
   });
   handle('datei:zeigen', (p) => { shell.showItemInFolder(p); return true; });
+  handle('link:oeffnen', (u) => { if (/^(https?:\/\/|mailto:)/i.test(String(u))) shell.openExternal(String(u)); return true; });
 
   handle('assistent', async ({ wunsch, html, auswahl, name }) => {
     const { text, weg } = await frage({ system: A.SYSTEM, auftrag: A.auftrag({ wunsch, html, auswahl, name }) }, einstellungen.alle());

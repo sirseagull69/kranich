@@ -38,7 +38,7 @@
         const r = el.getBoundingClientRect(); const p = 8;
         const x = Math.max(4, r.left - p), y = Math.max(4, r.top - p), w = Math.min(W - x - 4, r.width + p * 2), h = Math.min(H - y - 4, r.height + p * 2);
         Object.assign(loch.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px`, opacity: 1 });
-        const bw = 340; const bh = blase.offsetHeight || 200;
+        const bw = 360; const bh = blase.offsetHeight || 200;
         let bx; let by;
         if (x + w + 16 + bw < W) { bx = x + w + 16; by = y; } // rechts daneben
         else if (x - 16 - bw > 0) { bx = x - 16 - bw; by = y; } // links daneben

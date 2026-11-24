@@ -17,12 +17,14 @@ Regeln für "aktion":
 - "dokument": Ersetzt das GANZE Dokument (z. B. „schreib mir einen Brief an …“, „mach alles förmlicher“, „gliedere das neu“). Lass dabei alles stehen, was nicht geändert werden soll.
 - "keine": Nur eine Antwort, nichts am Dokument ändern (z. B. Fragen, Feedback, Ideen).
 
-Erlaubtes HTML: <h1>, <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <u>, <s>, <blockquote>, <br>. Keine Klassen, keine Styles, keine Bilder, keine Links.
+Erlaubtes HTML: <h1>, <h2>, <h3>, <p>, <ul>, <ol>, <li>, <strong>, <em>, <u>, <s>, <blockquote>, <br>, <table> mit <tr>/<th>/<td>, <a href="https://…">, <hr class="umbruch"> (Seitenumbruch). Keine Klassen außer "umbruch", keine Bilder.
+Bilder (<img>) im Dokument erscheinen bei dir als [Bild] – lass sie stehen, indem du bei "dokument" genau "[Bild]" an derselben Stelle schreibst.
 Ein Brief: Ort und Datum als <p>, Anrede als <p>, Absätze als <p>, Gruß als <p>.
 Erfinde keine Fakten (Namen, Zahlen, Termine), die nicht im Dokument oder Wunsch stehen – nimm Platzhalter wie [Name] und sag es in "antwort".`;
 
 function auftrag({ wunsch, html, auswahl, name }) {
-  const doc = String(html || '').slice(0, 60000);
+  // Bilder nicht als riesige Base64-Texte mitschicken
+  const doc = String(html || '').replace(/<img[^>]*>/g, '[Bild]').slice(0, 60000);
   return `DOKUMENT „${String(name || 'Dokument').slice(0, 120)}“:
 ${doc || '(leer)'}
 
