@@ -261,31 +261,31 @@
   function leiste() {
     return leisteNeu();
     const r = S.reiter || 'start';
-    if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 17)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 17)} Aus Albatros`, 'Tabelle aus Albatros einfügen – bleibt live und rechnet mit')}${wa('bild', `${sym('bild', 17)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 17)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 17)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 17)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 17)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 17)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
+    if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 16)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 16)} Aus Albatros`, 'Tabelle aus Albatros einfügen – bleibt live und rechnet mit')}${wa('bild', `${sym('bild', 16)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 16)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 16)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 16)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 16)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 16)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
     if (r === 'pruefen') {
       const n = blatt() ? Pruefen.alle(blatt()).length : 0;
-      return `${wa('kommentar', `${sym('kommentar', 17)} Kommentar`, 'Kommentar zur Markierung (Strg+Alt+M)')}${TZ}
-        ${wa('verfolgen', `${sym('spur', 17)} Verfolgen`, 'Änderungen verfolgen an/aus (Strg+Umschalt+E)', ` aria-pressed="${Boolean(S.d.verfolgen)}"`)}
-        ${wa('endfassung', `${sym('auge', 17)} ${S.endfassung ? 'Endfassung' : 'Markiert'}`, 'Umschalten: Änderungen zeigen oder Endfassung ansehen', ` aria-pressed="${Boolean(S.endfassung)}"`)}${TZ}
+      return `${wa('kommentar', `${sym('kommentar', 16)} Kommentar`, 'Kommentar zur Markierung (Strg+Alt+M)')}${TZ}
+        ${wa('verfolgen', `${sym('spur', 16)} Verfolgen`, 'Änderungen verfolgen an/aus (Strg+Umschalt+E)', ` aria-pressed="${Boolean(S.d.verfolgen)}"`)}
+        ${wa('endfassung', `${sym('auge', 16)} ${S.endfassung ? 'Endfassung' : 'Markiert'}`, 'Umschalten: Änderungen zeigen oder Endfassung ansehen', ` aria-pressed="${Boolean(S.endfassung)}"`)}${TZ}
         ${wz2('aend-zurueck', sym('zurueck', 16), 'Vorherige Änderung', !n)}${wz2('aend-vor', sym('vor', 16), 'Nächste Änderung', !n)}
         ${wa('aend-an', `${sym('haken', 16)} Annehmen`, 'Änderung an der Schreibmarke annehmen')}${wa('aend-ab', `${sym('kreuz', 16)} Ablehnen`, 'Änderung an der Schreibmarke ablehnen')}
         ${wa('aend-alle-an', `${sym('haken', 16)} Alle`, 'Alle Änderungen annehmen')}${wa('aend-alle-ab', `${sym('kreuz', 16)} Alle`, 'Alle Änderungen ablehnen')}${TZ}
-        ${wa('rechtschreibung', `${sym('abc', 17)} Rechtschreibung`, 'Rote Wellenlinien an/aus – Rechtsklick zeigt Vorschläge', ` aria-pressed="${S.rechtschreibung !== false}"`)}<span class="leise aend-zahl">${n ? `${n} Änderung${n === 1 ? '' : 'en'}` : ''}</span>`;
+        ${wa('rechtschreibung', `${sym('abc', 16)} Rechtschreibung`, 'Rote Wellenlinien an/aus – Rechtsklick zeigt Vorschläge', ` aria-pressed="${S.rechtschreibung !== false}"`)}<span class="leise aend-zahl">${n ? `${n} Änderung${n === 1 ? '' : 'en'}` : ''}</span>`;
     }
-    if (r === 'seite') return `<label class="wz-feld">Kopfzeile<input class="kf" data-kf="kopf" value="${esc(S.d.kopf || '')}" placeholder="z. B. Firma · Thema"></label><label class="wz-feld">Fußzeile<input class="kf" data-kf="fuss" value="${esc(S.d.fuss || '')}" placeholder="z. B. Name"></label><label class="wz-haken"><input type="checkbox" class="kf-seiten" ${S.d.seitenzahlen ? 'checked' : ''}> Seitenzahlen</label>${TZ}${wa('suchen', `${sym('lupe', 17)} Suchen & Ersetzen`, 'Suchen & Ersetzen (Strg+F)')}`;
+    if (r === 'seite') return `<label class="wz-feld">Kopfzeile<input class="kf" data-kf="kopf" value="${esc(S.d.kopf || '')}" placeholder="z. B. Firma · Thema"></label><label class="wz-feld">Fußzeile<input class="kf" data-kf="fuss" value="${esc(S.d.fuss || '')}" placeholder="z. B. Name"></label><label class="wz-haken"><input type="checkbox" class="kf-seiten" ${S.d.seitenzahlen ? 'checked' : ''}> Seitenzahlen</label>${TZ}${wa('suchen', `${sym('lupe', 16)} Suchen & Ersetzen`, 'Suchen & Ersetzen (Strg+F)')}`;
     return `${wz('undo', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wz('redo', sym('vor', 16), 'Wiederholen (Strg+Y)')}${TZ}
       <select class="absatz" aria-label="Absatzart" title="Absatzart"><option value="p">Text</option><option value="h1">Überschrift 1</option><option value="h2">Überschrift 2</option><option value="h3">Überschrift 3</option><option value="blockquote">Zitat</option></select>
       <select class="schrift" aria-label="Schriftart" title="Schriftart"><option value="">Schrift</option>${SCHRIFTEN.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('')}</select>
       <select class="groesse" aria-label="Schriftgröße" title="Schriftgröße"><option value="">Größe</option>${GROESSEN.map((g) => `<option value="${g}">${g}</option>`).join('')}</select>${TZ}
-      ${wz('bold', '<b>F</b>', 'Fett (Strg+B)')}${wz('italic', '<i style="font-family:\'Source Serif 4\',serif">K</i>', 'Kursiv (Strg+I)')}${wz('underline', '<u>U</u>', 'Unterstrichen (Strg+U)')}${wz('strikeThrough', '<s>S</s>', 'Durchgestrichen')}
+      ${wz('bold', '<b>F</b>', 'Fett (Strg+B)')}${wz('italic', '<i>K</i>', 'Kursiv (Strg+I)')}${wz('underline', '<u>U</u>', 'Unterstrichen (Strg+U)')}${wz('strikeThrough', '<s>S</s>', 'Durchgestrichen')}
       <span class="farbwahl"><button type="button" class="wz" data-aktion="farbmenue" data-art="farbe" title="Schriftfarbe" aria-label="Schriftfarbe"><span class="A">A</span><i class="balken" style="background:${S.farbe || '#b23a28'}"></i></button><button type="button" class="wz" data-aktion="farbmenue" data-art="mark" title="Textmarker" aria-label="Textmarker">${sym('marker', 16)}<i class="balken" style="background:${S.mark || '#fff59d'}"></i></button></span>${TZ}
-      ${wz('insertUnorderedList', sym('ul', 17), 'Aufzählung')}${wz('insertOrderedList', sym('ol', 17), 'Nummerierung')}${wz('outdent', sym('einzugweg', 17), 'Einzug verkleinern')}${wz('indent', sym('einzug', 17), 'Einzug vergrößern')}${TZ}
-      ${wz('justifyLeft', sym('links2', 17), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 17), 'Zentriert')}${wz('justifyRight', sym('rechts', 17), 'Rechtsbündig')}${wz('justifyFull', sym('block', 17), 'Blocksatz')}
+      ${wz('insertUnorderedList', sym('ul', 16), 'Aufzählung')}${wz('insertOrderedList', sym('ol', 16), 'Nummerierung')}${wz('outdent', sym('einzugweg', 16), 'Einzug verkleinern')}${wz('indent', sym('einzug', 16), 'Einzug vergrößern')}${TZ}
+      ${wz('justifyLeft', sym('links2', 16), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 16), 'Zentriert')}${wz('justifyRight', sym('rechts', 16), 'Rechtsbündig')}${wz('justifyFull', sym('block', 16), 'Blocksatz')}
       <select class="abstand" aria-label="Zeilenabstand" title="Zeilenabstand"><option value="">Abstand</option>${['1.0', '1.15', '1.5', '2.0'].map((v) => `<option>${v}</option>`).join('')}</select>${TZ}
-      ${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}`;
+      ${wz('removeFormat', sym('radier', 16), 'Formatierung entfernen')}`;
   }
   // ---------- Drei Leisten-Entwürfe: a = ruhig + Blase, b = eine Zeile, c = Werkzeugkasten rechts ----------
-  const lv = () => (S.einst?.leistenArt || 'b');
+  const lv = () => 'b';
   const KLAPP = '<span class="pfeil">▾</span>';
   function teilEinfuegen() { return `${wa('tabelle', `${sym('tabelle', 16)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 16)} Aus Albatros (live)`, 'Tabelle aus Albatros – bleibt live')}${wa('bild', `${sym('bild', 16)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 16)} Link`, 'Link einfügen (Strg+K)')}${wa('umbruch', `${sym('umbruch', 16)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 16)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis')}${wa('linie', `${sym('strich', 16)} Trennlinie`, 'Trennlinie')}${wa('datum', `${sym('kalender', 16)} Heutiges Datum`, 'Heutiges Datum')}`; }
   function teilPruefen() {
@@ -298,11 +298,11 @@
   const selGroesse = () => `<select class="groesse" aria-label="Schriftgröße" title="Schriftgröße"><option value="">Größe</option>${GROESSEN.map((g) => `<option value="${g}">${g}</option>`).join('')}</select>`;
   const selAbstand = () => `<select class="abstand" aria-label="Zeilenabstand" title="Zeilenabstand"><option value="">Abstand</option>${['1.0', '1.15', '1.5', '2.0'].map((v) => `<option>${v}</option>`).join('')}</select>`;
   const farben = () => `<span class="farbwahl"><button type="button" class="wz" data-aktion="farbmenue" data-art="farbe" title="Schriftfarbe" aria-label="Schriftfarbe"><span class="A">A</span><i class="balken" style="background:${S.farbe || '#b23a28'}"></i></button><button type="button" class="wz" data-aktion="farbmenue" data-art="mark" title="Textmarker" aria-label="Textmarker">${sym('marker', 16)}<i class="balken" style="background:${S.mark || '#fff59d'}"></i></button></span>`;
-  const FK = () => `${wz('bold', '<b>F</b>', 'Fett (Strg+B)')}${wz('italic', '<i style="font-family:\'Source Serif 4\',serif">K</i>', 'Kursiv (Strg+I)')}`;
+  const FK = () => `${wz('bold', '<b>F</b>', 'Fett (Strg+B)')}${wz('italic', '<i>K</i>', 'Kursiv (Strg+I)')}`;
   const US = () => `${wz('underline', '<u>U</u>', 'Unterstrichen (Strg+U)')}${wz('strikeThrough', '<s>S</s>', 'Durchgestrichen')}`;
-  const LISTEN = () => `${wz('insertUnorderedList', sym('ul', 17), 'Aufzählung')}${wz('insertOrderedList', sym('ol', 17), 'Nummerierung')}`;
-  const EINZUG = () => `${wz('outdent', sym('einzugweg', 17), 'Einzug verkleinern')}${wz('indent', sym('einzug', 17), 'Einzug vergrößern')}`;
-  const AUSRICHT = () => `${wz('justifyLeft', sym('links2', 17), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 17), 'Zentriert')}${wz('justifyRight', sym('rechts', 17), 'Rechtsbündig')}${wz('justifyFull', sym('block', 17), 'Blocksatz')}`;
+  const LISTEN = () => `${wz('insertUnorderedList', sym('ul', 16), 'Aufzählung')}${wz('insertOrderedList', sym('ol', 16), 'Nummerierung')}`;
+  const EINZUG = () => `${wz('outdent', sym('einzugweg', 16), 'Einzug verkleinern')}${wz('indent', sym('einzug', 16), 'Einzug vergrößern')}`;
+  const AUSRICHT = () => `${wz('justifyLeft', sym('links2', 16), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 16), 'Zentriert')}${wz('justifyRight', sym('rechts', 16), 'Rechtsbündig')}${wz('justifyFull', sym('block', 16), 'Blocksatz')}`;
   const UNDO = () => `${wz('undo', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wz('redo', sym('vor', 16), 'Wiederholen (Strg+Y)')}`;
   const klappKnopf = (m, inhalt, titel) => `<button type="button" class="wz klapp" data-aktion="klapp" data-m="${m}" title="${esc(titel)}" aria-haspopup="true">${inhalt}${KLAPP}</button>`;
   function pruefZahl() { const n = blatt() ? Pruefen.alle(blatt()).length : 0; return n ? `<i class="zahl">${n}</i>` : ''; }
@@ -310,13 +310,13 @@
     const a = lv();
     if (a === 'c') {
       return `<section class="wk"><h4>Text</h4><div class="wk-reihe">${selAbsatz()}</div><div class="wk-reihe">${selSchrift()}${selGroesse()}</div><div class="wk-reihe">${FK()}${US()}${farben()}</div></section>
-        <section class="wk"><h4>Absatz</h4><div class="wk-reihe">${AUSRICHT()}</div><div class="wk-reihe">${LISTEN()}${EINZUG()}</div><div class="wk-reihe">${selAbstand()}${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}</div></section>
+        <section class="wk"><h4>Absatz</h4><div class="wk-reihe">${AUSRICHT()}</div><div class="wk-reihe">${LISTEN()}${EINZUG()}</div><div class="wk-reihe">${selAbstand()}${wz('removeFormat', sym('radier', 16), 'Formatierung entfernen')}</div></section>
         <section class="wk wk-liste"><h4>Einfügen</h4>${teilEinfuegen()}</section>
         <section class="wk wk-liste"><h4>Überprüfen ${pruefZahl()}</h4>${teilPruefen()}</section>
         <section class="wk wk-liste"><h4>Seite</h4>${teilSeite()}</section>`;
     }
     if (a === 'b') {
-      return `${UNDO()}${TZ}${selAbsatz()}${selSchrift()}${selGroesse()}${TZ}${FK()}${US()}${farben()}${TZ}${LISTEN()}${klappKnopf('ausrichten', sym('links2', 17), 'Ausrichtung, Einzug, Abstand')}${TZ}
+      return `${UNDO()}${TZ}${selAbsatz()}${selSchrift()}${selGroesse()}${TZ}${FK()}${US()}${farben()}${TZ}${LISTEN()}${klappKnopf('ausrichten', sym('links2', 16), 'Ausrichtung, Einzug, Abstand')}${TZ}
         ${klappKnopf('einfuegen', `${sym('plus', 16)} Einfügen`, 'Tabelle, Bild, Link …')}${klappKnopf('pruefen', `${sym('kommentar', 16)} Überprüfen${pruefZahl()}`, 'Kommentare und Änderungen')}${klappKnopf('seite', `${sym('word', 16)} Seite`, 'Kopf- und Fußzeile, Suchen')}`;
     }
     return `${UNDO()}${TZ}${selAbsatz()}${FK()}${LISTEN()}${TZ}${klappKnopf('format', 'Aa', 'Mehr Format: Schrift, Größe, Farbe, Ausrichtung')}<span class="platz"></span>
@@ -327,7 +327,7 @@
     const box = document.createElement('div'); box.className = `klappmenue km-${m}`; box.dataset.m = m;
     box.innerHTML = m === 'einfuegen' ? teilEinfuegen() : m === 'pruefen' ? teilPruefen() : m === 'seite' ? teilSeite()
       : m === 'ausrichten' ? `<div class="km-reihe">${AUSRICHT()}</div><div class="km-reihe">${EINZUG()}${selAbstand()}</div>`
-      : `<div class="km-reihe">${selSchrift()}${selGroesse()}</div><div class="km-reihe">${US()}${farben()}${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}</div><div class="km-reihe">${AUSRICHT()}</div><div class="km-reihe">${EINZUG()}${selAbstand()}</div>`;
+      : `<div class="km-reihe">${selSchrift()}${selGroesse()}</div><div class="km-reihe">${US()}${farben()}${wz('removeFormat', sym('radier', 16), 'Formatierung entfernen')}</div><div class="km-reihe">${AUSRICHT()}</div><div class="km-reihe">${EINZUG()}${selAbstand()}</div>`;
     app.appendChild(box);
     const r = el.getBoundingClientRect(); box.style.top = `${r.bottom + 6}px`;
     box.style.left = `${Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 12))}px`;
@@ -341,7 +341,7 @@
     if (!an) { if (b) b.hidden = true; return; }
     const karte = app.querySelector('.oo-karte'); if (!karte) return;
     if (!b) { b = document.createElement('div'); b.className = 'textblase'; karte.appendChild(b); }
-    b.innerHTML = `${wz('bold', '<b>F</b>', 'Fett')}${wz('italic', '<i style="font-family:\'Source Serif 4\',serif">K</i>', 'Kursiv')}${wz('underline', '<u>U</u>', 'Unterstrichen')}${farben()}<span class="tz"></span>${selAbsatz()}<span class="tz"></span>${wa('kommentar', `${sym('kommentar', 15)} Kommentar`, 'Kommentar')}${wa('blase-fragen', `${oriVogel(16)} Schwalbe fragen`, 'Die Schwalbe zur Markierung fragen')}`;
+    b.innerHTML = `${wz('bold', '<b>F</b>', 'Fett')}${wz('italic', '<i>K</i>', 'Kursiv')}${wz('underline', '<u>U</u>', 'Unterstrichen')}${farben()}<span class="tz"></span>${selAbsatz()}<span class="tz"></span>${wa('kommentar', `${sym('kommentar', 15)} Kommentar`, 'Kommentar')}${wa('blase-fragen', `${oriVogel(16)} Schwalbe fragen`, 'Die Schwalbe zur Markierung fragen')}`;
     b.hidden = false;
     const a = b.querySelector('.absatz'); let k = sel.anchorNode; while (k && k !== blatt() && !(k.nodeType === 1 && /^(H1|H2|H3|P|BLOCKQUOTE|LI)$/.test(k.tagName))) k = k.parentNode; if (a && k?.nodeType === 1) a.value = /^(H1|H2|H3|BLOCKQUOTE)$/.test(k.tagName) ? k.tagName.toLowerCase() : 'p';
     b.querySelectorAll('.wz[data-cmd]').forEach((x) => x.classList.toggle('an', document.queryCommandState(x.dataset.cmd)));
@@ -516,6 +516,29 @@
       img.src = leser.result;
     };
     leser.readAsDataURL(datei);
+  }
+
+  // KI-Text selbst einsetzen (execCommand würde Schrift/Abstand der Umgebung „mitnehmen“)
+  function kiEinsetzen(html, amEnde) {
+    const s = blatt(); const sel = getSelection();
+    let rg = sel.rangeCount && inBlatt(sel.getRangeAt(0).startContainer) ? sel.getRangeAt(0) : null;
+    if (!rg || amEnde) { rg = document.createRange(); rg.selectNodeContents(s); rg.collapse(false); }
+    rg.deleteContents();
+    const tmp = document.createElement('div'); tmp.innerHTML = html;
+    const block = tmp.querySelector('p,h1,h2,h3,ul,ol,table,blockquote,hr');
+    let ziel = rg.startContainer.nodeType === 1 ? rg.startContainer : rg.startContainer.parentElement;
+    const absatz = ziel.closest?.('p,h1,h2,h3,li,blockquote');
+    if (block && absatz && inBlatt(absatz)) {
+      // Blöcke hinter den aktuellen Absatz; leeren Absatz ersetzen
+      const leer = !absatz.textContent.trim();
+      const frag = document.createDocumentFragment(); while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+      const letztes = frag.lastChild; absatz.after(frag); if (leer) absatz.remove();
+      rg = document.createRange(); rg.selectNodeContents(letztes); rg.collapse(false);
+    } else {
+      const frag = document.createDocumentFragment(); while (tmp.firstChild) frag.appendChild(tmp.firstChild);
+      const letztes = frag.lastChild; rg.insertNode(frag); if (letztes) { rg = document.createRange(); rg.setStartAfter(letztes); rg.collapse(true); }
+    }
+    sel.removeAllRanges(); sel.addRange(rg);
   }
 
   // ---------- Schwebeleiste für Tabelle oder Bild ----------
@@ -736,15 +759,15 @@
     let geaendertJa = false;
     // [Bild]-Platzhalter wieder durch die echten Bilder ersetzen (die schicken wir nicht an Claude)
     let bildNr = 0;
-    const html = r.html ? saeubern(String(r.html).replace(/\[Bild\]/g, () => bilderVorher[bildNr++] || '')) : '';
+    const html = r.html ? saeubern(String(r.html).replace(/\[Bild\]/g, () => bilderVorher[bildNr++] || '')).replace(/(font-family|line-height):[^;"]*;?/g, '').replace(/ style="\s*"/g, '') : '';
     if (html && r.aktion !== 'keine') {
       if (S.d.verfolgen) merkeStand();
       if (S.d.verfolgen && r.aktion === 'dokument') { const s = blatt(); s.innerHTML = saeubern(Pruefen.alsAenderungen(saeubern(s.innerHTML), html)); geaendertJa = true; }
       else if (S.d.verfolgen && r.aktion === 'auswahl' && auswahl) { bereichZurueck(); const rg = getSelection().getRangeAt(0); Pruefen.vorEingabe({ inputType: 'deleteContentForward', preventDefault() {} }); const neuHtml = Pruefen.alsEinfuegung(html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i))); Pruefen.htmlEinfuegen(blatt(), neuHtml); geaendertJa = Boolean(rg); }
       else if (S.d.verfolgen && r.aktion === 'einfuegen') { bereichZurueck(); Pruefen.htmlEinfuegen(blatt(), Pruefen.alsEinfuegung(html)); geaendertJa = true; }
-      else if (r.aktion === 'dokument') { const s = blatt(); s.focus(); const rg = document.createRange(); rg.selectNodeContents(s); sel.removeAllRanges(); sel.addRange(rg); document.execCommand('insertHTML', false, html); geaendertJa = true; }
-      else if (r.aktion === 'auswahl' && auswahl) { bereichZurueck(); document.execCommand('insertHTML', false, html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i))); geaendertJa = true; }
-      else { bereichZurueck(); if (!S.bereich) { const s = blatt(); const rg = document.createRange(); rg.selectNodeContents(s); rg.collapse(false); sel.removeAllRanges(); sel.addRange(rg); } document.execCommand('insertHTML', false, html); geaendertJa = true; }
+      else if (r.aktion === 'dokument') { merkeStand(); blatt().innerHTML = html; geaendertJa = true; }
+      else if (r.aktion === 'auswahl' && auswahl) { merkeStand(); bereichZurueck(); kiEinsetzen(html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i)), false); geaendertJa = true; }
+      else { merkeStand(); bereichZurueck(); kiEinsetzen(html, !S.bereich); geaendertJa = true; }
     }
     S.verlauf.push({ wer: 'sie', text: r.antwort || (geaendertJa ? 'Erledigt.' : '…'), rueck: geaendertJa });
     zeichneHelfer();
@@ -882,6 +905,7 @@
     const b = document.createElement('div'); b.className = 'backstage';
     const NAV = [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'kommentar', 'Info'], ['-'], ['speichern', 'speichern', 'Speichern'], ['unter', 'export', 'Speichern unter'], ['export', 'pdf', 'Exportieren'], ['drucken', 'drucker', 'Drucken'], ['-'], ['optionen', 'zahnrad', 'Optionen'], ['zu', 'links', 'Schließen']];
     b.innerHTML = `<nav class="bs-nav"><button type="button" class="bs-zurueck" data-bs="zurueck">${sym('links', 18)}<span>Zurück</span></button>${NAV.map(([k, ic, t]) => (k === '-' ? '<hr>' : `<button type="button" data-bs="${k}" class="${k === bereich ? 'an' : ''}">${sym(ic, 17)}<span>${t}</span></button>`)).join('')}<div class="platz"></div><div class="bs-vogel">${vogel('ruhezustand-2', 54)}</div></nav><section class="bs-inhalt"></section>`;
+    b.insertAdjacentHTML('beforeend', '<svg class="bs-berge" aria-hidden="true" viewBox="0 0 1440 220" preserveAspectRatio="none"><path d="M0 130 C 300 80 600 170 900 120 S 1300 90 1440 120 V220 H0Z" fill="#4f7cc0" opacity=".35"/><path d="M0 180 C 360 150 700 210 1000 175 S 1340 165 1440 180 V220 H0Z" fill="#2c5aa0" opacity=".85"/></svg>');
     document.body.appendChild(b);
     const inhalt = b.querySelector('.bs-inhalt');
     const zu = () => b.remove();
@@ -960,8 +984,7 @@
         <section data-ops="allgemein"><h3>Allgemein</h3><p class="leise">Name und Kürzel gelten für alle Vögel von Ori Office – bei Kommentaren und Änderungen steht dann dein Name.</p>
           ${feld('Dein Name', 'Erscheint bei Kommentaren und Änderungen', `<input class="feld" data-op="autorName" value="${esc(e.autorName || '')}" placeholder="${esc(Pruefen.autor())}">`)}
           ${feld('Kürzel', 'Zwei, drei Buchstaben', `<input class="feld kurz" data-op="initialen" maxlength="4" value="${esc(e.initialen || '')}" placeholder="NP">`)}
-          ${feld('Werkzeugleiste', 'Wie die Werkzeuge aussehen', `<select class="feld" data-op="leistenArt"><option value="a" ${e.leistenArt === 'a' ? 'selected' : ''}>A · Ruhig: Werkzeuge erscheinen beim Markieren</option><option value="b" ${(e.leistenArt || 'b') === 'b' ? 'selected' : ''}>B · Eine schlanke Zeile</option><option value="c" ${e.leistenArt === 'c' ? 'selected' : ''}>C · Werkzeugkasten rechts</option></select>`)}
-          ${feld('Beim Start', 'Was die Schwalbe zuerst zeigt', `<select class="feld" data-op="startAnsicht"><option value="start" ${e.startAnsicht !== 'zuletzt' ? 'selected' : ''}>Startseite</option><option value="zuletzt" ${e.startAnsicht === 'zuletzt' ? 'selected' : ''}>Zuletzt bearbeitetes Dokument</option></select>`)}</section>
+                    ${feld('Beim Start', 'Was die Schwalbe zuerst zeigt', `<select class="feld" data-op="startAnsicht"><option value="start" ${e.startAnsicht !== 'zuletzt' ? 'selected' : ''}>Startseite</option><option value="zuletzt" ${e.startAnsicht === 'zuletzt' ? 'selected' : ''}>Zuletzt bearbeitetes Dokument</option></select>`)}</section>
         <section data-ops="speichern" hidden><h3>Speichern</h3>
           ${feld('Standardordner', 'Hier schlägt „Speichern unter“ vor', `<div class="op-ordner"><input class="feld" data-op="standardOrdner" value="${esc(e.standardOrdner || '')}" placeholder="Dokumente"><button type="button" class="btn weiss" data-op-ordner>Wählen …</button></div>`)}
           ${feld('Neue Dokumente', 'Was beim ersten „Speichern“ passiert', `<select class="feld" data-op="standardFormat"><option value="docx" ${e.standardFormat !== 'schwalbe' ? 'selected' : ''}>Als Word-Datei (.docx)</option><option value="schwalbe" ${e.standardFormat === 'schwalbe' ? 'selected' : ''}>Nur in der Schwalbe behalten</option></select>`)}
@@ -1277,6 +1300,26 @@
     springe: (el) => { const h = [...blatt().querySelectorAll('h1,h2,h3')].filter((x) => x.textContent.trim() && !x.closest('nav.inhalt'))[Number(el.dataset.i)]; h?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   };
 
+  // Eigene Klappliste statt der grauen Windows-Liste – gilt für alle Auswahlfelder
+  document.addEventListener('mousedown', (ev) => {
+    const sel = ev.target.closest?.('select'); const offen = document.querySelector('.auswahlliste');
+    if (offen && !offen.contains(ev.target)) { offen.remove(); if (sel && offen.dataset.fuer === String(sel.dataset.alId)) { ev.preventDefault(); return; } }
+    if (!sel || sel.multiple || sel.disabled || ev.button !== 0) return;
+    ev.preventDefault();
+    sel.dataset.alId = sel.dataset.alId || String(Math.random()).slice(2);
+    const l = document.createElement('div'); l.className = 'auswahlliste'; l.dataset.fuer = sel.dataset.alId;
+    l.innerHTML = [...sel.options].filter((o) => o.value !== '' || sel.options.length < 3).map((o) => `<button type="button" data-v="${esc(o.value)}" class="${o.value === sel.value ? 'an' : ''}${o.value === '' ? ' leer' : ''}" ${o.getAttribute('style') ? `style="${esc(o.getAttribute('style'))}"` : ''}>${esc(o.textContent)}</button>`).join('');
+    document.body.appendChild(l);
+    const r = sel.getBoundingClientRect(); l.style.minWidth = `${Math.round(r.width)}px`;
+    const unten = innerHeight - r.bottom; const h = Math.min(l.scrollHeight, 340);
+    l.style.left = `${Math.round(Math.min(r.left, innerWidth - l.offsetWidth - 10))}px`;
+    l.style.top = `${Math.round(unten > h + 10 ? r.bottom + 4 : Math.max(8, r.top - h - 4))}px`;
+    l.querySelector('.an')?.scrollIntoView({ block: 'nearest' });
+    l.addEventListener('mousedown', (e2) => e2.preventDefault());
+    l.addEventListener('click', (e2) => { const b = e2.target.closest('[data-v]'); if (!b) return; l.remove(); if (sel.value !== b.dataset.v || b.dataset.v === '') { sel.value = b.dataset.v; sel.dispatchEvent(new Event('change', { bubbles: true })); } });
+  }, true);
+  document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') document.querySelector('.auswahlliste')?.remove(); }, true);
+  window.addEventListener('blur', () => document.querySelector('.auswahlliste')?.remove());
   app.addEventListener('mousedown', (ev) => { if (ev.target.closest('.oo-leiste .wz, .schwebeleiste button, .klappmenue .wz, .textblase .wz')) ev.preventDefault(); });
   app.addEventListener('click', (ev) => {
     const km = ev.target.closest('.klappmenue'); if (km && ev.target.closest('button') && !ev.target.closest('[data-aktion="farbmenue"]')) setTimeout(() => km.remove(), 0);

@@ -567,9 +567,9 @@
   function schiene() {
     const s = seite();
     const offen = s?.pruefung?.offen?.length || 0;
-    const k = (aktion, ic, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 18)}</button>`;
+    const k = (aktion, ic, titel, extra = '') => `<button type="button" class="schienenknopf" data-aktion="${aktion}" title="${titel}" aria-label="${titel}" ${extra}>${sym(ic, 16)}</button>`;
     const w = S.werkzeug || 'zeiger';
-    const kw = (id, d, titel) => `<button type="button" class="schienenknopf" data-aktion="werkzeug" data-w="${id}" title="${titel}" aria-label="${titel}" aria-pressed="${w === id}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></button>`;
+    const kw = (id, d, titel) => `<button type="button" class="schienenknopf" data-aktion="werkzeug" data-w="${id}" title="${titel}" aria-label="${titel}" aria-pressed="${w === id}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg></button>`;
     return `${k('werkzeug-zeiger', 'zeiger', 'Wählen (V): Element anklicken – Eigenschaften erscheinen rechts', `aria-pressed="${!S.hand && w === 'zeiger'}"`)}
       ${k('werkzeug-hand', 'hand', 'Hand (H): Leinwand verschieben (auch mit Leertaste)', `aria-pressed="${Boolean(S.hand)}"`)}
       <span class="schienenstrich"></span>

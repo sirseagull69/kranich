@@ -414,3 +414,35 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .op-inline .op-inhalt{overflow:visible;padding:20px 0}
 .op-inline .op-fuss{justify-content:flex-start;padding:14px 0;background:none}
 .op-inline .optionen,.op-inline .optionen::before{border-top:0!important}.op-inline .optionen::before{display:none}
+/* Schärfer bei Windows-Skalierung: ganze Größen, gleiche kräftige Schrift für F K U S */
+.oo-leiste .wz,.klappmenue .wz,.textblase .wz{font-family:'Bricolage Grotesque',sans-serif}
+.wz[data-cmd="bold"] b,.wz[data-cmd="italic"] i,.wz[data-cmd="underline"] u,.wz[data-cmd="strikeThrough"] s{font:800 15px/1 'Bricolage Grotesque',sans-serif;color:var(--tinte)}
+.wz[data-cmd="italic"] i{font-style:italic}
+.lv-b .oo-leiste .schrift{width:150px}.lv-b .oo-leiste .absatz{width:112px}
+.oo-leiste select{text-overflow:ellipsis}
+.oo-leiste svg{shape-rendering:geometricPrecision}
+/* Datei-Ansicht: Vogel sichtbar, Hügel unten */
+.bs-vogel{display:grid;place-items:center;width:76px;height:76px;margin:0 0 4px 6px;border-radius:50%;background:var(--papier);box-shadow:0 10px 20px -10px rgba(0,0,0,.45);opacity:1;padding:0}
+.backstage{position:fixed}
+.bs-berge{position:absolute;left:230px;right:0;bottom:0;width:calc(100% - 230px);height:150px;pointer-events:none;z-index:0}
+.bs-inhalt{position:relative;z-index:1;padding-bottom:170px}
+/* Eigene Klappliste */
+.auswahlliste{position:fixed;z-index:5000;max-height:340px;overflow:auto;display:flex;flex-direction:column;gap:1px;padding:5px;background:var(--papier);border-radius:11px;box-shadow:0 0 0 1px var(--linie),0 20px 34px -14px rgba(20,30,60,.45);animation:rein .1s}
+.auswahlliste button{border:0;background:none;text-align:left;padding:8px 12px;border-radius:8px;font:500 14px 'Bricolage Grotesque',sans-serif;color:var(--tinte);cursor:pointer;white-space:nowrap}
+.auswahlliste button:hover{background:var(--sand)}
+.auswahlliste button.an{background:var(--hell);color:var(--dunkel);font-weight:700}
+.auswahlliste button.leer{color:var(--leise)}
+select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7286' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 9px center!important;padding-right:26px!important}
+.lv-b .oo-leiste .groesse{width:84px}.lv-b .oo-leiste .absatz{width:122px}.lv-b .oo-leiste .schrift{width:156px}
+.oo-leiste select{padding-left:10px!important}
+.auswahlliste{scrollbar-width:thin;scrollbar-color:#d8cfbd transparent}
+.auswahlliste::-webkit-scrollbar{width:8px}.auswahlliste::-webkit-scrollbar-thumb{background:#d8cfbd;border-radius:4px}
+.oo-leiste .wz,.oo-leiste select{flex:none}
+.lv-b .oo-leiste .klapp:is([data-m="einfuegen"],[data-m="pruefen"],[data-m="seite"]) svg{display:none}
+.lv-b .oo-leiste .groesse{width:78px}.lv-b .oo-leiste .absatz{width:116px}.lv-b .oo-leiste .schrift{width:146px}
+.lv-b .oo-leiste .klapp{padding:0 10px}
+.lv-b .oo-leiste .wz{padding:0 7px;min-width:30px}
+.lv-b .oo-leiste .tz{margin:0 4px}
+.lv-b .oo-leiste .absatz{width:108px}.lv-b .oo-leiste .schrift{width:136px}.lv-b .oo-leiste .groesse{width:74px}
+.lv-b .oo-leiste .klapp{padding:0 8px}
+.lv-b .oo-leiste .absatz{width:100px}.lv-b .oo-leiste .schrift{width:130px}.lv-b .oo-leiste .groesse{width:86px}
