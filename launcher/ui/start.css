@@ -153,3 +153,8 @@ header .ver{margin-right:6px}
 .status.upd b{font:700 12px 'Bricolage Grotesque',sans-serif;background:#7dd3a0;color:#14472b;border-radius:7px;padding:4px 9px}
 .status.upd:hover b{background:#9be3b6}
 .held-vogel,.zeile .ikon svg{pointer-events:none}
+.datum{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2;color:#1d2742}
+.datum b{font:700 15px 'Bricolage Grotesque',sans-serif;text-transform:capitalize}
+.datum span{font:400 13.5px 'Source Serif 4',serif;color:#7a7f8e}
+.datum .uhr{font:600 13.5px 'Bricolage Grotesque',sans-serif;color:var(--farbe)}
+.oben{padding:22px 30px 0}

@@ -85,7 +85,7 @@
       </nav>
       <main class="buehne" style="--farbe:${k.farbe};--mittel:${k.mittel};--dunkel:${k.dunkel};--hell:${k.hell}">
         ${huegel(k)}
-        <div class="oben"><label class="ori-feld">${bild('origami', 'denkt-nach', 24)}<span class="nur-sr">Ori fragen</span><input id="frage" placeholder="Ori fragen …" autocomplete="off"></label></div>
+        <div class="oben"><div class="datum"><b>${esc(new Date().toLocaleDateString('de-DE', { weekday: 'long' }))}</b><span>${esc(new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }))} · <span class="uhr">${esc(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }))}</span></span></div></div>
         <div class="held">
           <div class="held-text">
             <span class="rolle">${esc(k.rolle.toUpperCase())}</span>
@@ -103,7 +103,6 @@
           <div class="weiter-liste">${weiter.length ? weiter.map((d) => { const x = S.apps.find((q) => q.id === d.app) || {}; return `<button type="button" class="datei" data-datei="${esc(d.id)}" data-app="${esc(d.app)}"><b>${esc(d.name)}</b><span>${esc(art(x).name || '')} · ${esc(wann(d.geaendert))}</span></button>`; }).join('') : '<span class="leer">Noch nichts bearbeitet – öffne einen Vogel und leg los.</span>'}</div>
         </div>
       </main>`;
-    document.getElementById('frage').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fragen(); } });
   }
   function waehle(id) {
     if (S.wahl === id) return;
@@ -248,6 +247,7 @@
   setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
   // Zwischendurch macht der gewählte Vogel von selbst etwas
   setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 6500);
+  setInterval(() => { const u = app.querySelector('.uhr'); if (u) u.textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }, 20000);
   // Auch die kleinen Vögel links machen ab und zu etwas – immer nur einer
   setInterval(() => {
     if (document.hidden) return;
