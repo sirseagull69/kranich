@@ -5,6 +5,7 @@ const rufe = (kanal) => (...args) => ipcRenderer.invoke(kanal, ...args);
 
 contextBridge.exposeInMainWorld('kranich', {
   standFoto: rufe('stand:foto'),
+  vollbild: rufe('fenster:vollbild'),
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, id) => cb(id)),
   projekte: {
     liste: rufe('projekte:liste'),
@@ -35,6 +36,7 @@ contextBridge.exposeInMainWorld('kranich', {
     bildWaehlen: rufe('datei:bildWaehlen'),
     ordnerWaehlen: rufe('datei:ordnerWaehlen'),
     zeigen: rufe('datei:zeigen'),
+    pptxOeffnen: rufe('datei:pptxOeffnen'),
   },
   export: {
     standardOrdner: rufe('export:standardOrdner'),
@@ -42,5 +44,6 @@ contextBridge.exposeInMainWorld('kranich', {
     bild: rufe('export:bild'),
     paket: rufe('export:paket'),
     sammlung: rufe('export:sammlung'),
+    pptx: rufe('export:pptx'),
   },
 });

@@ -16,7 +16,7 @@
 .kl-leise:hover{background:rgba(29,39,66,.06);color:var(--tinte)}
 .kl-los{display:inline-flex;align-items:center;gap:8px;min-height:42px;padding:0 20px;border:0;border-radius:10px;background:#5b3fc4;color:#fff;font:700 15px 'Bricolage Grotesque',sans-serif;cursor:pointer}
 .kl-los:hover{background:#4a2f9a}
-.kl-karten{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+.kl-karten{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .kl-karte{display:flex;flex-direction:column;align-items:stretch;gap:2px;padding:10px 10px 14px;border:0;border-radius:4px;background:#fffdf9;box-shadow:0 1px 2px rgba(30,40,70,.08),0 10px 24px rgba(30,40,70,.10);text-align:left;cursor:pointer;transition:transform .15s,box-shadow .15s;color:var(--tinte)}
 .kl-karte:hover{transform:translateY(-3px);box-shadow:0 2px 4px rgba(30,40,70,.10),0 18px 36px rgba(30,40,70,.14)}
 .kl-karte:focus-visible{outline:3px solid #7c5cd6;outline-offset:3px}
@@ -236,3 +236,54 @@ body{background:var(--oo-kraft)}
 .kopf.k-kopf .trenner{background:rgba(255,255,255,.3)!important}
 #start{background-color:var(--oo-kraft)!important;background-image:none!important}
 .wb .chatspalte{margin-top:52px!important}
+
+/* ---------- Vortrag (Präsentieren) ---------- */
+.vortrag{position:fixed;inset:0;z-index:9000;background:#0d0d10;color:#f4f1ea;outline:none;cursor:default;font-family:inherit}
+.vortrag:not(.maus){cursor:none}
+.vortrag.mit-laser{cursor:none}
+.vt-buehne{position:absolute;inset:0;display:grid;place-items:center}
+.vt-folie,.vt-r-jetzt,.vt-r-naechste{position:relative;overflow:hidden;background:#fff}
+.vt-bild{position:absolute;left:0;top:0;border:0;display:block;transform-origin:0 0;pointer-events:none;background:#fff}
+.vt-leiste{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:5px 8px;border-radius:999px;background:rgba(20,20,26,.82);opacity:0;transition:opacity .25s}
+.vortrag.maus .vt-leiste{opacity:1}
+.vt-leiste button,.vt-r-oben button{border:0;background:transparent;color:#f4f1ea;font:600 13px/1 inherit;padding:8px 11px;border-radius:999px;cursor:pointer}
+.vt-leiste button:hover,.vt-r-oben button:hover{background:rgba(255,255,255,.14)}
+.vt-stand{font:600 13px/1 inherit;min-width:60px;text-align:center;font-variant-numeric:tabular-nums}
+.vt-strich{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 4px}
+.vt-schwarz{position:absolute;inset:0;background:#000;display:grid;place-items:center;color:#777;font-size:15px}
+.vt-laser{position:fixed;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#ff2d2d;box-shadow:0 0 14px 5px rgba(255,40,40,.55);pointer-events:none;z-index:2}
+.vt-sprung{position:absolute;top:24px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:12px;background:rgba(20,20,26,.9);font:600 16px/1 inherit}
+.vt-referent{position:absolute;inset:0;display:flex;flex-direction:column;padding:18px 24px;gap:16px;background:#17161c}
+.vt-r-oben{display:flex;align-items:center;gap:18px}
+.vt-uhr{font-size:30px;font-variant-numeric:tabular-nums}
+.vt-dauer,.vt-zahl{color:#b9b4c9;font-size:14px}
+.vt-zahl{flex:1}
+.vt-r-mitte{flex:1;min-height:0;display:grid;grid-template-columns:62% minmax(0,1fr);gap:24px}
+.vt-r-mitte>.vt-r-jetzt{align-self:start;box-shadow:0 0 0 3px #8b6ee0}
+.vt-r-rechts{display:flex;flex-direction:column;gap:10px;min-height:0}
+.vt-r-titel{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#9c95b4}
+.vt-r-naechste{opacity:.85}
+.vt-ende-hinweis{display:grid;place-items:center;height:140px;background:#222;color:#999;font-size:14px}
+.vt-r-notiz{flex:1;overflow:auto;font-size:22px;line-height:1.45;color:#f4f1ea;padding-right:6px}
+.vt-r-notiz .leise{color:#888;font-size:16px}
+/* Übergänge */
+.rein-blende{animation:vt-blende-rein .55s ease both}.raus-blende{animation:vt-blende-raus .55s ease both}
+@keyframes vt-blende-rein{from{opacity:0}}@keyframes vt-blende-raus{to{opacity:0}}
+.rein-schieben{animation:vt-schieben-rein .55s cubic-bezier(.3,.7,.2,1) both}.raus-schieben{animation:vt-schieben-raus .55s cubic-bezier(.3,.7,.2,1) both}
+.rein-schieben.rueck{animation-name:vt-schieben-rein-r}.raus-schieben.rueck{animation-name:vt-schieben-raus-r}
+@keyframes vt-schieben-rein{from{translate:100% 0}}@keyframes vt-schieben-raus{to{translate:-100% 0}}
+@keyframes vt-schieben-rein-r{from{translate:-100% 0}}@keyframes vt-schieben-raus-r{to{translate:100% 0}}
+.rein-zoom{animation:vt-zoom-rein .55s ease both}.raus-zoom{animation:vt-blende-raus .4s ease both}
+@keyframes vt-zoom-rein{from{opacity:0;filter:blur(6px);scale:1.08}}
+.rein-wischen{animation:vt-wischen .6s cubic-bezier(.4,.6,.2,1) both;z-index:1}.raus-wischen{animation:vt-halten .6s both}
+.rein-wischen.rueck{animation-name:vt-wischen-r}
+@keyframes vt-wischen{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
+@keyframes vt-wischen-r{from{clip-path:inset(0 0 0 100%)}to{clip-path:inset(0 0 0 0)}}
+@keyframes vt-halten{to{opacity:1}}
+/* Vortrag-Bereich in der Seitenleiste */
+.vortragsfeld{display:flex;flex-direction:column;gap:6px;padding:0 4px 8px}
+.vortragsfeld select,.vortragsfeld textarea{width:100%;box-sizing:border-box;font:13px/1.4 inherit;border:1px solid var(--linie,#e3dccd);border-radius:8px;background:#fffdf8;padding:6px 8px;color:inherit}
+.vortragsfeld textarea{min-height:76px;resize:vertical}
+.vortragsfeld label{font-size:12px;color:var(--leise,#6b6f80)}
+.boardzeile.ziel-oben{box-shadow:inset 0 3px 0 #8b6ee0}.boardzeile.ziel-unten{box-shadow:inset 0 -3px 0 #8b6ee0}
+.boardzeile.zieht{opacity:.45}

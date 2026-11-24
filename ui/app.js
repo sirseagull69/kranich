@@ -97,6 +97,7 @@
     return `<aside class="seitenkarte"><span class="klebe"></span>
       <button type="button" class="sk-marke" data-aktion="lasche" data-lasche="start">${figur(S.erstesMal === false ? 'ruhend' : 'landet', 38)}<span class="h">Kranich</span></button>
       <button type="button" class="sk-neu" data-aktion="neu" data-art="entwurf">${sym('plus', 16, 2.4)}<span>Neuer Entwurf</span><kbd>Strg N</kbd></button>
+      <button type="button" class="sk-neu sk-pptx" data-aktion="pptx-neu">${sym('ordner', 16)}<span>PowerPoint öffnen</span></button>
       <label class="sk-suche">${sym('suche', 15)}<input id="psuche" placeholder="Entwürfe durchsuchen" aria-label="Entwürfe durchsuchen"></label>
       <div class="sk-mitte">${mitte}</div>
       <div class="sk-fuss"><span class="sk-status"><i></i><b>Bereit</b><small>${esc(hirn)}</small></span>
@@ -127,6 +128,7 @@
         ['bild', 'bild', 'Bild bearbeiten', 'Freistellen, zuschneiden & Co.', '#f3eefe'],
         ['ausbild', 'webseite', 'Aus Bild', 'Screenshot rein, Entwurf raus', '#e9e3fb'],
         ['entwurf', 'folien', 'Leeres Blatt', 'Format wählen und loslegen', '#f5f1fd'],
+        ['pptx', 'applaus', 'PowerPoint öffnen', 'Folien rein, bearbeiten, vortragen', '#efe9fd'],
       ];
       const IDEEN = [['Login-Seite für eine App', 'App-Bildschirm'], ['Post für die Bäckerei', 'Instagram-Post'], ['Einladung zum 40.', 'Karte A6'], ['Startseite für eine Fahrrad-App', 'Webseite']];
       const zuletzt = S.liste.slice(0, 6);
@@ -142,7 +144,7 @@
             <input id="startwunsch" placeholder="Ein Satz reicht, z. B. „Plakat für den Flohmarkt am Samstag“" aria-label="Was soll Kranich falten?">
             <div class="reihe"><span class="leise" style="font-size:13px">Kranich sucht das passende Format selbst aus.</span><div class="platz"></div>
               <button type="button" class="kl-los" data-aktion="start-falten">Falten ${sym('senden', 16, 2.4)}</button></div></div>
-          <div class="kl-karten">${KARTEN.map(([art, anim, t, x, hell]) => `<button type="button" class="kl-karte" style="--hell:${hell}" data-aktion="neu" data-art="${art}" data-anim="${anim}"><span class="kl-bild">${figur(anim, 104)}</span><b class="h">${t}</b><span class="leise">${x}</span></button>`).join('')}</div>
+          <div class="kl-karten">${KARTEN.map(([art, anim, t, x, hell]) => `<button type="button" class="kl-karte" style="--hell:${hell}" data-aktion="${art === 'pptx' ? 'pptx-neu' : 'neu'}" data-art="${art}" data-anim="${anim}"><span class="kl-bild">${figur(anim, 104)}</span><b class="h">${t}</b><span class="leise">${x}</span></button>`).join('')}</div>
           <div class="kl-zeile2">
             <section class="kl-blatt"><h2 class="h">Zum Ausprobieren</h2>${IDEEN.map(([t, x]) => `<button type="button" class="kl-idee" data-aktion="probier" data-text="${esc(t)}"><span><b class="h">${esc(t)}</b><small>${esc(x)}</small></span>${sym('rechts', 16)}</button>`).join('')}</section>
             <section class="kl-blatt"><div class="reihe"><h2 class="h" style="flex:1">Zuletzt bearbeitet</h2>${S.liste.length > 6 ? '<button type="button" class="kl-leise" data-aktion="lasche" data-lasche="alle">Alle anzeigen</button>' : ''}</div>
@@ -347,12 +349,50 @@
       <div class="mehrmenue paper" hidden>${eintraege.map(([a, ic, t, aus]) => `<button type="button" data-aktion="${a}" ${aus ? 'disabled' : ''}>${sym(ic, 16)} ${t}</button>`).join('')}</div></div>`;
   }
 
+  function praesentieren(ab) {
+    const alle = S.projekt.seiten.filter((x) => x.html);
+    if (!alle.length) { H.meldung('Noch keine Folie mit Inhalt.'); return; }
+    const start = ab === 'aktuell' ? Math.max(0, alle.indexOf(seite())) : 0;
+    Praesentation.starten(alle, start, { titel: S.projekt.name });
+  }
+
+  async function pptxEinlesen(neuAnlegen = false) {
+    const r = await K.datei.pptxOeffnen();
+    if (!r) return;
+    if (r.fehler) { H.meldung(r.fehler.nachricht, { art: 'fehler' }); return; }
+    if (!r.folien?.length) { H.meldung('In der Datei sind keine Folien.'); return; }
+    if (neuAnlegen || !S.projekt) {
+      const f = S.formate.find((x) => x.id === 'folie') || { id: 'folie', name: 'Folie 16:9', breite: 1920, hoehe: 1080 };
+      const p = await K.projekte.anlegen({ art: 'entwurf', format: f, name: r.name });
+      if (p?.fehler) { H.meldung(p.fehler.nachricht, { art: 'fehler' }); return; }
+      p.name = r.name;
+      await K.projekte.speichern(p);
+      await oeffne(p.id);
+    }
+    const leer = S.projekt.seiten.length === 1 && !S.projekt.seiten[0].html;
+    let erstes = null;
+    for (const [i, fo] of r.folien.entries()) {
+      const name = `Folie ${i + 1}${fo.titel ? ` · ${fo.titel.slice(0, 40)}` : ''}`;
+      let b;
+      if (i === 0 && leer) { b = S.projekt.seiten[0]; Object.assign(b, { name, breite: fo.breite, hoehe: fo.hoehe, format: 'folie', mass: undefined, html: fo.html, x: b.x || 0, y: b.y || 0 }); }
+      else b = neuesBoard({ id: 'folie', name, breite: fo.breite, hoehe: fo.hoehe }, { html: fo.html });
+      b.notiz = fo.notiz || '';
+      b.verlauf = [{ html: fo.html, wunsch: 'Aus PowerPoint' }]; b.stand = 0;
+      erstes ||= b;
+    }
+    S.seiteId = erstes.id;
+    geaendert();
+    zeigeBoards(); renderKopfKnoepfe();
+    H.meldung(`${r.folien.length} Folien aus „${r.name}“ übernommen.`);
+  }
+
   function kopfKnoepfe() {
     const kannZurueck = S.modus === 'bild' ? Bild.z.stand > 0 : (seite()?.stand || 0) > 0;
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     const leer = !seite()?.html;
     return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
-      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
+      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['pptx-speichern', 'export', 'Als PowerPoint speichern', leer], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
+      ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="praesentieren" ${S.projekt?.seiten?.some((x) => x.html) ? '' : 'disabled'} title="Präsentieren ab Folie 1 (F5) · ab dieser Folie: Umschalt+F5">${sym('senden', 16)} Präsentieren</button>`}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
 
@@ -483,7 +523,7 @@
   function boardZeile(x, aktiv, mehrere, klein) {
     const st = x.html ? (x.pruefung?.offen?.length ? ['gelb', `${x.pruefung.offen.length} offen`] : ['gruen', 'fertig']) : ['leer', 'leer'];
     const name = klein ? (x.name.split(' · ')[1] || x.name) : x.name;
-    return `<button type="button" class="boardzeile ${klein ? 'klein' : ''}" aria-current="${aktiv}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} · ${st[1]} – Doppelklick zum Umbenennen">
+    return `<button type="button" class="boardzeile ${klein ? 'klein' : ''}" draggable="true" aria-current="${aktiv}" data-aktion="seite" data-id="${x.id}" title="${esc(x.name)} · ${st[1]} – Doppelklick zum Umbenennen">
       <i class="punkt ${st[0]}"></i><span class="bz-name">${esc(name)}</span>${klein ? '' : `<small>${esc(x.mass || `${x.breite}×${x.hoehe}`)}</small>`}${!klein ? `<span class="loesch" role="button" tabindex="-1" aria-label="Board löschen" data-aktion="board-weg" data-id="${x.id}">${sym('muell', 13)}</span>` : ''}</button>`;
   }
 
@@ -511,6 +551,9 @@
     const fertig = alle.filter((x) => x.html).length;
     nav.innerHTML = `<span class="sk-titel hand">Boards <small>${fertig}/${alle.length}</small></span>
       <div class="seitenlaschen">${liste}</div>
+      ${S.modus === 'entwurf' && !S.projekt.app?.plan ? `<span class="sk-titel hand">Vortrag <small>Folie ${alle.indexOf(s) + 1}</small></span>
+      <div class="vortragsfeld"><label for="vt-uebergang">Übergang zu dieser Folie</label><select id="vt-uebergang">${Praesentation.UEBERGAENGE.map(([k, t]) => `<option value="${k}" ${(s.uebergang || 'keiner') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <label for="vt-notiz">Notizen für dich (nur in der Referentenansicht)</label><textarea id="vt-notiz" placeholder="Was willst du dazu sagen?">${esc(s.notiz || '')}</textarea></div>` : ''}
       <span class="sk-titel hand">Ebenen <small>${esc(s.name)}</small></span>
       <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
       ${S.modus === 'entwurf' ? Direkt.bausteinLeiste() : ''}
@@ -1235,6 +1278,17 @@
       await sendeEntwurf(`Mische diese Varianten (${teile.map((t) => t.name).join(', ')}) zu EINEM Entwurf: ${was}`, { auswahl: null });
       if (s.html === html) s.html = alt; // Auftrag gescheitert: alten Stand behalten
     },
+    'praesentieren': () => praesentieren(0),
+    'pptx-speichern': async () => {
+      const boards = S.projekt.seiten.filter((b) => b.html).map((b) => ({ name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, notiz: b.notiz || '' }));
+      if (!boards.length) return;
+      H.meldung('Kranich faltet die PowerPoint …', { dauer: 2500 });
+      const r = await K.export.pptx({ name: S.projekt.name, boards, ziel: 'speichern' });
+      if (r?.fehler) { H.meldung(r.fehler.nachricht, { art: 'fehler' }); return; }
+      H.meldung(`Gespeichert: ${r.datei}`, { knopf: 'Im Ordner zeigen', aktion: () => K.datei.zeigen(r.datei), dauer: 9000 });
+    },
+    'pptx-oeffnen': () => pptxEinlesen(),
+    'pptx-neu': () => pptxEinlesen(true),
     'exportieren': () => Dialoge.exportieren({ projekt: S.projekt, modus: S.modus, seite: seite() }),
     // Bild
     'werkzeug': async (el) => {
@@ -1273,6 +1327,38 @@
     const fn = aktionen[el.dataset.aktion];
     if (fn) Promise.resolve(fn(el, e)).catch((f) => H.meldung(f.message || String(f), { art: 'fehler' }));
   });
+  // Vortrag: Notizen und Übergang je Folie
+  app.addEventListener('input', (e) => {
+    if (e.target.id === 'vt-notiz' && seite()) { seite().notiz = e.target.value; geaendert({ vorschau: false }); }
+  });
+  app.addEventListener('change', (e) => {
+    if (e.target.id === 'vt-uebergang' && seite()) { seite().uebergang = e.target.value === 'keiner' ? undefined : e.target.value; geaendert({ vorschau: false }); }
+  });
+  // Folien-Reihenfolge per Ziehen in der Board-Liste
+  let gezogen = null;
+  app.addEventListener('dragstart', (e) => {
+    const z = e.target.closest?.('.boardzeile'); if (!z) return;
+    gezogen = z.dataset.id; z.classList.add('zieht'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', gezogen);
+  });
+  app.addEventListener('dragover', (e) => {
+    const z = e.target.closest?.('.boardzeile'); if (!z || !gezogen) return;
+    e.preventDefault();
+    app.querySelectorAll('.ziel-oben,.ziel-unten').forEach((x) => x.classList.remove('ziel-oben', 'ziel-unten'));
+    const r = z.getBoundingClientRect(); z.classList.add(e.clientY < r.top + r.height / 2 ? 'ziel-oben' : 'ziel-unten');
+  });
+  app.addEventListener('dragend', () => { gezogen = null; app.querySelectorAll('.zieht,.ziel-oben,.ziel-unten').forEach((x) => x.classList.remove('zieht', 'ziel-oben', 'ziel-unten')); });
+  app.addEventListener('drop', (e) => {
+    const z = e.target.closest?.('.boardzeile'); if (!z || !gezogen || !S.projekt) return;
+    e.preventDefault();
+    const liste = S.projekt.seiten; const von = liste.findIndex((x) => x.id === gezogen);
+    if (von < 0 || z.dataset.id === gezogen) return;
+    const [b] = liste.splice(von, 1);
+    let nach = liste.findIndex((x) => x.id === z.dataset.id);
+    if (z.classList.contains('ziel-unten')) nach++;
+    liste.splice(nach, 0, b);
+    gezogen = null; renderSeitenleiste(); geaendert({ vorschau: false });
+  });
+
   app.addEventListener('dblclick', (e) => {
     const el = e.target.closest('[data-aktion="seite"]');
     if (!el) return;
@@ -1288,7 +1374,8 @@
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') { e.preventDefault(); S.startLasche = 'neu'; if (S.ansicht === 'start') renderStart(); else aktionen['zum-start']().then(() => { S.startLasche = 'neu'; renderStart(); }); return; }
     if (S.ansicht !== 'werkbank') return;
-    if (document.querySelector('.schleier, .abspielen')) return;
+    if (document.querySelector('.schleier, .abspielen, .vortrag')) return;
+    if (e.key === 'F5' && S.modus === 'entwurf') { e.preventDefault(); praesentieren(e.shiftKey ? 'aktuell' : 0); return; }
     const tippt = /input|textarea/i.test(document.activeElement?.tagName || '') || document.activeElement?.isContentEditable;
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !tippt) { e.preventDefault(); aktionen.rueckgaengig(); }
     if (S.modus === 'bild' && !tippt) {

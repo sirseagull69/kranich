@@ -363,6 +363,26 @@ function registriere() {
     return { datei: ziel2 };
   });
 
+  // PowerPoint: Boards als .pptx (Bild je Folie + Sprechernotizen)
+  handle('export:pptx', async ({ name, boards, ziel, app: appName, ordner }) => {
+    if (!Array.isArray(boards) || !boards.length) throw new Error('Keine Folien gewählt.');
+    const basis = zielOrdner(ziel, appName, ordner);
+    const folien = [];
+    for (const b of boards.slice(0, 200)) {
+      const bild = await fotografiere(htmlFuerApp(b.html, { namenBehalten: true }), b.breite, b.hoehe, Math.min(2, 2400 / b.breite));
+      folien.push({ breite: b.breite, hoehe: b.hoehe, png: bild.toPNG(), notiz: b.notiz || '' });
+    }
+    const puffer = await require('../kern/pptx').pptxSchreiben(folien, { titel: name });
+    return { datei: schreibeExport(basis, name, 'pptx', puffer) };
+  });
+  handle('datei:pptxOeffnen', async () => {
+    const r = await dialog.showOpenDialog(fenster, { title: 'PowerPoint öffnen', properties: ['openFile'], filters: [{ name: 'PowerPoint', extensions: ['pptx'] }] });
+    if (r.canceled || !r.filePaths[0]) return null;
+    const erg = await require('../kern/pptx').pptxLesen(fs.readFileSync(r.filePaths[0]));
+    return { name: path.basename(r.filePaths[0]).replace(/\.pptx$/i, ''), ...erg };
+  });
+  handle('fenster:vollbild', (an) => { fenster?.setFullScreen(Boolean(an)); return true; });
+
   handle('export:bild', async ({ dataUrl, format, ziel, app: appName, ordner, name, breite, hoehe }) => {
     const zielPfad = zielOrdner(ziel, appName, ordner);
     const { puffer } = dataUrlZuPuffer(dataUrl);

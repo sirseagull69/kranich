@@ -523,6 +523,7 @@
       ['paket', 'Paket für die App', 'Boards, Bausteine, Plan – für Claude Code', 'M4 7l8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4M12 11v10'],
       ['bilder', 'Bilder', 'PNG, ein Bild pro Board', 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4'],
       ['mappe', 'Mappe', 'PDF, alles in einer Datei', 'M6 3h9l4 4v14H6zM15 3v4h4M9 13h6M9 17h6'],
+      ['pptx', 'PowerPoint', '.pptx mit Notizen', 'M4 5h16v11H4zM12 16v4M8 20h8'],
       ['code', 'Code', 'HTML pro Board zum Weiterbauen', 'M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14'],
     ];
     const s = document.createElement('div');
@@ -544,7 +545,7 @@
             <button type="button" class="wg-ziel" aria-pressed="${w.ziel === 'app'}" data-ziel="app"><b class="h">In ein App-Projekt</b><select class="feld" id="wg-app">${[['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schreibprogramm']].map(([k, t]) => `<option value="${k}" ${k === w.app ? 'selected' : ''}>${t}${e.appOrdner?.[k] ? '' : ' (Ordner fehlt)'}</option>`).join('')}</select></button>
             <div class="platz"></div>
             <span class="leise status" style="font-size:13px"></span>
-            <button type="button" class="btn btn-p btn-gross" data-los ${n ? '' : 'disabled'}>${sym('export', 16)} ${n} ${n === 1 ? 'Board' : 'Boards'} ${{ paket: 'als Paket', bilder: 'als Bilder', mappe: 'als PDF', code: 'als Code' }[w.art]} speichern</button>
+            <button type="button" class="btn btn-p btn-gross" data-los ${n ? '' : 'disabled'}>${sym('export', 16)} ${n} ${n === 1 ? 'Board' : 'Boards'} ${{ paket: 'als Paket', bilder: 'als Bilder', mappe: 'als PDF', pptx: 'als PowerPoint', code: 'als Code' }[w.art]} speichern</button>
           </section>
         </div></div>`;
     };
@@ -564,10 +565,10 @@
       if (t.closest('select')) return;
       const z = t.closest('[data-ziel]'); if (z) { w.ziel = z.dataset.ziel === 'app' ? 'app' : (w.ordner ? 'ordner' : 'speichern'); zeichne(); return; }
       if (t.closest('[data-los]')) {
-        const boards = alle.filter((b) => w.gewaehlt.has(b.id)).map((b) => ({ id: b.id, name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand }));
+        const boards = alle.filter((b) => w.gewaehlt.has(b.id)).map((b) => ({ id: b.id, name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand, notiz: b.notiz || '' }));
         const st = s.querySelector('.status'); st.textContent = 'Kranich faltet zusammen …';
         s.querySelector('[data-los]').disabled = true;
-        const r = w.art === 'paket'
+        const r = w.art === 'pptx' ? await K.export.pptx({ name, boards, ziel: w.ziel, app: w.app, ordner: w.ordner }) : w.art === 'paket'
           ? await K.export.paket({ name, boards, css: p.app?.css || '', plan: p.app?.plan || null, ziel: w.ziel, app: w.app, ordner: w.ordner })
           : await K.export.sammlung({ name, boards, art: w.art, faktor: w.faktor, ziel: w.ziel, app: w.app, ordner: w.ordner });
         if (r?.fehler) { st.textContent = r.fehler.nachricht; s.querySelector('[data-los]').disabled = false; return; }
