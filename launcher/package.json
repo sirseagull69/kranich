@@ -1,7 +1,7 @@
 {
   "name": "selbst-gfaltet",
   "productName": "Selbst gfaltet",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Startfenster der Familie Selbst gfaltet: origami, Kranich, Albatros und alle weiteren Vögel an einem Ort",
   "author": "Nils Pohler",
   "main": "main/main.js",
