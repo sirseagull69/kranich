@@ -468,3 +468,82 @@ body{background:var(--grund);background-image:none}
 .nachschlag{position:fixed;top:14px;right:14px;bottom:14px;width:min(620px,92vw);z-index:20;border-radius:18px;box-shadow:0 20px 60px rgba(20,28,50,.25)}
 @media (max-width:1100px){.wand{grid-template-columns:minmax(0,1fr)}.widgets{grid-template-columns:1fr}.widget.gross{grid-column:auto}}
 .widgets{overflow-x:hidden;padding:2px}
+
+/* ---------- Ori Office: Werkstatt-Look (Specht) ---------- */
+:root{--oo-farbe:#b23a28;--oo-mittel:#d0614d;--oo-hell:#f8e0d9;--oo-dunkel:#6f1f14;--oo-menue:#f6d2c9;--oo-kraft:#e6d5c4;--oo-papier:#fffaf0;--oo-linie:#efe4d6;--oo-sand:#f6efe6;--oo-leise:#a6907f;--oo-mono:'JetBrains Mono',ui-monospace,Consolas,monospace}
+body{background:var(--oo-kraft)!important;background-image:none!important}
+#app{padding:0!important;display:flex;flex-direction:column;height:100%}
+.ecke{display:none}
+.oo-kopf{height:46px;flex:none;display:flex;align-items:center;gap:10px;padding:0 150px 0 10px;background:var(--oo-farbe);color:#fff;-webkit-app-region:drag}
+.oo-kopf button,.oo-kopf [data-a]{-webkit-app-region:no-drag}
+.oo-ikon{width:34px;height:34px;border:0;border-radius:10px;background:rgba(255,255,255,.16);display:grid;place-items:center;padding:0;overflow:hidden}
+.oo-dok{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.oo-dok b{font:800 15px var(--g);color:#fff}
+.oo-dok small{font:400 11.5px var(--g);color:var(--oo-menue);white-space:nowrap}
+.oo-menue{display:flex;gap:2px;margin-left:14px}
+.oo-menue .m{background:none;border:0;color:var(--oo-menue);font:500 13.5px var(--g);padding:7px 10px;border-radius:0}
+.oo-menue .m:hover{color:#fff}
+.oo-menue .m.an{color:#fff;font-weight:700;box-shadow:inset 0 -2px 0 #fff}
+.oo-teilen{background:rgba(255,255,255,.16);border:0;color:#fff;font:700 13px var(--g);padding:7px 14px;border-radius:8px}
+.oo-ori{background:#ffe3d1;border:0;color:#8f3a10;font:700 13px var(--g);padding:2px 12px 2px 4px;border-radius:8px;display:flex;align-items:center;gap:4px}
+.oo-ori .ori-bild{width:32px;height:32px;margin:-6px -4px -6px -6px}
+/* Lochwand */
+.oo-flaeche{flex:1;min-height:0;position:relative;overflow:hidden;padding:16px 28px 0;background-color:var(--oo-kraft);background-image:radial-gradient(circle,rgba(110,60,40,.22) 2.2px,transparent 2.8px);background-size:26px 26px;background-position:13px 13px}
+.oo-berge{position:absolute;left:0;right:0;bottom:0;width:100%;height:200px;pointer-events:none}
+.oo-inhalt{position:relative;height:100%;display:grid;grid-template-columns:330px minmax(0,1fr);gap:22px}
+.oo-inhalt.zu{grid-template-columns:52px minmax(0,1fr)}
+.oo-links{position:relative;min-height:0;display:flex;flex-direction:column;padding:56px 0 22px}
+.oo-sitzvogel{position:absolute;right:20px;top:-4px;z-index:2;filter:drop-shadow(0 6px 6px rgba(40,20,10,.3));pointer-events:none}
+.oo-inhalt.zu .oo-sitzvogel,.oo-inhalt.zu .oo-seite{display:none}
+.oo-schiene{display:none}
+.oo-inhalt.zu .oo-schiene{display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0;border-radius:6px;background:var(--oo-papier);box-shadow:0 20px 30px -22px rgba(40,20,10,.6)}
+.oo-klapp{width:34px;height:34px;border:0;border-radius:8px;background:var(--oo-sand);color:var(--tinte);font:700 18px var(--g)}
+.oo-schienenvogel{width:40px;height:40px;border:0;border-radius:10px;background:var(--oo-hell);display:grid;place-items:center;padding:0;overflow:hidden}
+.oo-seite{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--oo-papier);border-radius:6px;box-shadow:0 30px 40px -24px rgba(40,20,10,.55);padding:14px;overflow:hidden;border-top:5px solid var(--oo-farbe)}
+.oo-seite .frage{flex:1;min-height:0;background:transparent!important;color:var(--tinte);box-shadow:none;padding:0;border-radius:0}
+.oo-seite .frage .kopfz{display:flex;align-items:center;gap:6px;background:transparent;border-bottom:1px solid var(--oo-linie);border-radius:0;margin:-14px -14px 12px;padding:14px 12px 12px 16px}
+.oo-seite .frage .kopfz h3{flex:1;color:var(--tinte)}
+.oo-seite .frage .mini{background:var(--oo-sand);color:var(--oo-dunkel)}
+.oo-pfeil{width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:var(--oo-leise);font:700 18px var(--g)}
+.oo-pfeil:hover{background:var(--oo-sand);color:var(--tinte)}
+.oo-seite .frage h1{font-size:24px;color:var(--tinte)}
+.oo-seite .fr-in{flex-direction:column-reverse;align-items:stretch}
+.oo-seite .fr-in .vogel{display:none}
+.oo-seite .fr-text{color:var(--leise)}
+.oo-seite .bsp button{background:var(--oo-sand);color:var(--oo-dunkel);border:0;border-radius:999px;padding:7px 12px;font-size:13px}
+.oo-seite .bsp button:hover{background:var(--oo-hell)}
+.oo-seite .frage .eing{background:var(--oo-sand);box-shadow:none}
+.oo-seite .frage .frage-zettel{background:var(--oo-sand);color:var(--tinte)}
+.oo-seite .frage .antwort{background:var(--oo-hell);color:#3d1109}
+.oo-seite .frage .denkt i{background:var(--oo-farbe)}
+.oo-ori-karte{display:flex;align-items:center;gap:6px;margin-top:10px;padding:0;background:none;color:#a8431a;flex:none}
+.oo-ori-karte b{font:600 18px 'Caveat',cursive;color:#a8431a}
+.oo-ori-karte .ori-bild{width:34px;height:34px;flex:none}
+.oo-wer2{display:flex;align-items:center;gap:8px;margin:0;text-transform:none!important;letter-spacing:0!important}
+.oo-wer2 span{display:flex;flex-direction:column;line-height:1.2}
+.oo-wer2 b{font:800 16.5px var(--g);color:var(--tinte)}
+.oo-wer2 small{font:400 13px var(--s);color:var(--oo-leise)}
+.oo-rechts{position:relative;min-width:0;min-height:0;display:flex;flex-direction:column;gap:14px}
+.oo-leiste{position:relative;flex:none;align-self:flex-start;max-width:100%;display:flex;align-items:center;gap:2px;flex-wrap:wrap;background:var(--oo-papier);border-radius:10px;box-shadow:0 8px 18px -12px rgba(40,20,10,.5);padding:4px 8px}
+.oo-leiste .wz{border:0;background:none;color:var(--oo-dunkel);font:600 13px var(--g);padding:8px 11px;border-radius:8px;white-space:nowrap}
+.oo-leiste .wz:hover:not(:disabled){background:var(--oo-sand)}
+.oo-leiste .wz.an{background:var(--oo-farbe);color:#fff;font-weight:700}
+.oo-leiste .wz:disabled{opacity:.55}
+.oo-leiste .tz{width:1px;height:20px;background:var(--oo-linie);margin:0 6px}
+.oo-leiste .pille{margin-left:8px}
+.oo-karte{position:relative;flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--oo-papier);border-radius:6px 0 0 0;box-shadow:0 30px 40px -24px rgba(40,20,10,.55);overflow:hidden;clip-path:polygon(0 0,calc(100% - 36px) 0,100% 36px,100% 100%,0 100%)}
+.oo-karte::after{content:'';position:absolute;right:0;top:0;width:36px;height:36px;background:var(--oo-hell);clip-path:polygon(0 0,100% 100%,0 100%)}
+.oo-blattkopf{display:flex;align-items:baseline;gap:12px;padding:16px 60px 12px 24px;flex:none;border-bottom:1px solid var(--oo-linie)}
+.oo-blattkopf h1{margin:0;font:800 24px/1.2 var(--g);letter-spacing:-.4px;color:var(--tinte)}
+.oo-blattkopf .hand{font:600 21px 'Caveat',cursive!important;color:var(--oo-farbe);text-transform:none!important;letter-spacing:0!important}
+.oo-blattkopf .hand::before,.oo-blattkopf .hand::after{content:none!important;display:none!important}
+.oo-blattkopf .platz{flex:1}
+.oo-stand{font:500 12px var(--oo-mono);color:var(--oo-leise)}
+.oo-wandinhalt{flex:1;min-height:0;overflow:auto;padding:16px 20px;display:flex;flex-direction:column}
+.oo-wand .widgets{flex:1}
+/* angepinnte Karten */
+.oo-wand .widget,.oo-wand .k{position:relative;border-radius:6px!important;box-shadow:0 1px 0 var(--oo-linie),0 10px 18px -14px rgba(40,20,10,.5)!important}
+.oo-wand .widget::before,.oo-wand .k::before{content:'';position:absolute;left:50%;top:-5px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--oo-farbe);box-shadow:0 2px 2px rgba(0,0,0,.25);z-index:1}
+.oo-wand .widget b,.oo-wand .k b,.oo-wand .zahl{font-variant-numeric:tabular-nums}
+.nachschlag{top:62px}
+@media (max-width:1250px){.oo-menue .m{padding:7px 6px;font-size:13px}.oo-inhalt{grid-template-columns:300px minmax(0,1fr)}.oo-flaeche{padding:14px 18px 0}}

@@ -111,13 +111,27 @@
   const STANDARD_WAND = [{ id: 'server', gross: false }, { id: 'stoerungen', gross: false }, { id: 'backup', gross: false }, { id: 'netz', gross: false }];
   function wand() { try { const w = JSON.parse(localStorage.getItem('specht-wand') || 'null'); if (Array.isArray(w) && w.every((x) => WIDGETS[x.id])) return w; } catch { /* egal */ } return STANDARD_WAND.map((x) => ({ ...x })); }
   function wandSpeichern(w) { try { localStorage.setItem('specht-wand', JSON.stringify(w)); } catch { /* egal */ } }
+  // ---------- Ori-Office-Rahmen ----------
+  const oriVogel = (g, anim = 'ruhezustand-2') => { const v = window.ORI?.[anim] || window.ORI?.['ruhezustand-2'] || ''; return v.replace(/__G__/g, g).replace(/<ellipse[\s\S]*?<\/ellipse>/, '').replace(' aria-hidden="true"', ' aria-hidden="true" class="ori-bild"'); };
+  const ORI_SPRUECHE = ['Er mag den Drucker. Ganz tief drinnen.', 'Grummelt viel, hilft immer.', 'Frag ihn, bevor du Marco fragst.', 'Er klopft erst, wenn du willst. Versprochen.', 'Wenn er „schon wieder“ sagt, war es schon wieder.'];
+  const ORI_NR = Math.floor(Math.random() * 5);
+  const OO_REITER = [['uebersicht', 'Übersicht'], ['server', 'Server'], ['netz', 'Netz'], ['backup', 'Backup'], ['stoerungen', 'Tagebuch'], ['anleitungen', 'Anleitungen'], ['lizenzen', 'Lizenzen']];
+  function ooKopf() {
+    const offen = S.ansicht && S.ansicht !== 'uebersicht' ? S.ansicht : 'uebersicht';
+    return `<header class="oo-kopf"><button type="button" class="oo-ikon" data-a="ansicht" data-z="uebersicht" aria-label="Übersicht">${specht(30, S.klopft ? 'klopft' : '')}</button>
+      <div class="oo-dok"><b>Specht</b><small>IT-Helfer · ${esc(klopfText())}</small></div>
+      <nav class="oo-menue" aria-label="Bereiche">${OO_REITER.map(([k, t]) => `<button type="button" class="m${offen === k ? ' an' : ''}" data-a="ansicht" data-z="${k}">${t}</button>`).join('')}</nav>
+      <div class="platz"></div>
+      <button type="button" class="oo-teilen" data-a="ansicht" data-z="einstellungen">Einstellungen</button>
+      <button type="button" class="oo-ori" data-a="ori" title="Specht fragen">${oriVogel(24)}Ori</button></header>`;
+  }
   function kopfleiste() {
     return `<header class="wandkopf">${kopf()}<div class="platz"></div>${S.anpassen ? '<button type="button" class="btn klein haupt" data-a="anpassen">Fertig</button>' : ''}${syncPille()}<button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></header>`;
   }
   function frageKachel() {
     const verlauf = chatVerlauf();
     const vorschlaege = S.d.wissen.VORSCHLAEGE?.length ? S.d.wissen.VORSCHLAEGE : ['Welche Server sind gerade still?', 'Was steht offen im Tagebuch?', 'Ein Drucker druckt nicht – was prüfe ich?'];
-    const kopfz = `<div class="kopfz"><h3>Specht fragen</h3>${verlauf.length ? `<button type="button" class="mini" data-a="gross">${S.gross ? 'Zur Wand' : 'Ausklappen'}</button><button type="button" class="mini" data-a="chat-neu">Neue Frage</button>` : `<button type="button" class="mini" data-a="anpassen">${S.anpassen ? 'Fertig' : 'Anpassen'}</button>`}</div>`;
+    const kopfz = `<div class="kopfz"><h3 class="oo-wer2"><span><b>Specht</b><small>Admin, grummelt, hilft trotzdem</small></span></h3>${verlauf.length ? `<button type="button" class="mini" data-a="gross">${S.gross ? 'Zur Wand' : 'Ausklappen'}</button><button type="button" class="mini" data-a="chat-neu">Neue Frage</button>` : ''}<button type="button" class="oo-pfeil" data-a="helfer-klappen" title="Einklappen" aria-label="Specht einklappen">‹</button></div>`;
     const inhalt = verlauf.length
       ? `<div class="gespraech" aria-live="polite">${verlauf.map(nachricht).join('')}${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}</div>`
       : `<div class="fr-in"><div><h1>${keinWissen() ? 'Hallo, ich bin Specht.' : 'Was ist los<br>in der IT?'}</h1>
@@ -500,7 +514,32 @@
     const frage = document.getElementById('frage')?.value || '';
     const scroll = app.querySelector('.nachschlag-inhalt')?.scrollTop || 0;
     const gesp = app.querySelector('.gespraech');
-    app.innerHTML = `${kopfleiste()}<div class="wand ${S.gross && chatVerlauf().length ? 'gross' : ''}">${frageKachel()}${S.gross && chatVerlauf().length ? leisteSchmal() : widgetWand()}</div>${nachschlagBlatt()}`;
+    app.innerHTML = `${ooKopf()}<main class="oo-flaeche">
+        <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1440 220" preserveAspectRatio="none"><path d="M0 130 C 300 80 600 170 900 120 S 1300 90 1440 120 V220 H0Z" fill="#d0614d" opacity=".35"/><path d="M0 180 C 360 150 700 210 1000 175 S 1340 165 1440 180 V220 H0Z" fill="#b23a28" opacity=".85"/></svg>
+        <div class="oo-inhalt${S.helferZu ? ' zu' : ''}">
+          <div class="oo-links">
+            <div class="oo-sitzvogel" aria-hidden="true">${specht(84)}</div>
+            <aside class="oo-seite">${frageKachel()}<div class="oo-ori-karte">${oriVogel(34)}<span><b>${esc(ORI_SPRUECHE[ORI_NR % ORI_SPRUECHE.length])}</b></span></div></aside>
+            <div class="oo-schiene"><button type="button" class="oo-klapp" data-a="helfer-klappen" aria-label="Specht zeigen">›</button><button type="button" class="oo-schienenvogel" data-a="helfer-klappen" aria-label="Specht">${specht(34)}</button></div>
+          </div>
+          <div class="oo-rechts">
+            <div class="oo-leiste" role="toolbar" aria-label="Werkzeuge">
+              <button type="button" class="wz an" data-a="klopfen" ${S.klopft || keinWissen() ? 'disabled' : ''}>${S.klopft ? 'Klopft ab …' : 'Jetzt abklopfen'}</button>
+              <span class="tz"></span>
+              <button type="button" class="wz" data-a="ansicht" data-z="stoerungen">+ Störung</button>
+              <button type="button" class="wz" data-a="ansicht" data-z="anleitungen">Anleitungen</button>
+              <span class="tz"></span>
+              <button type="button" class="wz${S.anpassen ? ' an' : ''}" data-a="anpassen">${S.anpassen ? 'Fertig' : 'Wand anpassen'}</button>
+              <button type="button" class="wz" data-a="wissen-laden">Wissens-Datei</button>
+              ${syncPille()}
+            </div>
+            <div class="oo-karte oo-wand">
+              <div class="oo-blattkopf"><h1>Alles im Blick</h1><span class="hand">sag, was klemmt</span><span class="platz"></span><small class="oo-stand">${esc(klopfText())}</small></div>
+              <div class="oo-wandinhalt">${S.gross && chatVerlauf().length ? leisteSchmal() : widgetWand()}</div>
+            </div>
+          </div>
+        </div>
+      </main>${nachschlagBlatt()}`;
     const f = document.getElementById('frage'); if (f) f.value = frage;
     if (!neu) { const h = app.querySelector('.nachschlag-inhalt'); if (h) h.scrollTop = scroll; }
     const g = app.querySelector('.gespraech'); if (g) g.scrollTop = g.scrollHeight;
@@ -570,6 +609,8 @@
     },
     ansicht: (el) => { S.ansicht = el.dataset.z; S.stoerung = null; S.bearbeite = null; if (S.ansicht === 'lizenzen') S.lizenzen = null; zeichne(); },
     helfer: () => { S.helfer = !S.helfer; zeichne(false); },
+    'helfer-klappen': () => { S.helferZu = !S.helferZu; zeichne(false); },
+    ori: () => { if (S.helferZu) S.helferZu = false; zeichne(false); setTimeout(() => document.getElementById('frage')?.focus(), 30); },
     gross: () => { S.gross = !S.gross; zeichne(false); },
     anpassen: () => { S.anpassen = !S.anpassen; zeichne(false); },
     'w-gross': (el) => { const w = wand(); const x = w.find((y) => y.id === el.dataset.id); if (x) x.gross = !x.gross; wandSpeichern(w); zeichne(false); },

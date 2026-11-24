@@ -254,7 +254,8 @@ function registriere() {
 
 function oeffneFenster() {
   fenster = new BrowserWindow({
-    width: 1440, height: 900, minWidth: 1100, minHeight: 700, title: 'Specht', backgroundColor: '#f2f0e9', autoHideMenuBar: true,
+    width: 1440, height: 900, minWidth: 1100, minHeight: 700, title: 'Specht', backgroundColor: '#b23a28', autoHideMenuBar: true,
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#b23a28', symbolColor: '#ffffff', height: 46 },
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });
