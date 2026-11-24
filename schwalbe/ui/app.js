@@ -354,6 +354,7 @@
       else if (ev.dataTransfer?.files?.length) ev.preventDefault();
     });
     s.addEventListener('click', (ev) => {
+      aendBlase(ev.target.closest?.('ins.aend, del.aend'));
       S.live = ev.target.closest('table[data-quelle]') || null; if (S.live) zeigeSchwebe();
       const img = ev.target.closest('img');
       app.querySelectorAll('.seite img.gewaehlt').forEach((x) => x !== img && x.classList.remove('gewaehlt'));
@@ -788,6 +789,24 @@
   }
   const rueckgaengig = () => { if (!verlaufSchritt(-1)) document.execCommand('undo'); geaendert(); };
   const wiederholen = () => { if (!verlaufSchritt(1)) document.execCommand('redo'); geaendert(); };
+
+  // Kleine Blase direkt an einer Änderung: ✓ / ✕ ohne Umweg über die Leiste
+  function aendBlase(el) {
+    document.querySelector('.aend-blase')?.remove();
+    if (!el || !blatt()?.contains(el)) return;
+    const b = document.createElement('div'); b.className = 'aend-blase';
+    b.innerHTML = `<small>${el.tagName === 'INS' ? 'eingefügt' : 'gelöscht'} · ${esc(el.dataset.autor || '')}</small><button type="button" data-w="an" title="Annehmen">${sym('haken', 14)} Annehmen</button><button type="button" data-w="ab" title="Ablehnen">${sym('kreuz', 14)}</button>`;
+    document.body.appendChild(b);
+    const r = el.getBoundingClientRect(); b.style.left = `${Math.max(8, Math.min(r.left, innerWidth - b.offsetWidth - 8))}px`; b.style.top = `${r.top - b.offsetHeight - 6}px`;
+    b.addEventListener('mousedown', (e) => e.preventDefault());
+    b.addEventListener('click', (e) => {
+      const w = e.target.closest('[data-w]')?.dataset.w; if (!w) return;
+      merkeStand(); (w === 'an' ? Pruefen.annehmen : Pruefen.ablehnen)(el); b.remove(); geaendert(); if (S.reiter === 'pruefen') zeigeLeiste();
+    });
+    const weg = (e) => { if (!b.contains(e.target)) { b.remove(); document.removeEventListener('mousedown', weg, true); } };
+    setTimeout(() => document.addEventListener('mousedown', weg, true), 0);
+    app.querySelector('.schreibtisch')?.addEventListener('scroll', () => b.remove(), { once: true, passive: true });
+  }
 
   // ---------- Live-Tabellen aus Albatros ----------
   async function liveAktualisieren(nurDiese) {

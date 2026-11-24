@@ -295,3 +295,8 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .zieh-hinweis small{color:var(--leise)}
 .zieh-hinweis.lade{border-style:solid;background:rgba(219,230,247,.6)}
 .kopf .version{font:600 11px 'Bricolage Grotesque',sans-serif;opacity:.7;margin-left:6px;align-self:flex-end;margin-bottom:3px}
+.aend-blase{position:fixed;z-index:2500;display:flex;align-items:center;gap:4px;background:#1d2742;color:#fff;border-radius:9px;padding:4px 5px 4px 10px;box-shadow:0 8px 20px -8px rgba(10,14,30,.5);font:600 12.5px 'Bricolage Grotesque',sans-serif}
+.aend-blase small{color:#b9c4d6;font-weight:500;margin-right:4px}
+.aend-blase button{border:0;background:rgba(255,255,255,.1);color:#fff;border-radius:6px;padding:4px 8px;display:inline-flex;align-items:center;gap:4px;font:inherit;cursor:pointer}
+.aend-blase button:hover{background:rgba(255,255,255,.22)}
+.seite del.aend{text-decoration-skip-ink:none}

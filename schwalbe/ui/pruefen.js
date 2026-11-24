@@ -10,7 +10,7 @@ window.Pruefen = (() => {
   // Nachbarknoten, leere Textknoten übersprungen
   function nachbar(n, richtung) { let k = richtung < 0 ? n.previousSibling : n.nextSibling; while (k && k.nodeType === 3 && !k.length) k = richtung < 0 ? k.previousSibling : k.nextSibling; return k; }
   const meinDel = (k) => k?.matches?.('del.aend') && k.dataset.autor === autor;
-  function neu(tag) { const e = document.createElement(tag); e.className = 'aend'; e.dataset.autor = autor; e.dataset.zeit = jetzt(); return e; }
+  function neu(tag) { const e = document.createElement(tag); e.className = 'aend'; e.dataset.autor = autor; e.dataset.zeit = jetzt(); if (tag === 'del') e.spellcheck = false; return e; }
   function caret(knoten, offset) { const sel = getSelection(); const r = document.createRange(); r.setStart(knoten, offset); r.collapse(true); sel.removeAllRanges(); sel.addRange(r); }
 
   // Alle Textknoten eines Bereichs (an den Rändern geteilt) einzeln einwickeln.
