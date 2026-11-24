@@ -348,6 +348,7 @@
     const box = app.querySelector('.rasterscroll');
     const scroll = [box.scrollLeft, box.scrollTop];
     box.innerHTML = html;
+    zeichneDiagramme();
     [box.scrollLeft, box.scrollTop] = scroll;
     zeichneReiter();
     zeigeAuswahl();
@@ -757,7 +758,7 @@
     for (const [sp, px] of Object.entries(r.breiten || {})) if (/^[A-Z]{1,3}$/i.test(sp)) b.breiten[sp.toUpperCase()] = Math.max(40, Math.min(600, Number(px) || 110));
     if (r.name && /^(Neue Tabelle|Ausrechnung)$/.test(S.t.name)) { S.t.name = String(r.name).slice(0, 80); const t = app.querySelector('.dok b'); if (t) t.textContent = S.t.name; }
     if (hatWas) { geaendert(); zeichneTabelle(); }
-    if (r.diagramm?.werte) zeigeDiagramm(r.diagramm.werte, r.diagramm.beschriftung, r.diagramm.art, r.diagramm.titel);
+    if (r.diagramm?.werte) { const q = quelleAusAlt(r.diagramm.werte, r.diagramm.beschriftung, r.diagramm.titel); const art = window.Diagramm.ARTEN.some(([k]) => k === r.diagramm.art) ? r.diagramm.art : 'saeulen'; if (q?.reihen.length) diagrammInsBlatt(q, art, String(r.diagramm.titel || '').slice(0, 80)); }
     return n;
   }
 
@@ -778,38 +779,119 @@
   }
 
   // ---------- Diagramm ----------
-  function zeigeDiagramm(werteBereich, namenBereich, art = 'balken', titel = '') {
-    if (!werteBereich) {
-      const a = auswahl();
-      if (a.sp1 === a.sp2 && a.ze1 === a.ze2) { meldung('Markier zuerst die Zahlen, z. B. eine Spalte.'); return; }
-      const kopf = typeof S.werte[Fo.adresse(a.sp2, a.ze1)] === 'string';
-      const ze1 = kopf ? a.ze1 + 1 : a.ze1;
-      werteBereich = `${Fo.adresse(a.sp2, ze1)}:${Fo.adresse(a.sp2, a.ze2)}`;
-      // Beschriftung: Spalte links daneben mit Text, sonst erste Textspalte
-      let nameSp = a.sp1 < a.sp2 ? a.sp1 : -1;
-      if (nameSp < 0) for (let s = 0; s < a.sp2; s++) { if (typeof S.werte[Fo.adresse(s, ze1)] === 'string') { nameSp = s; } }
-      namenBereich = nameSp >= 0 ? `${Fo.adresse(nameSp, ze1)}:${Fo.adresse(nameSp, a.ze2)}` : null;
-      titel = kopf ? String(S.werte[Fo.adresse(a.sp2, a.ze1)]) : '';
+  // Quelle: { namen: 'A2:A9' | null, reihen: [{ name, bereich: 'D2:D9' }] }
+  function diagrammQuelle(a) {
+    const zahlSpalte = (sp) => { for (let ze = a.ze1; ze <= a.ze2; ze++) if (typeof S.werte[Fo.adresse(sp, ze)] === 'number') return true; return false; };
+    const kopf = (() => { for (let sp = a.sp1; sp <= a.sp2; sp++) { const w = S.werte[Fo.adresse(sp, a.ze1)]; if (zahlSpalte(sp) && typeof w === 'string' && w.trim()) return true; } return false; })();
+    const ze1 = kopf && a.ze2 > a.ze1 ? a.ze1 + 1 : a.ze1;
+    // letzte Zeile weglassen, wenn sie eine Summe ist
+    let ze2 = a.ze2;
+    for (let sp = a.sp1; sp <= a.sp2; sp++) { const w = S.werte[Fo.adresse(sp, ze2)]; if (typeof w === 'string' && /^(summe|gesamt|total)/i.test(w) && ze2 > ze1) { ze2--; break; } const roh = String(blatt().zellen[Fo.adresse(sp, ze2)] || ''); if (/^=SUMME\(/i.test(roh) && ze2 > ze1) { ze2--; break; } }
+    const reihen = []; let namenSp = -1;
+    for (let sp = a.sp1; sp <= a.sp2; sp++) {
+      if (zahlSpalte(sp) && !(namenSp < 0 && sp === a.sp1 && a.sp2 > a.sp1 && [...Array(ze2 - ze1 + 1)].every((_, i) => { const w = S.werte[Fo.adresse(sp, ze1 + i)]; return typeof w === 'number' && w > 1900 && w < 2100 && Number.isInteger(w); }))) {
+        reihen.push({ name: kopf ? String(S.werte[Fo.adresse(sp, a.ze1)]) : `Reihe ${reihen.length + 1}`, bereich: `${Fo.adresse(sp, ze1)}:${Fo.adresse(sp, ze2)}` });
+      } else if (namenSp < 0) namenSp = sp;
     }
-    const w = sammle(werteBereich); const nm = namenBereich ? sammle(namenBereich) : [];
-    const daten = w.map((ad, i) => ({ name: nm[i] ? Fo.zeige(S.werte[nm[i]]) : ad, wert: S.werte[ad] })).filter((d) => typeof d.wert === 'number' && d.name !== '' && !/^summe/i.test(d.name));
+    if (namenSp < 0 && a.sp1 === a.sp2) for (let sp = a.sp1 - 1; sp >= 0; sp--) { if (typeof S.werte[Fo.adresse(sp, ze1)] === 'string') { namenSp = sp; break; } }
+    return { namen: namenSp >= 0 ? `${Fo.adresse(namenSp, ze1)}:${Fo.adresse(namenSp, ze2)}` : null, reihen };
+  }
+  function diagrammDaten(q, b = blatt()) {
+    const wert = (ad) => S.werte[ad];
+    const namen = q.namen ? sammle(q.namen).map((ad) => Fo.zeige(wert(ad), fmtVon(b, ad))) : [];
+    const reihen = (q.reihen || []).map((r) => ({ name: r.name, werte: sammle(r.bereich).map((ad) => { const v = wert(ad); return typeof v === 'number' ? v : null; }) }));
+    return { namen, reihen };
+  }
+  function quelleAusAlt(werteBereich, namenBereich, titel) {
+    const r = Fo.bereich(String(werteBereich).toUpperCase()); if (!r) return null;
+    const reihen = []; for (let sp = r.sp1; sp <= r.sp2; sp++) { const kopfW = S.werte[Fo.adresse(sp, Math.max(0, r.ze1 - 1))]; reihen.push({ name: r.sp1 === r.sp2 ? (titel || (typeof kopfW === 'string' ? kopfW : 'Werte')) : (typeof kopfW === 'string' ? kopfW : `Reihe ${sp - r.sp1 + 1}`), bereich: `${Fo.adresse(sp, r.ze1)}:${Fo.adresse(sp, r.ze2)}` }); }
+    return { namen: namenBereich ? String(namenBereich).toUpperCase() : null, reihen };
+  }
+  function zeigeDiagramm(werteBereich, namenBereich, art = 'saeulen', titel = '') {
+    let q;
+    if (werteBereich) q = quelleAusAlt(werteBereich, namenBereich, titel);
+    else {
+      const a = auswahl();
+      if (a.sp1 === a.sp2 && a.ze1 === a.ze2) { meldung('Markier zuerst die Zahlen, z. B. eine oder mehrere Spalten mit Überschrift.'); return; }
+      q = diagrammQuelle(a);
+      if (!titel) titel = q.reihen.length === 1 ? q.reihen[0].name : '';
+    }
+    if (!q?.reihen.length) { meldung('In der Markierung sind keine Zahlen.'); return; }
+    if (art === 'balken') art = 'saeulen';
+    const daten = diagrammDaten(q);
     const s = document.createElement('div'); s.className = 'schleier';
     let aktuell = art;
-    const bau = () => window.Diagramm.svg({ daten, art: aktuell, titel });
-    s.innerHTML = `<div class="fenster" role="dialog" aria-modal="true" aria-label="Diagramm"><div class="reihe"><h2 class="h" style="flex:1">Diagramm</h2>
-        <div class="segment">${[['balken', 'Balken'], ['linie', 'Linie'], ['kreis', 'Kreis']].map(([k, t]) => `<label><input type="radio" name="dart" value="${k}" ${k === art ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
+    const bau = () => window.Diagramm.svg({ ...daten, art: aktuell, titel });
+    s.innerHTML = `<div class="fenster" role="dialog" aria-modal="true" aria-label="Diagramm" style="width:min(900px,95vw)"><div class="reihe"><h2 class="h" style="flex:1">Diagramm</h2>
+        <input class="feld" id="d-titel" value="${esc(titel)}" placeholder="Titel" style="width:220px">
         <button type="button" class="rund" data-zu aria-label="Schließen">✕</button></div>
+        <div class="segment d-arten">${window.Diagramm.ARTEN.map(([k, t]) => `<label><input type="radio" name="dart" value="${k}" ${k === art ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
       <div class="diagramm">${bau()}</div>
-      <div class="reihe"><span class="leise" style="font-size:13px">${esc(werteBereich)}${namenBereich ? ` · Namen aus ${esc(namenBereich)}` : ''}</span><div class="platz"></div><button type="button" class="btn weiss" data-zu>Schließen</button><button type="button" class="btn" data-bild>${sym('export', 16)} Als Bild speichern</button></div></div>`;
+      <div class="reihe"><span class="leise" style="font-size:13px">${q.reihen.map((r) => esc(`${r.name} (${r.bereich})`)).join(' · ')}${q.namen ? ` · Namen aus ${esc(q.namen)}` : ''}</span><div class="platz"></div><button type="button" class="btn weiss" data-bild>Als Bild speichern</button><button type="button" class="btn" data-insblatt>Ins Blatt setzen</button></div></div>`;
     document.body.appendChild(s);
-    s.querySelector('.diagramm svg').setAttribute('style', 'width:100%;height:auto');
-    s.addEventListener('change', (ev) => { if (ev.target.name === 'dart') { aktuell = ev.target.value; s.querySelector('.diagramm').innerHTML = bau(); s.querySelector('.diagramm svg').setAttribute('style', 'width:100%;height:auto'); } });
+    const neuZeichnen = () => { s.querySelector('.diagramm').innerHTML = bau(); s.querySelector('.diagramm svg').setAttribute('style', 'width:100%;height:auto'); };
+    neuZeichnen();
+    s.addEventListener('change', (ev) => { if (ev.target.name === 'dart') { aktuell = ev.target.value; neuZeichnen(); } });
+    s.addEventListener('input', (ev) => { if (ev.target.id === 'd-titel') { titel = ev.target.value; neuZeichnen(); } });
     s.addEventListener('click', async (ev) => {
       if (ev.target === s || ev.target.closest('[data-zu]')) return s.remove();
       if (ev.target.closest('[data-bild]')) { const r = await A.datei.bild(await window.Diagramm.alsBild(bau()), titel || S.t.name); if (r?.ok) meldung('Gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); }
+      if (ev.target.closest('[data-insblatt]')) { diagrammInsBlatt(q, aktuell, titel); s.remove(); }
     });
     s.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s.remove(); });
-    s.querySelector('[data-bild]').focus();
+    s.querySelector('[data-insblatt]').focus();
+  }
+  function diagrammInsBlatt(q, art, titel) {
+    const b = blatt(); merke('meta');
+    const a = auswahl();
+    const g = groesse(b);
+    const sp = Math.max(0, Math.min(a.sp1, g.sp)); const ze = Math.max(a.ze2, g.ze) + 2;
+    (b.diagramme ||= []).push({ id: `d${Date.now().toString(36)}`, quelle: q, art, titel, sp, ze, w: 520, h: 300 });
+    geaendert(); zeichneTabelle();
+    meldung('Diagramm steht im Blatt – ziehen zum Verschieben, Ecke zum Vergrößern.');
+  }
+  // Diagramme über dem Gitter (rechnen bei jeder Änderung mit)
+  function zeichneDiagramme() {
+    const box = app.querySelector('.rasterscroll'); const b = blatt(); if (!box || !b?.diagramme?.length) return;
+    const ebene = document.createElement('div'); ebene.className = 'diagramm-ebene';
+    const kopfH = box.querySelector('thead')?.offsetHeight || 30;
+    const breite = (sp) => b.breiten[Fo.nrZuSpalte(sp)] || 110;
+    for (const d of b.diagramme) {
+      let x = 46; for (let i = 0; i < d.sp; i++) x += breite(i);
+      const td = box.querySelector(`td[data-a="${Fo.adresse(d.sp, d.ze)}"]`);
+      const y = td ? td.offsetTop : kopfH + d.ze * 30;
+      const el = document.createElement('div'); el.className = `blattdiagramm${S.diagrammAktiv === d.id ? ' aktiv' : ''}`; el.dataset.diagramm = d.id;
+      el.style.cssText = `left:${x}px;top:${y}px;width:${d.w}px;height:${d.h}px`;
+      el.innerHTML = `${window.Diagramm.svg({ ...diagrammDaten(d.quelle, b), art: d.art, titel: d.titel, breite: d.w, hoehe: d.h })}
+        <div class="bd-leiste"><select data-bd-art aria-label="Diagrammart">${window.Diagramm.ARTEN.map(([k, t]) => `<option value="${k}" ${k === d.art ? 'selected' : ''}>${t}</option>`).join('')}</select><button type="button" data-bd-titel title="Titel ändern">Titel</button><button type="button" data-bd-bild title="Als Bild speichern">Bild</button><button type="button" data-bd-weg title="Diagramm löschen" aria-label="Löschen">✕</button></div>
+        <span class="bd-ecke" data-bd-ecke></span>`;
+      ebene.appendChild(el);
+    }
+    box.appendChild(ebene);
+  }
+  function diagrammZiehen(ev, el, groesseAendern) {
+    const b = blatt(); const d = b.diagramme.find((x) => x.id === el.dataset.diagramm); if (!d) return;
+    ev.preventDefault(); S.diagrammAktiv = d.id;
+    const box = app.querySelector('.rasterscroll'); const sx = ev.clientX; const sy = ev.clientY; const x0 = el.offsetLeft; const y0 = el.offsetTop; const w0 = d.w; const h0 = d.h;
+    let bewegt = false;
+    const mm = (e) => {
+      const dx = e.clientX - sx; const dy = e.clientY - sy; if (Math.abs(dx) + Math.abs(dy) > 3) bewegt = true;
+      if (groesseAendern) { d.w = Math.max(240, Math.min(1400, w0 + dx)); d.h = Math.max(160, Math.min(900, h0 + dy)); el.style.width = `${d.w}px`; el.style.height = `${d.h}px`; }
+      else { el.style.left = `${Math.max(46, x0 + dx)}px`; el.style.top = `${Math.max(0, y0 + dy)}px`; }
+    };
+    const mu = () => {
+      document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu);
+      if (!bewegt) { zeichneTabelle(); return; }
+      if (!groesseAendern) {
+        // an der Zelle unter der linken oberen Ecke einrasten
+        const r = el.getBoundingClientRect(); el.style.pointerEvents = 'none';
+        const td = document.elementFromPoint(r.left + 4, r.top + 4)?.closest?.('td[data-a]'); el.style.pointerEvents = '';
+        if (td) { const z = Fo.zerlege(td.dataset.a); d.sp = z.sp; d.ze = z.ze; }
+        else { const kopfH = box.querySelector('thead')?.offsetHeight || 30; let x = 46; let sp = 0; while (x + (b.breiten[Fo.nrZuSpalte(sp)] || 110) < el.offsetLeft && sp < 200) { x += b.breiten[Fo.nrZuSpalte(sp)] || 110; sp++; } d.sp = sp; d.ze = Math.max(0, Math.round((el.offsetTop - kopfH) / 30)); }
+      }
+      geaendert(); zeichneTabelle();
+    };
+    document.addEventListener('mousemove', mm); document.addEventListener('mouseup', mu);
   }
 
   // ---------- Einstellungen ----------
@@ -946,7 +1028,16 @@
         const b = ev.target.closest('[data-art]'); if (!b) return; m.remove();
         if (b.dataset.art === 'pdf') { druckFenster(); return; }
         await A.tabellen.speichern(S.t);
-        const r = await A.datei.exportieren(S.t, b.dataset.art, S.blattNr);
+        let t = S.t;
+        if (b.dataset.art === 'xlsx' && S.t.blaetter.some((x) => x.diagramme?.length)) {
+          const aktiv = S.blattNr; t = { ...S.t, blaetter: [] };
+          for (const [i, x] of S.t.blaetter.entries()) {
+            if (!x.diagramme?.length || i !== aktiv) { t.blaetter.push(x); continue; }
+            const d2 = []; for (const d of x.diagramme) d2.push({ ...d, png: await window.Diagramm.alsBild(window.Diagramm.svg({ ...diagrammDaten(d.quelle, x), art: d.art, titel: d.titel, breite: d.w, hoehe: d.h }), 1.5) });
+            t.blaetter.push({ ...x, diagramme: d2 });
+          }
+        }
+        const r = await A.datei.exportieren(t, b.dataset.art, S.blattNr);
         if (r?.ok) meldung('Gespeichert.', { knopf: 'Im Ordner zeigen', aktion: () => A.datei.zeigen(r.datei), dauer: 7000 });
         else if (r?.fehler) meldung(`Klappt nicht: ${r.fehler.nachricht}`);
       });
@@ -961,7 +1052,7 @@
   //  Albatros 0.4–0.7: Ausfüllen, Formate, Fixieren, Verbinden, Suchen,
   //  Filter, Hervorheben, Auswahllisten, Übersicht, Drucken, Makros
   // =====================================================================
-  const metaVon = (b) => ({ fixiert: b.fixiert, verbunden: b.verbunden, regeln: b.regeln, listen: b.listen, filter: b.filter, breiten: b.breiten });
+  const metaVon = (b) => ({ fixiert: b.fixiert, verbunden: b.verbunden, regeln: b.regeln, listen: b.listen, filter: b.filter, breiten: b.breiten, diagramme: b.diagramme });
   const neueId = () => `m${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   function fensterAuf(html, { breite = 560, zu } = {}) {
     const s = document.createElement('div'); s.className = 'schleier';
@@ -1492,6 +1583,25 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
   });
 
   // ---------- Ereignisse ----------
+  // Diagramme im Blatt: Leiste
+  app.addEventListener('change', (ev) => {
+    const sel = ev.target.closest?.('[data-bd-art]'); if (!sel) return;
+    const d = blatt().diagramme?.find((x) => x.id === sel.closest('.blattdiagramm').dataset.diagramm); if (!d) return;
+    merke('meta'); d.art = sel.value; geaendert(); zeichneTabelle();
+  });
+  app.addEventListener('click', async (ev) => {
+    const bd = ev.target.closest('.blattdiagramm'); if (!bd) return;
+    const b = blatt(); const d = b.diagramme?.find((x) => x.id === bd.dataset.diagramm); if (!d) return;
+    if (ev.target.closest('[data-bd-weg]')) { merke('meta'); b.diagramme = b.diagramme.filter((x) => x !== d); geaendert(); zeichneTabelle(); meldung('Diagramm gelöscht.', { knopf: 'Rückgängig', aktion: rueckgaengig }); }
+    else if (ev.target.closest('[data-bd-bild]')) { const r = await A.datei.bild(await window.Diagramm.alsBild(window.Diagramm.svg({ ...diagrammDaten(d.quelle), art: d.art, titel: d.titel, breite: d.w, hoehe: d.h })), d.titel || S.t.name); if (r?.ok) meldung('Gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); }
+    else if (ev.target.closest('[data-bd-titel]')) {
+      const s2 = fensterAuf(`${fensterKopf('Titel des Diagramms', 'Leer lassen für ohne Titel.')}<input class="feld" id="bdtitel" style="width:100%" value="${esc(d.titel || '')}"><div class="reihe" style="justify-content:flex-end;margin-top:12px"><button type="button" class="btn" data-ok>Übernehmen</button></div>`);
+      const t = s2.querySelector('#bdtitel'); t.focus(); t.select();
+      const ok = () => { merke('meta'); d.titel = t.value.trim().slice(0, 80); s2.schliessen(); geaendert(); zeichneTabelle(); };
+      s2.addEventListener('click', (e2) => { if (e2.target.closest('[data-ok]')) ok(); });
+      t.addEventListener('keydown', (e2) => { if (e2.key === 'Enter') ok(); });
+    }
+  });
   app.addEventListener('click', (ev) => {
     const rt = ev.target.closest('[data-reiter]'); if (rt) { S.reiter = rt.dataset.reiter; zeigeLeiste(); return; }
     if (!ev.target.closest('.menue, [data-aktion="exportmenue"]')) document.querySelector('.menue')?.remove();
@@ -1512,6 +1622,11 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
   let zieht = false;
   app.addEventListener('mousedown', (ev) => {
     if (S.ansicht !== 'tabelle' || ev.button !== 0) return;
+    const bd = ev.target.closest('.blattdiagramm');
+    if (bd) {
+      if (ev.target.closest('select, button')) return;
+      ev.stopPropagation(); merke('meta'); diagrammZiehen(ev, bd, Boolean(ev.target.closest('[data-bd-ecke]'))); return;
+    }
     if (ev.target.closest('.griff')) { ev.preventDefault(); if (S.bearbeiten?.ort === 'zelle') beende(true); fuell = { a: auswahl(), ziel: null }; return; }
     const fk = ev.target.closest('[data-filter]'); if (fk) { ev.preventDefault(); ev.stopPropagation(); filterMenue(Number(fk.dataset.filter), fk); return; }
     if (ev.target.closest('[data-liste]')) { ev.preventDefault(); listeOeffnen(); return; }

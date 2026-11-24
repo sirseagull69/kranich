@@ -404,15 +404,57 @@
     },
     SEQUENZ: ([z, s, start, schritt]) => { const h = zuZahl(z), b = s === undefined || s === null ? 1 : zuZahl(s); const a = start === undefined || start === null ? 1 : zuZahl(start); const d = schritt === undefined || schritt === null ? 1 : zuZahl(schritt); if (h < 1 || b < 1 || h * b > 100000) return F.wert; return Array.from({ length: h }, (_, i) => Array.from({ length: b }, (__, j) => a + (i * b + j) * d)); },
     MTRANS: ([m]) => { const M = mat(m); return M[0].map((_, j) => M.map((r) => r[j])); },
+    // Statistik und Mathe
+    'STABW.S': (a) => { const z = zahlen(a); if (z.length < 2) return F.div; const m = summe(z) / z.length; return Math.sqrt(summe(z.map((v) => (v - m) ** 2)) / (z.length - 1)); },
+    'STABW.N': (a) => { const z = zahlen(a); if (!z.length) return F.div; const m = summe(z) / z.length; return Math.sqrt(summe(z.map((v) => (v - m) ** 2)) / z.length); },
+    'VAR.S': (a) => { const z = zahlen(a); if (z.length < 2) return F.div; const m = summe(z) / z.length; return summe(z.map((v) => (v - m) ** 2)) / (z.length - 1); },
+    'VAR.P': (a) => { const z = zahlen(a); if (!z.length) return F.div; const m = summe(z) / z.length; return summe(z.map((v) => (v - m) ** 2)) / z.length; },
+    'MODUS.EINF': (a) => { const z = zahlen(a); const h = new Map(); let best = null; let n = 1; for (const v of z) { const k = (h.get(v) || 0) + 1; h.set(v, k); if (k > n) { n = k; best = v; } } return best === null ? F.na : best; },
+    OBERGRENZE: ([x, s]) => { const k = s === undefined || s === null ? 1 : zuZahl(s); return k ? Math.ceil(zuZahl(x) / k - 1e-9) * k : 0; },
+    UNTERGRENZE: ([x, s]) => { const k = s === undefined || s === null ? 1 : zuZahl(s); return k ? Math.floor(zuZahl(x) / k + 1e-9) * k : 0; },
+    VRUNDEN: ([x, s]) => { const k = zuZahl(s); return k ? Math.round(zuZahl(x) / k) * k : 0; },
+    LN: ([x]) => { const v = zuZahl(x); return v > 0 ? Math.log(v) : F.zahl; },
+    LOG: ([x, b]) => { const v = zuZahl(x); const bb = b === undefined || b === null ? 10 : zuZahl(b); return v > 0 && bb > 0 && bb !== 1 ? Math.log(v) / Math.log(bb) : F.zahl; },
+    LOG10: ([x]) => { const v = zuZahl(x); return v > 0 ? Math.log10(v) : F.zahl; },
+    EXP: ([x]) => Math.exp(zuZahl(x)),
+    PI: () => Math.PI,
+    VORZEICHEN: ([x]) => Math.sign(zuZahl(x)),
+    ZUFALLSZAHL: () => Math.random(),
+    ZUFALLSBEREICH: ([u, o]) => { const a = Math.ceil(zuZahl(u)); const b = Math.floor(zuZahl(o)); return a > b ? F.zahl : a + Math.floor(Math.random() * (b - a + 1)); },
+    ZEILEN: ([m]) => mat(m).length,
+    SPALTEN: ([m]) => (mat(m)[0] || []).length,
+    // Text
+    TEXTVOR: ([t, tr, n]) => { const s = textVon(t); const d = textVon(tr); const k = n === undefined || n === null ? 1 : zuZahl(n); let i = -1; for (let j = 0; j < k; j++) { i = s.indexOf(d, i + 1); if (i < 0) return F.na; } return s.slice(0, i); },
+    TEXTNACH: ([t, tr, n]) => { const s = textVon(t); const d = textVon(tr); const k = n === undefined || n === null ? 1 : zuZahl(n); let i = -1; for (let j = 0; j < k; j++) { i = s.indexOf(d, i + 1); if (i < 0) return F.na; } return s.slice(i + d.length); },
+    WIEDERHOLEN: ([t, n]) => textVon(t).repeat(Math.max(0, Math.min(32767, zuZahl(n)))),
+    ZEICHEN: ([n]) => String.fromCharCode(zuZahl(n)),
+    CODE: ([t]) => { const s = textVon(t); return s ? s.charCodeAt(0) : F.wert; },
+    IDENTISCH: ([a, b]) => textVon(a) === textVon(b),
+    ERSTERWERT: (a) => { const [x, ...rest] = a.map(einz); for (let i = 0; i + 1 < rest.length; i += 2) if (rest[i] === x || (typeof rest[i] === 'string' && typeof x === 'string' && rest[i].toLowerCase() === x.toLowerCase())) return rest[i + 1]; return rest.length % 2 ? rest[rest.length - 1] : F.na; },
+    // Datum
+    DATWERT: ([t]) => { const z = datumZahl(textVon(t)); return z === null ? F.wert : Math.floor(z); },
+    DATEDIF: ([a, e, art]) => {
+      const x = datumTeile(a); const y = datumTeile(e); const k = textVon(art).toUpperCase();
+      if (zuZahl(e) < zuZahl(a)) return F.zahl;
+      const monate = (y.getUTCFullYear() - x.getUTCFullYear()) * 12 + y.getUTCMonth() - x.getUTCMonth() - (y.getUTCDate() < x.getUTCDate() ? 1 : 0);
+      if (k === 'Y') return Math.floor(monate / 12); if (k === 'M') return monate; if (k === 'D') return Math.floor(zuZahl(e)) - Math.floor(zuZahl(a));
+      if (k === 'YM') return monate % 12; if (k === 'MD') { const t = y.getUTCDate() - x.getUTCDate(); return t >= 0 ? t : t + new Date(Date.UTC(y.getUTCFullYear(), y.getUTCMonth(), 0)).getUTCDate(); }
+      return F.zahl;
+    },
+    ARBEITSTAG: ([s, n, frei]) => { let d = Math.floor(zuZahl(s)); let k = zuZahl(n); const f = new Set(frei ? vektor(frei).filter((v) => typeof v === 'number').map(Math.floor) : []); const st = k < 0 ? -1 : 1; while (k !== 0) { d += st; const w = alsDatum(d).getUTCDay(); if (w !== 0 && w !== 6 && !f.has(d)) k -= st; } return d; },
+    // Finanzen
+    ZW: ([z, n, r, bw, f]) => { const i = zuZahl(z); const N = zuZahl(n); const R = zuZahl(r); const B = zuZahl(bw ?? 0); const t = zuZahl(f ?? 0); if (!i) return -(B + R * N); const q = (1 + i) ** N; return -(B * q + R * (1 + i * t) * (q - 1) / i); },
+    BW: ([z, n, r, zw, f]) => { const i = zuZahl(z); const N = zuZahl(n); const R = zuZahl(r); const Z = zuZahl(zw ?? 0); const t = zuZahl(f ?? 0); if (!i) return -(Z + R * N); const q = (1 + i) ** N; return -(Z + R * (1 + i * t) * (q - 1) / i) / q; },
+    NBW: ([z, ...w]) => { const i = zuZahl(z); return zahlen(w).reduce((s, v, k) => s + v / (1 + i) ** (k + 1), 0); },
   };
   // Was die Formel erklären soll (für die Formelzeile)
   const NUR_ROHE_ARGS = new Set(['SUMMENPRODUKT', 'SUMMEWENNS', 'ZÄHLENWENNS', 'MITTELWERTWENNS', 'MAXWENNS', 'MINWENNS', 'XVERWEIS', 'INDEX', 'VERGLEICH', 'EINDEUTIG', 'FILTER', 'SORTIEREN', 'MTRANS', 'TEXTVERKETTEN', 'NETTOARBEITSTAGE']);
   // Englische Namen (für .xlsx) und deutsche Namen
-  const EN = { SUM: 'SUMME', AVERAGE: 'MITTELWERT', COUNT: 'ANZAHL', COUNTA: 'ANZAHL2', COUNTBLANK: 'ANZAHLLEEREZELLEN', PRODUCT: 'PRODUKT', SUMPRODUCT: 'SUMMENPRODUKT', ROUND: 'RUNDEN', ROUNDUP: 'AUFRUNDEN', ROUNDDOWN: 'ABRUNDEN', INT: 'GANZZAHL', MOD: 'REST', SQRT: 'WURZEL', POWER: 'POTENZ', LARGE: 'KGRÖSSTE', SMALL: 'KKLEINSTE', 'RANK.EQ': 'RANG.GLEICH', RANK: 'RANG', IF: 'WENN', IFERROR: 'WENNFEHLER', IFNA: 'WENNNV', IFS: 'WENNS', ISERROR: 'ISTFEHLER', ISERR: 'ISTFEHL', ISNA: 'ISTNV', ISBLANK: 'ISTLEER', ISNUMBER: 'ISTZAHL', ISTEXT: 'ISTTEXT', AND: 'UND', OR: 'ODER', NOT: 'NICHT', CONCATENATE: 'VERKETTEN', CONCAT: 'VERKETTEN', TEXTJOIN: 'TEXTVERKETTEN', LEN: 'LÄNGE', LEFT: 'LINKS', RIGHT: 'RECHTS', MID: 'TEIL', UPPER: 'GROSS', LOWER: 'KLEIN', PROPER: 'GROSS2', TRIM: 'GLÄTTEN', SUBSTITUTE: 'WECHSELN', FIND: 'FINDEN', SEARCH: 'SUCHEN', VALUE: 'WERT', TODAY: 'HEUTE', NOW: 'JETZT', DATE: 'DATUM', TIME: 'ZEIT', DAY: 'TAG', MONTH: 'MONAT', YEAR: 'JAHR', HOUR: 'STUNDE', WEEKDAY: 'WOCHENTAG', WEEKNUM: 'KALENDERWOCHE', ISOWEEKNUM: 'ISOKALENDERWOCHE', EDATE: 'EDATUM', EOMONTH: 'MONATSENDE', DAYS: 'TAGE', NETWORKDAYS: 'NETTOARBEITSTAGE', SUMIF: 'SUMMEWENN', COUNTIF: 'ZÄHLENWENN', AVERAGEIF: 'MITTELWERTWENN', SUMIFS: 'SUMMEWENNS', COUNTIFS: 'ZÄHLENWENNS', AVERAGEIFS: 'MITTELWERTWENNS', MAXIFS: 'MAXWENNS', MINIFS: 'MINWENNS', PMT: 'RMZ', VLOOKUP: 'SVERWEIS', HLOOKUP: 'WVERWEIS', XLOOKUP: 'XVERWEIS', MATCH: 'VERGLEICH', UNIQUE: 'EINDEUTIG', SORT: 'SORTIEREN', SEQUENCE: 'SEQUENZ', TRANSPOSE: 'MTRANS', MIN: 'MIN', MAX: 'MAX', ABS: 'ABS', MEDIAN: 'MEDIAN', TEXT: 'TEXT', INDEX: 'INDEX', FILTER: 'FILTER', MINUTE: 'MINUTE' };
+  const EN = { 'STDEV.S': 'STABW.S', STDEV: 'STABW.S', 'STDEV.P': 'STABW.N', 'VAR.S': 'VAR.S', VAR: 'VAR.S', 'VAR.P': 'VAR.P', 'MODE.SNGL': 'MODUS.EINF', CEILING: 'OBERGRENZE', FLOOR: 'UNTERGRENZE', MROUND: 'VRUNDEN', LN: 'LN', LOG: 'LOG', LOG10: 'LOG10', EXP: 'EXP', PI: 'PI', SIGN: 'VORZEICHEN', RAND: 'ZUFALLSZAHL', RANDBETWEEN: 'ZUFALLSBEREICH', ROWS: 'ZEILEN', COLUMNS: 'SPALTEN', TEXTBEFORE: 'TEXTVOR', TEXTAFTER: 'TEXTNACH', REPT: 'WIEDERHOLEN', CHAR: 'ZEICHEN', CODE: 'CODE', EXACT: 'IDENTISCH', SWITCH: 'ERSTERWERT', DATEVALUE: 'DATWERT', DATEDIF: 'DATEDIF', WORKDAY: 'ARBEITSTAG', FV: 'ZW', PV: 'BW', NPV: 'NBW', SUM: 'SUMME', AVERAGE: 'MITTELWERT', COUNT: 'ANZAHL', COUNTA: 'ANZAHL2', COUNTBLANK: 'ANZAHLLEEREZELLEN', PRODUCT: 'PRODUKT', SUMPRODUCT: 'SUMMENPRODUKT', ROUND: 'RUNDEN', ROUNDUP: 'AUFRUNDEN', ROUNDDOWN: 'ABRUNDEN', INT: 'GANZZAHL', MOD: 'REST', SQRT: 'WURZEL', POWER: 'POTENZ', LARGE: 'KGRÖSSTE', SMALL: 'KKLEINSTE', 'RANK.EQ': 'RANG.GLEICH', RANK: 'RANG', IF: 'WENN', IFERROR: 'WENNFEHLER', IFNA: 'WENNNV', IFS: 'WENNS', ISERROR: 'ISTFEHLER', ISERR: 'ISTFEHL', ISNA: 'ISTNV', ISBLANK: 'ISTLEER', ISNUMBER: 'ISTZAHL', ISTEXT: 'ISTTEXT', AND: 'UND', OR: 'ODER', NOT: 'NICHT', CONCATENATE: 'VERKETTEN', CONCAT: 'VERKETTEN', TEXTJOIN: 'TEXTVERKETTEN', LEN: 'LÄNGE', LEFT: 'LINKS', RIGHT: 'RECHTS', MID: 'TEIL', UPPER: 'GROSS', LOWER: 'KLEIN', PROPER: 'GROSS2', TRIM: 'GLÄTTEN', SUBSTITUTE: 'WECHSELN', FIND: 'FINDEN', SEARCH: 'SUCHEN', VALUE: 'WERT', TODAY: 'HEUTE', NOW: 'JETZT', DATE: 'DATUM', TIME: 'ZEIT', DAY: 'TAG', MONTH: 'MONAT', YEAR: 'JAHR', HOUR: 'STUNDE', WEEKDAY: 'WOCHENTAG', WEEKNUM: 'KALENDERWOCHE', ISOWEEKNUM: 'ISOKALENDERWOCHE', EDATE: 'EDATUM', EOMONTH: 'MONATSENDE', DAYS: 'TAGE', NETWORKDAYS: 'NETTOARBEITSTAGE', SUMIF: 'SUMMEWENN', COUNTIF: 'ZÄHLENWENN', AVERAGEIF: 'MITTELWERTWENN', SUMIFS: 'SUMMEWENNS', COUNTIFS: 'ZÄHLENWENNS', AVERAGEIFS: 'MITTELWERTWENNS', MAXIFS: 'MAXWENNS', MINIFS: 'MINWENNS', PMT: 'RMZ', VLOOKUP: 'SVERWEIS', HLOOKUP: 'WVERWEIS', XLOOKUP: 'XVERWEIS', MATCH: 'VERGLEICH', UNIQUE: 'EINDEUTIG', SORT: 'SORTIEREN', SEQUENCE: 'SEQUENZ', TRANSPOSE: 'MTRANS', MIN: 'MIN', MAX: 'MAX', ABS: 'ABS', MEDIAN: 'MEDIAN', TEXT: 'TEXT', INDEX: 'INDEX', FILTER: 'FILTER', MINUTE: 'MINUTE' };
   const DE = Object.fromEntries(Object.entries(EN).filter(([e]) => !['CONCAT', 'RANK'].includes(e)).map(([e, d]) => [d, e]));
   DE.RANG = 'RANK';
   // Neue Excel-Funktionen brauchen in der Datei einen Vorsatz
-  const XLFN = { XLOOKUP: '_xlfn.XLOOKUP', IFS: '_xlfn.IFS', MAXIFS: '_xlfn.MAXIFS', MINIFS: '_xlfn.MINIFS', TEXTJOIN: '_xlfn.TEXTJOIN', IFNA: '_xlfn.IFNA', DAYS: '_xlfn.DAYS', ISOWEEKNUM: '_xlfn.ISOWEEKNUM', UNIQUE: '_xlfn.UNIQUE', SEQUENCE: '_xlfn.SEQUENCE', FILTER: '_xlfn._xlws.FILTER', SORT: '_xlfn._xlws.SORT', 'RANK.EQ': '_xlfn.RANK.EQ' };
+  const XLFN = { 'STDEV.S': '_xlfn.STDEV.S', 'STDEV.P': '_xlfn.STDEV.P', 'VAR.S': '_xlfn.VAR.S', 'VAR.P': '_xlfn.VAR.P', 'MODE.SNGL': '_xlfn.MODE.SNGL', TEXTBEFORE: '_xlfn.TEXTBEFORE', TEXTAFTER: '_xlfn.TEXTAFTER', SWITCH: '_xlfn.SWITCH', XLOOKUP: '_xlfn.XLOOKUP', IFS: '_xlfn.IFS', MAXIFS: '_xlfn.MAXIFS', MINIFS: '_xlfn.MINIFS', TEXTJOIN: '_xlfn.TEXTJOIN', IFNA: '_xlfn.IFNA', DAYS: '_xlfn.DAYS', ISOWEEKNUM: '_xlfn.ISOWEEKNUM', UNIQUE: '_xlfn.UNIQUE', SEQUENCE: '_xlfn.SEQUENCE', FILTER: '_xlfn._xlws.FILTER', SORT: '_xlfn._xlws.SORT', 'RANK.EQ': '_xlfn.RANK.EQ' };
   const norm = (n) => String(n).toUpperCase().replace(/Ä/g, 'AE').replace(/Ö/g, 'OE').replace(/Ü/g, 'UE').replace(/ß/g, 'SS');
   const NORM = {}; for (const k of Object.keys(FN)) NORM[norm(k)] = k;
   const fnName = (n) => { n = String(n).toUpperCase().replace(/^_XLFN\.(_XLWS\.)?/, ''); if (FN[n] !== undefined) return n; if (EN[n]) return EN[n]; return NORM[norm(n)] || n; };

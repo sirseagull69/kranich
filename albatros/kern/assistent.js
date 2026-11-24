@@ -31,7 +31,7 @@ Antworte NUR mit einem JSON-Objekt, ohne Text davor oder danach, ohne Markdown:
   "stil": { "A1:F1": { "aus": "center", "gr": 13 }, "E14": { "rand": { "o": 1, "u": 2 } }, "B5": { "k": true, "fa": "#b23a28", "umbruch": true } },
   "notizen": { "E3": "Kurzer Hinweis an der Zelle", "E4": null },
   "breiten": { "B": 220 },
-  "diagramm": { "werte": "E2:E13", "beschriftung": "B2:B13", "art": "balken", "titel": "Ausgaben November" },
+  "diagramm": { "werte": "D2:E13", "beschriftung": "B2:B13", "art": "saeulen", "titel": "Einnahmen und Ausgaben" },
   "regeln": [{ "bereich": "E2:E40", "art": "kleiner", "wert": "0", "farbe": "#f3c9c4" }],
   "listen": { "C2:C200": { "werte": ["Wohnen", "Essen", "Auto"] } },
   "verbinden": ["A1:E1"],
@@ -51,7 +51,7 @@ Regeln:
 - Bestehende Daten nicht verändern oder löschen, außer Nils will das.
 - Neue Tabelle: Zeile 1 = fette Überschriften, dann sinnvolle Beispielzeilen (glaubwürdig, deutsch), unten Summen/Ergebnis mit Formeln, passende Formate, Spaltenbreiten (B für Beschreibungen ~220).
 - Frage ohne Änderungswunsch (z. B. „Wie viel ist das im Schnitt?“): nur "antwort" mit dem Ergebnis.
-- "diagramm" nur, wenn Nils ein Diagramm will. art: "balken", "linie" oder "kreis".
+- "diagramm" nur, wenn ein Diagramm gewünscht ist. Es landet direkt im Blatt. "werte" darf mehrere nebeneinanderliegende Spalten umfassen (je Spalte eine Reihe, Überschrift in der Zeile darüber). art: "saeulen", "gestapelt", "quer" (waagerechte Balken), "linie", "flaeche", "kreis", "ring" oder "punkte".
 - Formate außerdem: "zahl" (1.234,56), "datumlang", "monat", "uhrzeit", "text" oder eigen: { "eigen": "0,0 \"kg\"" }.
 - "regeln" = bedingte Formatierung (färbt automatisch, auch bei neuen Werten). art: "groesser", "kleiner", "gleich", "ungleich", "zwischen" (wert + wert2), "enthaelt", "doppelt", "leer", "balken" (Datenbalken), "formel" (wert z. B. "=$F2=\"offen\"", bezogen auf die erste Zelle). Lieber Regeln als feste Farben, wenn es um Bedingungen geht.
 - "listen" = Auswahlliste in Zellen (Dropdown). Entweder "werte" oder "bereich": "Listen!A1:A9".

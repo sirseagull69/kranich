@@ -252,6 +252,11 @@ async function xlsxSchreiben(tabelle, datei) {
   for (const b of tabelle.blaetter) {
     const ws = wb.addWorksheet(String(b.name || 'Blatt').slice(0, 31).replace(/[\\/?*[\]:]/g, ' '));
     const werte = F.rechneAlles(b, F.mappe(tabelle.blaetter));
+    for (const d of b.diagramme || []) {
+      const m = /^data:image\/png;base64,(.+)$/.exec(d.png || ''); if (!m) continue;
+      const id = wb.addImage({ base64: m[1], extension: 'png' });
+      ws.addImage(id, { tl: { col: Number(d.sp) || 0, row: Number(d.ze) || 0 }, ext: { width: Number(d.w) || 520, height: Number(d.h) || 300 } });
+    }
     for (const [a, roh] of Object.entries(b.zellen)) {
       const cell = ws.getCell(a);
       const w = werte[a];
