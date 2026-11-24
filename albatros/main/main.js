@@ -149,7 +149,7 @@ function start() {
   const daten = app.getPath('userData');
   try { fs.mkdirSync(daten, { recursive: true }); fs.writeFileSync(path.join(daten, 'version.json'), JSON.stringify({ version: app.getVersion(), pfad: process.execPath })); } catch { /* egal */ }
   tabellen = new Tabellen(path.join(daten, 'tabellen'));
-  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'));
+  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'), path.join(app.getPath('appData'), 'Ori Office', 'gemeinsam.json'));
   Menu.setApplicationMenu(null); // Strg+R/Strg+D gehören der Tabelle, nicht dem Menü
   registriere();
   netzSperren();

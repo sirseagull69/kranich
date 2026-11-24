@@ -206,7 +206,7 @@
     if (r === 'daten') return `${wzk('sortieren', `${sym('sortieren', 16)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 16)} Filter`, 'Filter an/aus (Strg+Umschalt+L)')}${wzk('hervorheben', `${sym('hervor', 16)} Hervorheben`, 'Automatisch färben')}${wzk('liste', `${sym('liste', 16)} Auswahlliste`, 'Dropdown für Zellen')}${tz}${wzk('uebersicht', `${sym('pivot', 16)} Übersicht`, 'Pivot')}${blatt().pivot ? wzk('pivot-neu', 'Neu aufbauen', 'Übersicht neu aufbauen') : ''}${wzk('suchen', `${sym('lupe', 16)} Suchen`, 'Suchen & Ersetzen (Strg+F)')}`;
     if (r === 'makros') return `${wzk('makros', `${sym('makro', 16)} Makros verwalten`, 'Aufnehmen, schreiben, ausführen')}${S.aufnahme ? '' : wzk('aufnahme-start', '<span style="color:#c0392b">●</span> Aufnehmen', 'Makro aufnehmen')}${S.t.makros.filter((m) => m.knopf).length ? tz : ''}${S.t.makros.filter((m) => m.knopf).map((m) => `<button type="button" class="wz makroknopf" data-aktion="makro-los" data-id="${esc(m.id)}" title="Makro ausführen">${sym('makro', 13)} ${esc(m.name)}</button>`).join('')}${S.t.vba?.length ? `${tz}${wzk('makros', `Excel-Makros (${S.t.vba.length})`, 'Aus der Datei')}` : ''}`;
     if (r === 'ansicht') return `${wzk('fixieren', `${sym('fixieren', 16)} Fixieren`, 'Zeilen/Spalten festhalten')}${wzk('helfer-klappen', S.helferZu ? 'Albatros zeigen' : 'Albatros ausblenden', 'Seitenleiste')}`;
-    return `${wzk('rueckgaengig', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 16), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}${wzk('kursiv', '<i style="font:italic 800 15px 'Bricolage Grotesque',sans-serif">K</i>', 'Kursiv (Strg+I)')}${wzk('unterstrichen', '<u style="font-weight:700">U</u>', 'Unterstrichen (Strg+U)')}<button type="button" class="wz" data-aktion="groessemenue" data-schwebe-auf title="Schriftgröße">${esc(String(stilAnker().gr || 11))} ▾</button><button type="button" class="wz schriftfarbe" data-aktion="schriftfarbe" data-schwebe-auf title="Schriftfarbe"><span class="A">A</span><i style="background:${esc(stilAnker().fa || '#1d2742')}"></i></button><span class="farbwahl">${wzk('farbmenue', sym('farbe', 16), 'Füllfarbe')}</span>${tz}<button type="button" class="wz" data-aktion="ausrichtungmenue" data-schwebe-auf title="Ausrichtung und Zeilenumbruch">${sym(stilAnker().aus === 'center' ? 'mitte' : stilAnker().aus === 'right' ? 'rechtsb' : 'linksb', 15)} ▾</button><button type="button" class="wz" data-aktion="randmenue" data-schwebe-auf title="Rahmen">${sym('rahmen', 16)} ▾</button>${wzk('verbinden', sym('verbinden', 16), 'Zellen verbinden / lösen')}${tz}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}${wzk('pinsel', sym('pinsel', 16), 'Format übertragen: erst Quelle, dann Ziel markieren', S.pinsel ? 'aria-pressed="true"' : '')}${tz}${wzk('summe-unten', `${sym('summe', 16)} Summe`, 'Summe unter die Markierung')}${wzk('diagramm', sym('diagramm', 16), 'Diagramm aus der Markierung')}`;
+    return `${wzk('rueckgaengig', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 16), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}${wzk('kursiv', '<i style="font:italic 800 15px Bricolage Grotesque,sans-serif">K</i>', 'Kursiv (Strg+I)')}${wzk('unterstrichen', '<u style="font-weight:700">U</u>', 'Unterstrichen (Strg+U)')}<button type="button" class="wz" data-aktion="groessemenue" data-schwebe-auf title="Schriftgröße">${esc(String(stilAnker().gr || 11))} ▾</button><button type="button" class="wz schriftfarbe" data-aktion="schriftfarbe" data-schwebe-auf title="Schriftfarbe"><span class="A">A</span><i style="background:${esc(stilAnker().fa || '#1d2742')}"></i></button><span class="farbwahl">${wzk('farbmenue', sym('farbe', 16), 'Füllfarbe')}</span>${tz}<button type="button" class="wz" data-aktion="ausrichtungmenue" data-schwebe-auf title="Ausrichtung und Zeilenumbruch">${sym(stilAnker().aus === 'center' ? 'mitte' : stilAnker().aus === 'right' ? 'rechtsb' : 'linksb', 15)} ▾</button><button type="button" class="wz" data-aktion="randmenue" data-schwebe-auf title="Rahmen">${sym('rahmen', 16)} ▾</button>${wzk('verbinden', sym('verbinden', 16), 'Zellen verbinden / lösen')}${tz}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}${wzk('pinsel', sym('pinsel', 16), 'Format übertragen: erst Quelle, dann Ziel markieren', S.pinsel ? 'aria-pressed="true"' : '')}${tz}${wzk('summe-unten', `${sym('summe', 16)} Summe`, 'Summe unter die Markierung')}${wzk('diagramm', sym('diagramm', 16), 'Diagramm aus der Markierung')}`;
   }
   // ---------- Eine Zeile (wie die Schwalbe): Wichtiges direkt, der Rest klappt auf ----------
   const KLAPP = '<span class="pfeil">▾</span>';
@@ -237,11 +237,10 @@
     app.innerHTML = `<header class="oo-kopf">
         <button type="button" class="oo-ikon" data-aktion="start" title="Alle Tabellen" aria-label="Alle Tabellen">${vogel('ruhezustand-3', 30)}</button><b class="oo-app">Albatros</b>
         <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
-        <nav class="oo-menue" aria-label="Menü"><button type="button" class="m m-datei" data-aktion="klapp" data-m="datei">Datei</button></nav>
+        <nav class="oo-menue" aria-label="Menü"><button type="button" class="m m-datei" data-aktion="datei-ansicht">Datei</button></nav>
         <div class="platz"></div>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
-        <div style="position:relative"><button type="button" class="oo-teilen" data-aktion="exportmenue">Teilen</button></div>
-        <button type="button" class="oo-ori" data-aktion="ori" title="Ori fragen">${oriVogel(24)}Ori</button>
+        <button type="button" class="oo-teilen" data-aktion="datei-export">${sym('export', 16)} Exportieren</button>
       </header>
       <main class="oo-flaeche">
         <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1440 220" preserveAspectRatio="none"><path d="M0 130 C 300 80 600 170 900 120 S 1300 90 1440 120 V220 H0Z" fill="#4f9a6b" opacity=".35"/><path d="M0 180 C 360 150 700 210 1000 175 S 1340 165 1440 180 V220 H0Z" fill="#2f7a4d" opacity=".85"/></svg>
@@ -954,11 +953,62 @@
     s.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s.remove(); });
   }
 
+  OO.auswahllisten();
+  async function exportiere(art) { return aktionen._exportAlt({ dataset: { art } }); }
+
+  // ---------- Datei-Ansicht (gemeinsam mit allen Vögeln) ----------
+  const NEU_IN_VERSION = ['Eine Werkzeugzeile wie in der Schwalbe – der Rest klappt auf', 'Datei-Ansicht mit Neu, Öffnen, Info, Exportieren und Optionen', 'Eigene Klapplisten, schärfere Symbole', 'Diagramme direkt im Blatt, 30 neue Formeln'];
+  function dateiAnsicht(start = 'info') {
+    const offen = S.ansicht === 'tabelle' && S.t;
+    const nav = offen
+      ? [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'info', 'Info'], '-', ['speichern', 'speichern', 'Als Excel speichern'], ['export', 'export', 'Exportieren'], ['drucken', 'drucken', 'Drucken'], '-', ['optionen', 'optionen', 'Optionen'], ['zu', 'schliessen', 'Schließen']]
+      : [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], '-', ['optionen', 'optionen', 'Optionen']];
+    const T = OO.teile;
+    OO.backstage({
+      nav, start: offen ? start : (start === 'info' ? 'neu' : start), vogel: vogel('ruhezustand-3', 54),
+      klick: async (k, api) => {
+        if (k === 'speichern') { api.zu(); exportiere('xlsx'); return true; }
+        if (k === 'drucken') { api.zu(); druckFenster(); return true; }
+        if (k === 'zu') { api.zu(); zeigeStart(); return true; }
+        return false;
+      },
+      zeige: async (k, inhalt, api) => {
+        if (k === 'neu') {
+          inhalt.innerHTML = `${T.titel('Neu')}<div class="oo-bs-kacheln"><button type="button" class="oo-bs-kachel" data-neu="leer"><span class="oo-bild">${OO.sym('plus', 34)}</span><b>Leere Tabelle</b><small>Einfach losrechnen</small></button>${Object.entries(VORLAGEN).map(([key, v]) => `<button type="button" class="oo-bs-kachel" data-neu="${key}"><span class="oo-bild">${vogel(v.anim, 80)}</span><b>${esc(v.name)}</b><small>${esc(v.text)}</small></button>`).join('')}</div>`;
+          inhalt.onclick = (ev) => { const b = ev.target.closest('[data-neu]'); if (!b) return; api.zu(); if (b.dataset.neu === 'leer') aktionen.neu(); else aktionen.vorlage({ dataset: { k: b.dataset.neu } }); };
+        } else if (k === 'oeffnen') {
+          const liste = (await A.tabellen.liste()) || [];
+          inhalt.innerHTML = `${T.titel('Öffnen')}${T.gross('data-durchsuchen', 'oeffnen', 'Durchsuchen …', 'Excel-Datei (.xlsx, .xlsm) oder CSV vom PC wählen · Strg+O')}<h2>Zuletzt geöffnet</h2>${(liste.fehler ? [] : liste).slice(0, 14).map((t) => T.zeile(`data-tab="${esc(t.id)}"`, 'tabelle', t.name, `${t.zeilen} Zeilen${t.blaetter > 1 ? ` · ${t.blaetter} Blätter` : ''}`, wann(t.geaendert))).join('') || '<p class="oo-leise">Noch keine Tabelle.</p>'}`;
+          inhalt.onclick = (ev) => { if (ev.target.closest('[data-durchsuchen]')) { api.zu(); aktionen.oeffnen(); return; } const t = ev.target.closest('[data-tab]'); if (t) { api.zu(); oeffne(t.dataset.tab); } };
+        } else if (k === 'info') {
+          const b = S.t.blaetter; let formeln = 0; let zellen = 0;
+          b.forEach((x) => Object.values(x.zellen || {}).forEach((v) => { if (v !== '' && v != null) { zellen += 1; if (String(v).startsWith('=')) formeln += 1; } }));
+          const diagramme = b.reduce((n, x) => n + (x.diagramme?.length || 0), 0);
+          inhalt.innerHTML = `${T.titel('Info')}${T.kopf('tabelle', S.t.name, S.t.quelle ? `Aus ${S.t.quelle}` : 'Liegt in Albatros – speichert sich nebenbei von selbst.')}
+            <div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-x="xlsx">${OO.sym('speichern', 16)} Als Excel speichern</button><button type="button" class="oo-btn weiss" data-x="umbenennen">Umbenennen</button></div>
+            <div class="oo-bs-spalten"><div><h2>Eigenschaften</h2>${T.info('Blätter', b.length)}${T.info('Gefüllte Zellen', zellen.toLocaleString('de-DE'))}${T.info('Formeln', formeln.toLocaleString('de-DE'))}${T.info('Diagramme', diagramme)}${T.info('Makros', (S.t.makros || []).length)}${T.info('Zuletzt geändert', esc(wann(S.t.geaendert)))}</div>
+            <div><h2>Schutz</h2><p class="oo-leise">Alles speichert sich nebenbei in Albatros. Eine Excel-Datei auf dem PC entsteht mit „Als Excel speichern“.</p>${S.t.vba?.length ? `<h2>Excel-Makros</h2><p class="oo-leise">Diese Datei hat ${S.t.vba.length} Excel-Makro${S.t.vba.length > 1 ? 's' : ''}. Albatros führt sie nicht aus, kann sie aber übersetzen.</p>` : ''}</div></div>`;
+          inhalt.onclick = (ev) => { const x = ev.target.closest('[data-x]')?.dataset.x; if (x === 'xlsx') { api.zu(); exportiere('xlsx'); } if (x === 'umbenennen') { api.zu(); const el = app.querySelector('.oo-dok b'); if (el) aktionen.umbenennen(el); } };
+        } else if (k === 'export') {
+          inhalt.innerHTML = `${T.titel('Exportieren')}<p class="oo-leise">Macht eine Kopie in einem anderen Format. Deine Tabelle bleibt in Albatros.</p>${T.gross('data-art="xlsx"', 'tabelle', 'Excel-Datei', '.xlsx – mit Formeln und Diagrammen, für Excel & Co.')}${T.gross('data-art="csv"', 'liste', 'CSV', 'Nur die Werte dieses Blatts')}${T.gross('data-art="pdf"', 'drucken', 'PDF / Drucken', 'Saubere Seiten, Überschrift auf jeder Seite')}`;
+          inhalt.onclick = (ev) => { const b = ev.target.closest('[data-art]'); if (b) { api.zu(); exportiere(b.dataset.art); } };
+        } else if (k === 'optionen') {
+          OO.optionen(inhalt, { A, app: 'Albatros', vogelName: 'Albatros', vogel: vogel('winkt', 70), neu: NEU_IN_VERSION,
+            zurueck: () => api.zeige(offen ? 'info' : 'neu'),
+            fertig: (wie) => { api.zu(); if (wie === 'rundgang') aktionen.rundgang(); else meldung('Optionen gespeichert.'); },
+            nachSpeichern: async () => { S.einst = await A.einstellungen.lesen(); if (S.ansicht === 'start') zeigeStart(); } });
+        }
+      },
+    });
+  }
+
   // ---------- Aktionen ----------
   const aktionen = {
+    'datei-ansicht': () => dateiAnsicht(),
+    'datei-export': () => dateiAnsicht('export'),
     start: () => zeigeStart(),
     rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
-    einstellungen: () => einstellungen(),
+    einstellungen: () => dateiAnsicht('optionen'),
     tabelle: (el, ev) => { if (ev?.target?.closest('[data-aktion="loeschen"]')) return; oeffne(el.dataset.id); },
     loeschen: async (el) => {
       const t = S.liste.find((x) => x.id === el.dataset.id);
@@ -1048,14 +1098,18 @@
     frage: (el) => frageAlbatros(el.dataset.text),
     senden: () => { const f = document.getElementById('frage'); const t = f.value; f.value = ''; frageAlbatros(t); },
     klapp: (el) => klappMenue(el, el.dataset.m),
-    'export-teilen': () => app.querySelector('.oo-teilen')?.click(),
+    'export-teilen': () => dateiAnsicht('export'),
     exportmenue: (el) => {
       const w = el.parentElement; const da = w.querySelector('.menue'); if (da) { da.remove(); return; }
       const m = document.createElement('div'); m.className = 'menue';
       m.innerHTML = `<button type="button" data-art="xlsx">${sym('tabelle', 16)}<span>Excel-Datei<small>.xlsx – mit Formeln, für Excel & Co.</small></span></button><button type="button" data-art="csv">${sym('export', 16)}<span>CSV<small>Nur Werte, dieses Blatt</small></span></button><button type="button" data-art="pdf">${sym('drucker', 16)}<span>Drucken / PDF<small>Saubere Seiten, Überschrift auf jeder Seite</small></span></button>`;
       w.appendChild(m);
       m.addEventListener('click', async (ev) => {
-        const b = ev.target.closest('[data-art]'); if (!b) return; m.remove();
+        const b = ev.target.closest('[data-art]'); if (!b) return; m.remove(); exportiere(b.dataset.art);
+      });
+    },
+    _exportAlt: async (b) => {
+      {
         if (b.dataset.art === 'pdf') { druckFenster(); return; }
         await A.tabellen.speichern(S.t);
         let t = S.t;
@@ -1070,7 +1124,7 @@
         const r = await A.datei.exportieren(t, b.dataset.art, S.blattNr);
         if (r?.ok) meldung('Gespeichert.', { knopf: 'Im Ordner zeigen', aktion: () => A.datei.zeigen(r.datei), dauer: 7000 });
         else if (r?.fehler) meldung(`Klappt nicht: ${r.fehler.nachricht}`);
-      });
+      }
     },
     blatt: (el, ev) => { if (ev?.target?.closest('[data-aktion="blatt-weg"]')) return; S.blattNr = Number(el.dataset.i); S.anker = { sp: 0, ze: 0 }; S.ende = { sp: 0, ze: 0 }; if (S.aufnahme) notiere(`tab.blatt(${JSON.stringify(blatt().name)});`); app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } zeichneTabelle(); },
     'blatt-dazu': () => { S.t.blaetter.push({ name: `Blatt ${S.t.blaetter.length + 1}`, zellen: {}, formate: {}, farben: {}, fett: {}, breiten: {} }); S.blattNr = S.t.blaetter.length - 1; app.querySelector('.blattname').textContent = blatt().name; { const b2 = app.querySelector('.blattname2'); if (b2) b2.textContent = blatt().name; } geaendert(); zeichneTabelle(); },

@@ -442,7 +442,7 @@ function start() {
   // Für das Startfenster: welche Version ist installiert?
   try { fs.mkdirSync(datenOrdner(), { recursive: true }); fs.writeFileSync(path.join(datenOrdner(), 'version.json'), JSON.stringify({ version: app.getVersion(), pfad: process.execPath })); } catch { /* egal */ }
   projekte = new Projekte(path.join(datenOrdner(), 'projekte'));
-  einstellungen = new Einstellungen(path.join(datenOrdner(), 'einstellungen.json'));
+  einstellungen = new Einstellungen(path.join(datenOrdner(), 'einstellungen.json'), path.join(app.getPath('appData'), 'Ori Office', 'gemeinsam.json'));
   registriere();
   heimdienstAnpassen();
   return oeffneFenster();

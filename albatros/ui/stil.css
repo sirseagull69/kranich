@@ -440,3 +440,5 @@ body.zieht .ablage{transform:scale(1.02);box-shadow:0 0 0 6px rgba(47,138,85,.15
 .oo-leiste .tz{margin:0 3px}
 .oo-leiste .klapp{gap:5px}
 @media (max-width:1450px){.oo-leiste .wz{padding:0 5px}.oo-leiste .klapp svg{display:none}}
+:root{--oo-f:#2f7a4d;--oo-fm:#4f9a6b;--oo-fd:#1f5a37;--oo-fh:#d8eedf}
+.oo-teilen svg{vertical-align:-3px;margin-right:4px}

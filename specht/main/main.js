@@ -290,7 +290,7 @@ function oeffneFenster() {
 function start() {
   const daten = app.getPath('userData');
   try { fs.mkdirSync(daten, { recursive: true }); fs.writeFileSync(path.join(daten, 'version.json'), JSON.stringify({ version: app.getVersion(), pfad: process.execPath })); } catch { /* egal */ }
-  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'));
+  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'), path.join(app.getPath('appData'), 'Ori Office', 'gemeinsam.json'));
   speicher = new Speicher(path.join(daten, 'specht-daten.json'), { geraet: geraet() });
   kontoLaden();
   registriere();
