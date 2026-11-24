@@ -371,6 +371,7 @@
         <span class="wb-trenner"></span>
         <div class="sk-projekt wb-projekt"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><small><span class="boardtitel">${esc(seite()?.name || '')}</span> · <span class="boardmass">${esc(seite()?.mass || `${seite()?.breite} × ${seite()?.hoehe}`)}</span> · <span class="speicherchip">gespeichert</span></small></div>
         <div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div>
+        <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
       </header>
       <div class="wb-raster">
@@ -409,7 +410,15 @@
     renderLeiste();
     zeigeSpeicherchip();
     if (!bild) setTimeout(() => { if (S.ansicht === 'werkbank' && S.modus === 'entwurf' && !document.querySelector('.schleier') && seite()?.html) K.standFoto?.('kranich-arbeitsflaeche'); }, 4000);
+    if (!bild) setTimeout(() => { if (S.ansicht === 'werkbank' && !document.querySelector('.schleier')) window.Rundgang?.start(RUNDGANG()); }, 900);
   }
+  const RUNDGANG = () => ({ app: 'kranich', farbe: '#6a4fc7', vogel: figur('winkt', 52), schritte: [
+    { ziel: '.leinwandrahmen', titel: 'Der Leuchttisch', text: 'Hier entsteht dein Entwurf – Folie, Plakat, App-Bildschirm. Zoomen mit Strg+Mausrad, verschieben mit der Hand.' },
+    { ziel: '.werkzeugleiste', titel: 'Werkzeuge', text: 'Auswählen, Hand, Text, Form, Bild, Notiz. Doppelklick auf einen Text und du schreibst direkt rein.' },
+    { ziel: '.chatspalte', titel: 'Hier bin ich', text: 'Beschreib, was du willst – ich falte es dir hin. „Mach den Knopf größer“, „mehr Lila“, „drei Varianten“. Lila geht immer.' },
+    { ziel: '.wb-links', titel: 'Boards & Bausteine', text: 'Mehrere Boards für mehrere Folien oder Größen. Bausteine ziehst du einfach auf die Leinwand.' },
+    { ziel: '[data-aktion="exportieren"]', titel: 'Fertig?', text: 'Exportieren als PNG, PDF oder für Insta. Das ? daneben startet diesen Rundgang nochmal.' },
+  ] });
 
   function renderKopfKnoepfe() {
     const r = app.querySelector('.knopfreihe') || app.querySelector('.kopf .reihe');
@@ -1055,6 +1064,7 @@
       await K.projekte.loeschen(p.id);
       zeigeStart();
     },
+    rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
     'zum-start': async () => { await speichernSpaeter.sofort(); S.startLasche = 'start'; zeigeStart(); },
     'einstellungen': () => Dialoge.einstellungen(),
     'anhang': async (_el, { danach } = {}) => {

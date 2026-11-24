@@ -216,6 +216,7 @@
         <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
         <nav class="oo-menue" aria-label="Menü">${REITER.map(([k, t]) => `<button type="button" class="m${(S.reiter || 'start') === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}</nav>
         <div class="platz"></div>
+        <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <div style="position:relative"><button type="button" class="oo-teilen" data-aktion="exportmenue">Teilen</button></div>
         <button type="button" class="oo-ori" data-aktion="ori" title="Ori fragen">${oriVogel(24)}Ori</button>
       </header>
@@ -256,7 +257,15 @@
       if ((S.fenster.von > 0 && oben < S.fenster.von + 10) || (S.fenster.bis < S.fenster.zeilen && unten > S.fenster.bis - 10)) { clearTimeout(scrollUhr); scrollUhr = setTimeout(() => zeichneTabelle(), 30); }
     });
     setTimeout(() => { if (S.ansicht === 'tabelle' && !document.querySelector('.schleier')) A.standFoto?.('albatros-tabelle'); }, 3000);
+    setTimeout(() => { if (S.ansicht === 'tabelle' && !document.querySelector('.schleier')) window.Rundgang?.start(RUNDGANG()); }, 700);
   }
+  const RUNDGANG = () => ({ app: 'albatros', farbe: '#2f7a4d', vogel: vogel('winkt', 52), schritte: [
+    { ziel: '.oo-karte', titel: 'Deine Tabelle', text: 'Hier trägst du alles ein – wie in Excel. Formeln beginnen mit =, z. B. =SUMME(B2:B9). Gespeichert wird von selbst, auf den Cent genau.' },
+    { ziel: '.oo-leiste', titel: 'Werkzeuge', text: 'Fett, Zahlenformat, Euro, Summe, Sortieren, Filter, Diagramm. Oben im Menü wechselst du die Werkzeuge: Einfügen, Formeln, Daten, Makros.' },
+    { ziel: '.formelzeile', titel: 'Formelzeile', text: 'Zeigt, was wirklich in der Zelle steht. Ich erkläre dir jede Formel, wenn du willst.' },
+    { ziel: '.oo-seite', titel: 'Hier sitze ich', text: 'Sag mir in normalen Worten, was du willst: „Summe unten“, „alles über 200 € rot“, „mach ein Diagramm“. Ich rechne nach. Zweimal. Mit ‹ klappst du mich weg.' },
+    { ziel: '.oo-hilfe', titel: 'Nochmal?', text: 'Dieses ? startet den Rundgang jederzeit neu. Teilen speichert als Excel, CSV oder PDF.' },
+  ] });
 
   // ---------- Gitter ----------
   function zeichneTabelle() {
@@ -788,6 +797,7 @@
   // ---------- Aktionen ----------
   const aktionen = {
     start: () => zeigeStart(),
+    rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
     einstellungen: () => einstellungen(),
     tabelle: (el, ev) => { if (ev?.target?.closest('[data-aktion="loeschen"]')) return; oeffne(el.dataset.id); },
     loeschen: async (el) => {

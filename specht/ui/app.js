@@ -122,6 +122,7 @@
       <div class="oo-dok"><b>Specht</b><small>IT-Helfer · ${esc(klopfText())}</small></div>
       <nav class="oo-menue" aria-label="Bereiche">${OO_REITER.map(([k, t]) => `<button type="button" class="m${offen === k ? ' an' : ''}" data-a="ansicht" data-z="${k}">${t}</button>`).join('')}</nav>
       <div class="platz"></div>
+      <button type="button" class="oo-hilfe" data-a="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
       <button type="button" class="oo-teilen" data-a="ansicht" data-z="einstellungen">Einstellungen</button>
       <button type="button" class="oo-ori" data-a="ori" title="Specht fragen">${oriVogel(24)}Ori</button></header>`;
   }
@@ -599,7 +600,16 @@
     if (S.gewechselt.size === 0 && vorher === Object.values(zustand).filter((z) => !z.an).length && Object.keys(alt).length) meldung('Abgeklopft – alles wie vorher.');
   }
 
+  const RUNDGANG = () => ({ app: 'specht', farbe: '#b23a28', vogel: specht(52), schritte: [
+    { ziel: '.oo-karte', titel: 'Die Wand', text: 'Hier hängt alles, was zählt: Server, Netz, Backup, Tagebuch. Rot heißt: kümmern. Grün heißt: Kaffee.' },
+    { ziel: '.oo-leiste', titel: 'Abklopfen', text: '„Jetzt abklopfen“ prüft einmal alle Server – nur ein Ping, nichts Wildes. Störungen trägst du hier ein, Anleitungen findest du daneben.' },
+    { ziel: '.oo-seite', titel: 'Frag mich', text: 'Beschreib, was klemmt – ich kenne eure Server und die Anleitungen. Ich grummel, aber ich helfe. Mit ‹ klappst du mich weg.' },
+    { ziel: '.oo-menue', titel: 'Bereiche', text: 'Server, Netz, Backup, Tagebuch, Anleitungen, Lizenzen – alles einzeln zum Nachschlagen.' },
+    { ziel: '.oo-hilfe', titel: 'Nochmal?', text: 'Das ? startet diesen Rundgang neu. Mehr sag ich nicht.' },
+  ] });
+  setTimeout(function rgVersuch() { if (document.querySelector('.oo-karte') && !document.querySelector('.schleier')) window.Rundgang?.start(RUNDGANG()); else setTimeout(rgVersuch, 1500); }, 1500);
   const AKTIONEN = {
+    rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
     'wissen-laden': async () => {
       const r = await SP.wissenLaden();
       if (r?.abgebrochen) return;

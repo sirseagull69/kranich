@@ -1,0 +1,22 @@
+/* Rundgang – gleich in allen Vögeln */
+.rg-schleier{position:fixed;inset:0;z-index:9000}
+.rg-loch{position:fixed;border-radius:10px;box-shadow:0 0 0 9999px rgba(20,24,40,.55),0 0 0 3px var(--rg-farbe);transition:all .28s cubic-bezier(.3,.7,.2,1);pointer-events:none}
+.rg-blase{position:fixed;width:340px;box-sizing:border-box;background:#fffaf0;border-radius:12px;padding:16px 16px 14px;box-shadow:0 24px 50px -16px rgba(10,14,30,.55);border-top:5px solid var(--rg-farbe);transition:left .28s cubic-bezier(.3,.7,.2,1),top .28s cubic-bezier(.3,.7,.2,1);font:400 14.5px/1.5 'Source Serif 4',Georgia,serif;color:#1d2742;animation:rg-rein .3s ease-out}
+@keyframes rg-rein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.rg-kopf{display:flex;align-items:center;gap:10px}
+.rg-vogel{width:52px;height:52px;flex:none;display:grid;place-items:center}
+.rg-vogel svg{width:52px!important;height:52px!important}
+.rg-kopf small{display:block;font:700 11.5px 'Bricolage Grotesque',sans-serif;color:var(--rg-farbe);text-transform:uppercase;letter-spacing:.06em}
+.rg-kopf b{display:block;font:800 17px/1.2 'Bricolage Grotesque',sans-serif;color:#1d2742}
+.rg-blase p{margin:10px 0 14px}
+.rg-fuss{display:flex;align-items:center;gap:6px}
+.rg-punkte{flex:1;display:flex;gap:5px}
+.rg-punkte i{width:7px;height:7px;border-radius:50%;background:#e2dccd}
+.rg-punkte i.an{background:var(--rg-farbe);width:18px;border-radius:4px}
+.rg-blase button{border:0;cursor:pointer;font:700 13px 'Bricolage Grotesque',sans-serif;border-radius:8px;padding:8px 13px}
+.rg-leise{background:transparent;color:#7a7f8e}
+.rg-leise:hover{background:#f1ece2;color:#1d2742}
+.rg-weiter{background:var(--rg-farbe);color:#fff}
+.rg-weiter:focus-visible{outline:3px solid color-mix(in srgb,var(--rg-farbe) 40%,transparent);outline-offset:2px}
+.oo-hilfe{width:30px;height:30px;border:0;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font:800 14px 'Bricolage Grotesque',sans-serif;cursor:pointer;-webkit-app-region:no-drag}
+.oo-hilfe:hover{background:rgba(255,255,255,.3)}
