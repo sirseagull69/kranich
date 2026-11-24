@@ -17,6 +17,16 @@ const A = require('../kern/assistent');
 if (process.platform === 'win32') app.commandLine.appendSwitch('disable-features', 'WinUseBrowserSpellChecker');
 
 let fenster = null;
+let dateiOffen = { ungespeichert: false, name: '' };
+let schliessenErlaubt = false;
+// Zuletzt verwendete Dateien (wie in Office, auch in der Windows-Sprungliste)
+const zuletztDatei = () => path.join(app.getPath('userData'), 'zuletzt.json');
+function zuletztLesen() { try { return JSON.parse(fs.readFileSync(zuletztDatei(), 'utf8')); } catch { return []; } }
+function zuletztMerken(pfad) {
+  const liste = [{ pfad, name: path.basename(pfad), zeit: new Date().toISOString() }, ...zuletztLesen().filter((z) => path.resolve(z.pfad).toLowerCase() !== path.resolve(pfad).toLowerCase())].slice(0, 25);
+  try { fs.writeFileSync(zuletztDatei(), JSON.stringify(liste), 'utf8'); } catch { /* egal */ }
+  try { app.addRecentDocument(pfad); } catch { /* egal */ }
+}
 let dokumente = null;
 let einstellungen = null;
 
@@ -35,7 +45,7 @@ const sauber = (n) => String(n || 'Dokument').replace(/[\\/:*?"<>|]/g, ' ').trim
 function oeffneArg(argv) {
   const id = argv.find((a) => a.startsWith('--oeffne='))?.slice(9);
   if (id && /^[a-z0-9-]{6,40}$/.test(id)) return { id };
-  const datei = argv.slice(1).find((a) => /\.docx$/i.test(a) && fs.existsSync(a));
+  const datei = argv.slice(1).find((a) => /\.(docx|txt|md)$/i.test(a) && fs.existsSync(a));
   return datei ? { datei } : null;
 }
 
@@ -61,18 +71,58 @@ function registriere() {
   handle('dok:speichern', (d) => dokumente.speichern(d));
   handle('dok:loeschen', (id) => dokumente.loeschen(id));
 
+  // Datei öffnen: lesen, mit dem Dokument verbinden (Speichern schreibt wieder in genau diese Datei)
+  const inhaltLesen = async (datei) => {
+    if (/\.docx$/i.test(datei)) return docxLesen(fs.readFileSync(datei));
+    const t = fs.readFileSync(datei, 'utf8');
+    return { html: t.split(/\r?\n\r?\n/).map((p) => `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\r?\n/g, '<br>') || '<br>'}</p>`).join('') };
+  };
   handle('datei:importieren', async (pfad) => {
     let datei = pfad;
     if (!datei) {
-      const r = await dialog.showOpenDialog(fenster, { title: 'Dokument öffnen', filters: [{ name: 'Word-Dokumente', extensions: ['docx'] }, { name: 'Text', extensions: ['txt', 'md'] }], properties: ['openFile'] });
+      const e = einstellungen.alle();
+      const r = await dialog.showOpenDialog(fenster, { title: 'Öffnen', defaultPath: e.standardOrdner || app.getPath('documents'), filters: [{ name: 'Alle Dokumente', extensions: ['docx', 'txt', 'md'] }, { name: 'Word-Dokumente', extensions: ['docx'] }, { name: 'Text', extensions: ['txt', 'md'] }], properties: ['openFile'] });
       if (r.canceled || !r.filePaths[0]) return { abgebrochen: true };
       datei = r.filePaths[0];
     }
-    const name = path.basename(datei).replace(/\.[^.]+$/, '');
-    if (/\.docx$/i.test(datei)) { const r = await docxLesen(fs.readFileSync(datei)); return dokumente.neu(name, r.html, r); }
-    const html = fs.readFileSync(datei, 'utf8').split(/\r?\n\r?\n/).map((p) => `<p>${p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/\r?\n/g, '<br>')}</p>`).join('');
-    return dokumente.neu(name, html);
+    if (!fs.existsSync(datei)) throw new Error('Die Datei gibt es nicht mehr.');
+    const inhalt = await inhaltLesen(datei);
+    zuletztMerken(datei);
+    const da = dokumente.zuDatei(datei);
+    if (da) return dokumente.ausDatei(da.id, inhalt);
+    const d = dokumente.neu(path.basename(datei).replace(/\.[^.]+$/, ''), inhalt.html, { ...inhalt, datei });
+    dokumente.speichern({ id: d.id, dateiStand: new Date().toISOString() });
+    return d;
   });
+  // Speichern: in die verbundene Datei – ohne Nachfrage. Ohne Datei (oder mit ziel: 'neu') fragt „Speichern unter“.
+  handle('datei:speichern', async ({ id, bloecke, text, name, opt, unter, format }) => {
+    const d = dokumente.lesen(id);
+    let ziel = !unter && d.datei ? d.datei : null;
+    if (!ziel) {
+      const e = einstellungen.alle();
+      const fmt = format || (d.datei ? path.extname(d.datei).slice(1).toLowerCase() : 'docx');
+      const r = await dialog.showSaveDialog(fenster, { title: 'Speichern unter', defaultPath: path.join(d.datei ? path.dirname(d.datei) : (e.standardOrdner || app.getPath('documents')), `${sauber(name || d.name)}.${fmt === 'txt' || fmt === 'md' ? fmt : 'docx'}`),
+        filters: [{ name: 'Word-Dokument', extensions: ['docx'] }, { name: 'Nur Text', extensions: ['txt'] }, { name: 'Markdown', extensions: ['md'] }] });
+      if (r.canceled || !r.filePath) return { abgebrochen: true };
+      ziel = r.filePath;
+    }
+    if (/\.(txt|md)$/i.test(ziel)) fs.writeFileSync(ziel, String(text || ''), 'utf8');
+    else fs.writeFileSync(ziel, await docxSchreiben(Array.isArray(bloecke) ? bloecke : [], name || d.name, opt || {}));
+    const stand = new Date().toISOString();
+    dokumente.speichern({ id, name: d.name === 'Neues Dokument' || unter ? path.basename(ziel).replace(/\.[^.]+$/, '') : d.name, html: d.html, datei: ziel, dateiStand: stand });
+    zuletztMerken(ziel);
+    return { ok: true, datei: ziel, stand, name: path.basename(ziel).replace(/\.[^.]+$/, '') };
+  });
+  handle('datei:ordnerWaehlen', async () => { const r = await dialog.showOpenDialog(fenster, { title: 'Ordner wählen', properties: ['openDirectory', 'createDirectory'] }); return r.canceled ? null : r.filePaths[0]; });
+  handle('datei:textKopie', async ({ name, text }) => {
+    const r = await dialog.showSaveDialog(fenster, { title: 'Als Text exportieren', defaultPath: path.join(einstellungen.alle().standardOrdner || app.getPath('documents'), `${sauber(name)}.txt`), filters: [{ name: 'Text', extensions: ['txt'] }] });
+    if (r.canceled || !r.filePath) return { abgebrochen: true };
+    fs.writeFileSync(r.filePath, String(text || ''), 'utf8'); return { ok: true, datei: r.filePath };
+  });
+  handle('datei:info', (pfad) => { try { const st = fs.statSync(pfad); return { groesse: st.size, geaendert: st.mtime.toISOString(), da: true }; } catch { return { da: false }; } });
+  handle('zuletzt:liste', () => zuletztLesen().filter((z) => fs.existsSync(z.pfad)).slice(0, 15));
+  handle('datei:status', ({ ungespeichert, name }) => { dateiOffen = { ungespeichert: Boolean(ungespeichert), name: String(name || '') }; fenster?.setTitle(`${dateiOffen.ungespeichert ? '• ' : ''}${dateiOffen.name || 'Schwalbe'} – Schwalbe`); return true; });
+  handle('fenster:schliessen', () => { schliessenErlaubt = true; fenster?.close(); return true; });
   handle('datei:docx', async ({ bloecke, name, opt }) => {
     const r = await dialog.showSaveDialog(fenster, { title: 'Als Word-Datei speichern', defaultPath: path.join(app.getPath('documents'), `${sauber(name)}.docx`), filters: [{ name: 'Word', extensions: ['docx'] }] });
     if (r.canceled || !r.filePath) return { abgebrochen: true };
@@ -137,6 +187,13 @@ function oeffneFenster() {
     else if (p.selectionText) vorlage.push({ label: 'Kopieren', role: 'copy' });
     if (vorlage.length) Menu.buildFromTemplate(vorlage).popup({ window: fenster });
   });
+  fenster.on('close', (e) => {
+    if (schliessenErlaubt || !dateiOffen.ungespeichert) return;
+    e.preventDefault();
+    const w = dialog.showMessageBoxSync(fenster, { type: 'question', buttons: ['Speichern', 'Nicht speichern', 'Abbrechen'], defaultId: 0, cancelId: 2, title: 'Schwalbe', message: `Änderungen an „${dateiOffen.name}“ speichern?`, detail: 'Wenn du nicht speicherst, bleibt die Datei auf dem alten Stand. In der Schwalbe ist trotzdem alles noch da.' });
+    if (w === 0) fenster.webContents.send('datei:speichernUndZu');
+    else if (w === 1) { schliessenErlaubt = true; fenster.close(); }
+  });
   fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   fenster.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   fenster.webContents.on('will-navigate', (e) => e.preventDefault());
@@ -147,7 +204,7 @@ function start() {
   const daten = app.getPath('userData');
   try { fs.mkdirSync(daten, { recursive: true }); fs.writeFileSync(path.join(daten, 'version.json'), JSON.stringify({ version: app.getVersion(), pfad: process.execPath })); } catch { /* egal */ }
   dokumente = new Dokumente(path.join(daten, 'dokumente'));
-  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'));
+  einstellungen = new Einstellungen(path.join(daten, 'einstellungen.json'), path.join(app.getPath('appData'), 'Ori Office', 'gemeinsam.json'));
   Menu.setApplicationMenu(null);
   registriere();
   netzSperren();

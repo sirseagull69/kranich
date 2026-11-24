@@ -16,27 +16,48 @@ class Dokumente {
       try {
         const d = JSON.parse(fs.readFileSync(path.join(this.ordner, f), 'utf8'));
         const text = String(d.html || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-        aus.push({ id: d.id, name: d.name, geaendert: d.geaendert, woerter: text ? text.split(' ').length : 0, anfang: text.slice(0, 140) });
+        aus.push({ id: d.id, name: d.name, geaendert: d.geaendert, woerter: text ? text.split(' ').length : 0, anfang: text.slice(0, 140), datei: d.datei || '' });
       } catch { /* kaputt */ }
     }
     return aus.sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert)));
   }
   neu(name = 'Neues Dokument', html = '<h1>Neues Dokument</h1><p></p>', extra = {}) {
-    const d = { id: crypto.randomUUID().slice(0, 18), name: String(name).slice(0, 120), html: String(html), kopf: String(extra.kopf || ''), fuss: String(extra.fuss || ''), seitenzahlen: Boolean(extra.seitenzahlen), kommentare: kommentareSauber(extra.kommentare), ...(extra.aenderungen && Object.keys(extra.aenderungen).length ? { aenderungen: extra.aenderungen } : {}), erstellt: new Date().toISOString(), geaendert: new Date().toISOString() };
+    const d = { id: crypto.randomUUID().slice(0, 18), name: String(name).slice(0, 120), html: String(html), kopf: String(extra.kopf || ''), fuss: String(extra.fuss || ''), seitenzahlen: Boolean(extra.seitenzahlen), kommentare: kommentareSauber(extra.kommentare), datei: String(extra.datei || ''), ...(extra.aenderungen && Object.keys(extra.aenderungen).length ? { aenderungen: extra.aenderungen } : {}), erstellt: new Date().toISOString(), geaendert: new Date().toISOString() };
     fs.writeFileSync(this.pfad(d.id), JSON.stringify(d), 'utf8');
     return d;
   }
   lesen(id) { return JSON.parse(fs.readFileSync(this.pfad(id), 'utf8')); }
   speichern(d) {
     const alt = (() => { try { return this.lesen(d.id); } catch { return {}; } })();
-    const neu = { ...alt, id: d.id, name: String(d.name || 'Dokument').slice(0, 120), html: String(d.html || ''), geaendert: new Date().toISOString() };
+    const neu = { ...alt, id: d.id, geaendert: new Date().toISOString() };
+    if ('name' in d || !alt.name) neu.name = String(d.name || alt.name || 'Dokument').slice(0, 120);
+    if ('html' in d || alt.html === undefined) neu.html = String(d.html ?? alt.html ?? '');
     for (const k of ['kopf', 'fuss']) if (k in d) neu[k] = String(d[k] || '').slice(0, 300);
     if ('seitenzahlen' in d) neu.seitenzahlen = Boolean(d.seitenzahlen);
     if ('kommentare' in d) neu.kommentare = kommentareSauber(d.kommentare);
     if ('verfolgen' in d) neu.verfolgen = Boolean(d.verfolgen);
+    if ('datei' in d) neu.datei = String(d.datei || '');
+    if ('dateiStand' in d) neu.dateiStand = String(d.dateiStand || '');
     if (d.markerFertig) delete neu.aenderungen;
     fs.writeFileSync(this.pfad(d.id), JSON.stringify(neu), 'utf8');
     return { ok: true, geaendert: neu.geaendert };
+  }
+  // Dokument, das mit einer Datei auf der Platte verbunden ist
+  zuDatei(pfad) {
+    const ziel = path.resolve(String(pfad)).toLowerCase();
+    for (const f of fs.readdirSync(this.ordner)) {
+      if (!/\.json$/.test(f)) continue;
+      try { const d = JSON.parse(fs.readFileSync(path.join(this.ordner, f), 'utf8')); if (d.datei && path.resolve(d.datei).toLowerCase() === ziel) return d; } catch { /* kaputt */ }
+    }
+    return null;
+  }
+  // Inhalt frisch aus der Datei übernehmen (Datei öffnen = Datei lesen)
+  ausDatei(id, inhalt) {
+    const d = this.lesen(id);
+    Object.assign(d, { html: String(inhalt.html || ''), kopf: String(inhalt.kopf || ''), fuss: String(inhalt.fuss || ''), seitenzahlen: Boolean(inhalt.seitenzahlen), kommentare: kommentareSauber(inhalt.kommentare), geaendert: new Date().toISOString(), dateiStand: new Date().toISOString() });
+    if (inhalt.aenderungen && Object.keys(inhalt.aenderungen).length) d.aenderungen = inhalt.aenderungen; else delete d.aenderungen;
+    fs.writeFileSync(this.pfad(id), JSON.stringify(d), 'utf8');
+    return d;
   }
   loeschen(id) { fs.rmSync(this.pfad(id), { force: true }); return true; }
 }

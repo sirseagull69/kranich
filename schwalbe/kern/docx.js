@@ -216,7 +216,9 @@ async function docxSchreiben(bloecke, titel = 'Dokument', opt = {}) {
     ...sw.rels.map((r) => `<Relationship Id="${r.id}" Type="${r.typ}" Target="${x(r.ziel)}"${r.extern ? ' TargetMode="External"' : ''}/>`),
   ];
   zip.file('word/_rels/document.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join('')}</Relationships>`);
-  zip.file('word/styles.xml', STYLES);
+  const schrift = /^[\w\s-]{2,40}$/.test(String(opt.schrift || '')) ? String(opt.schrift) : 'Calibri';
+  const sz = Math.round((Number(opt.groesse) || 11) * 2);
+  zip.file('word/styles.xml', STYLES.replace(/w:ascii="Calibri" w:hAnsi="Calibri" w:cs="Calibri"\/><w:sz w:val="22"\/>/, `w:ascii="${x(schrift)}" w:hAnsi="${x(schrift)}" w:cs="${x(schrift)}"/><w:sz w:val="${sz}"/>`));
   zip.file('word/numbering.xml', numberingXml(sw.listen));
   // Felder (Inhaltsverzeichnis, Seitenzahlen) beim Öffnen aktualisieren
   zip.file('word/settings.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:settings xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">${bloecke.some((b) => b.art === 'inhalt') ? '<w:updateFields w:val="true"/>' : ''}<w:defaultTabStop w:val="708"/><w:lang w:val="de-DE"/></w:settings>`);

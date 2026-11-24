@@ -196,7 +196,9 @@
     S.ansicht = 'start'; S.d = null;
     S.liste = await A.dokumente.liste();
     S.einst = await A.einstellungen.lesen();
-    if (!S.autorGesetzt) { S.autorGesetzt = true; Pruefen.setzeAutor(S.einst?.name || await A.systemName?.() || 'Ich'); }
+    if (!S.autorGesetzt) { S.autorGesetzt = true; Pruefen.setzeAutor(S.einst?.autorName || await A.systemName?.() || 'Ich'); }
+    einstellungenAnwenden();
+    if (!S.ersterStart) { S.ersterStart = true; if (S.einst?.startAnsicht === 'zuletzt' && S.liste?.[0]) { oeffne(S.liste[0].id); return; } }
     const wer = S.einst?.weg === 'api' ? 'API' : S.einst?.weg === 'heim' ? 'Heim-PC' : `Claude · ${esc(S.einst?.claudeModell || 'opus')}`;
     app.innerHTML = `<header class="kopf"><span class="marke">${vogel('ruhezustand-2', 34)}<b>Schwalbe</b>${S.einst?.version ? `<small class="version">${esc(S.einst.version)}</small>` : ''}</span><div class="platz"></div>
         <span class="chip">${wer}</span>
@@ -229,18 +231,20 @@
       await A.dokumente.speichern({ id: d.id, name: d.name, html: d.html, kommentare: d.kommentare || [], markerFertig: true });
     }
     d.kommentare ||= [];
-    S.d = d; S.verlauf = []; zeigeDokument();
+    if (!S.einst) { S.einst = await A.einstellungen.lesen(); einstellungenAnwenden(); }
+    S.d = d; S.verlauf = []; S.dateiUngespeichert = false; hist.zurueck = []; hist.vor = []; zeigeDokument(); statusZeigen();
   }
   let speicherUhr = null;
   function geaendert() {
     if (!S.d) return;
-    const chip = app.querySelector('.gespeichert'); if (chip) chip.textContent = 'speichert …';
     clearTimeout(speicherUhr);
     speicherUhr = setTimeout(async () => {
       S.d.html = blatt() ? saeubern(blatt().innerHTML) : S.d.html;
       const r = await A.dokumente.speichern({ id: S.d.id, name: S.d.name, html: S.d.html, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [], verfolgen: Boolean(S.d.verfolgen) });
-      const c = app.querySelector('.gespeichert'); if (c) c.textContent = r?.fehler ? 'nicht gespeichert!' : 'gespeichert';
+      if (r?.fehler) { const c = app.querySelector('.gespeichert'); if (c) c.textContent = 'nicht gespeichert!'; } else statusZeigen();
+      if (S.einst?.autoInDatei && S.d?.datei) { clearTimeout(S.autoUhr); S.autoUhr = setTimeout(() => speichern({ still: true }), 2500); }
     }, 600);
+    if (S.d.datei && !S.dateiUngespeichert) { S.dateiUngespeichert = true; statusZeigen(); }
     zaehle(); gliederung(); clearTimeout(S.ivUhr); S.ivUhr = setTimeout(inhaltAktualisieren, 400);
     clearTimeout(S.komUhr); S.komUhr = setTimeout(() => { zeichneKommentare(); if (S.reiter === 'pruefen') { const z = app.querySelector('.aend-zahl'); const n = Pruefen.alle(blatt()).length; if (z) z.textContent = n ? `${n} Änderung${n === 1 ? '' : 'en'}` : ''; } }, 250);
   }
@@ -290,13 +294,13 @@
     S.ansicht = 'dokument';
     app.innerHTML = `<header class="oo-kopf">
         <button type="button" class="oo-ikon" data-aktion="start" title="Alle Dokumente" aria-label="Alle Dokumente">${vogel('ruhezustand-2', 30)}</button><b class="oo-app">Schwalbe</b>
-        <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.d.name)}</b><small><span class="gespeichert">gespeichert</span></small></div>
+        <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(dateiName())}</b><small><span class="gespeichert">gespeichert</span></small></div>
         <nav class="oo-menue" aria-label="Menü">
-          <div class="datei-wrap"><button type="button" class="m" data-aktion="dateimenue" aria-haspopup="true">Datei ▾</button></div>
+          <div class="datei-wrap"><button type="button" class="m m-datei" data-aktion="backstage" aria-haspopup="true">Datei</button></div>
           ${REITER.map(([k, t]) => `<button type="button" class="m${(S.reiter || 'start') === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}
         </nav>
         <div class="platz"></div>
-        <button type="button" class="oo-teilen" data-aktion="docx" title="Als Word speichern (Strg+S)">Als Word</button>
+        <button type="button" class="oo-teilen" data-aktion="speichern" title="Speichern (Strg+S)">${sym('word', 15)} Speichern</button>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="oo-ori" data-aktion="ori" title="Schwalbe fragen">${oriVogel(24)}Ori</button>
       </header>
@@ -332,7 +336,7 @@
     s.addEventListener('beforeinput', (ev) => {
       if (ev.inputType === 'historyUndo' && hist.zurueck.length) { ev.preventDefault(); rueckgaengig(); return; }
       if (ev.inputType === 'historyRedo' && hist.vor.length) { ev.preventDefault(); wiederholen(); return; }
-      if (!S.d.verfolgen) return;
+      if (!S.d.verfolgen) { autokorrektur(ev); return; }
       const t = ev.inputType || '';
       merkeStand(t.startsWith('insertText') ? 'tippen' : t.startsWith('delete') ? 'loeschen' : t);
       if (Pruefen.vorEingabe(ev)) geaendert();
@@ -365,10 +369,8 @@
     });
     s.addEventListener('keydown', (ev) => {
       const k = ev.key.toLowerCase();
-      if (ev.ctrlKey && !ev.shiftKey && k === 's') { ev.preventDefault(); aktionen.docx(); }
       if (ev.ctrlKey && !ev.shiftKey && k === 'z' && hist.zurueck.length) { ev.preventDefault(); rueckgaengig(); return; }
       if (ev.ctrlKey && (k === 'y' || (ev.shiftKey && k === 'z')) && hist.vor.length) { ev.preventDefault(); wiederholen(); return; }
-      if (ev.ctrlKey && k === 'p') { ev.preventDefault(); aktionen.drucken(); }
       if (ev.ctrlKey && (k === 'f' || k === 'h')) { ev.preventDefault(); aktionen.suchen(); }
       if (ev.ctrlKey && k === 'k') { ev.preventDefault(); aktionen.link(); }
       if (ev.ctrlKey && ev.altKey && k === 'm') { ev.preventDefault(); aktionen.kommentar(); }
@@ -753,14 +755,228 @@
     { ziel: '.mitgebracht', titel: 'Word-Dateien gehen auch', text: 'Zieh eine .docx hier rein. Ich öffne sie, du schreibst weiter, und am Ende speicherst du sie wieder als Word oder PDF.' },
   ] });
   const RUNDGANG = () => ({ app: 'schwalbe', farbe: '#2c5aa0', vogel: vogel('winkt', 52), schritte: [
-    { ziel: '.blattrahmen', titel: 'Dein Blatt', text: 'Hier schreibst du – wie in Word. Alles speichert sich von selbst, du musst nie auf Speichern drücken.' },
+    { ziel: '.blattrahmen', titel: 'Dein Blatt', text: 'Hier schreibst du – wie in Word. In der Schwalbe ist alles sofort gesichert. In die Word-Datei auf dem PC schreibt erst „Speichern“ (Strg+S) – oben steht, ob die Datei auf dem neuesten Stand ist.' },
     { ziel: '.oo-leiste', titel: 'Die Werkzeuge', text: 'Oben wechselst du zwischen Start (Schrift, Größe, Farbe, Listen), Einfügen (Tabelle, Bild, Link, Inhaltsverzeichnis) und Seite (Kopf- und Fußzeile, Seitenzahlen). Strg+F sucht, Strg+Enter macht einen Seitenumbruch.' },
     { ziel: '.oo-seite', titel: 'Hier bin ich', text: 'Sag mir, was ich tun soll: kürzer, förmlicher, Fehler raus, weiterschreiben. Markierst du vorher Text, kümmer ich mich nur um den. Mit ‹ klappst du mich weg.' },
     { ziel: '.gliederung', titel: 'Gliederung', text: 'Deine Überschriften. Ein Klick, und du springst hin.' },
-    { ziel: '.oo-menue', titel: 'Fertig?', text: 'Als Word (.docx) oder PDF speichern oder gleich drucken. Das ? oben rechts startet diesen Rundgang nochmal.' },
+    { ziel: '.oo-menue', titel: 'Datei', text: 'Unter „Datei“ findest du alles wie in Office: Neu, Öffnen, Info, Speichern unter, PDF, Drucken und die Optionen. Das ? oben rechts startet diesen Rundgang nochmal.' },
   ] });
 
   // ---------- Aktionen ----------
+  // ---------- Datei: Speichern wie in Office ----------
+  const dateiName = () => (S.d?.datei ? S.d.datei.split(/[\\/]/).pop() : S.d?.name || 'Dokument');
+  function statusZeigen() {
+    if (!S.d) return;
+    const c = app.querySelector('.gespeichert');
+    if (c) {
+      c.textContent = S.d.datei ? (S.dateiUngespeichert ? '● Änderungen nicht in der Datei' : 'in der Datei gespeichert') : 'nur in der Schwalbe – „Speichern“ legt eine Datei an';
+      c.classList.toggle('offen', Boolean(S.d.datei && S.dateiUngespeichert));
+      c.title = S.d.datei || '';
+    }
+    const n = app.querySelector('.oo-dok b'); if (n && n.tagName === 'B') n.textContent = dateiName();
+    A.datei.status?.({ ungespeichert: Boolean(S.d.datei && S.dateiUngespeichert), name: dateiName() });
+  }
+  async function speichern({ unter = false, format, still = false } = {}) {
+    if (!S.d || !blatt()) return false;
+    if (!unter && !S.d.datei && S.einst?.standardFormat === 'schwalbe' && !format) { meldung('Gespeichert (in der Schwalbe). Als Datei: Datei > Speichern unter.'); return true; }
+    S.d.html = saeubern(blatt().innerHTML);
+    await A.dokumente.speichern({ id: S.d.id, name: S.d.name, html: S.d.html, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [], verfolgen: Boolean(S.d.verfolgen) });
+    const r = await A.datei.speichern({ id: S.d.id, unter, format, name: S.d.name, bloecke: bloecke(blatt()), text: blatt().innerText.replace(/\n{3,}/g, '\n\n').trim() + '\n',
+      opt: { kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [], schrift: ({ 'Source Serif 4': 'Georgia', 'Bricolage Grotesque': 'Segoe UI' })[S.einst?.standardSchrift] || S.einst?.standardSchrift || 'Georgia', groesse: S.einst?.standardGroesse || 12 } });
+    if (r?.abgebrochen) return false;
+    if (r?.fehler) { meldung(`Speichern ging nicht: ${r.fehler.nachricht}`, { dauer: 8000 }); return false; }
+    S.d.datei = r.datei; S.d.name = r.name; S.d.dateiStand = r.stand; S.dateiUngespeichert = false; statusZeigen();
+    if (!still) meldung(`Gespeichert: ${r.datei.split(/[\\/]/).pop()}`, { knopf: 'Im Ordner zeigen', aktion: () => A.datei.zeigen(r.datei) });
+    return true;
+  }
+  async function dokumentSchliessen() {
+    if (S.d?.datei && S.dateiUngespeichert) {
+      const w = await waehle({ titel: `Änderungen an „${dateiName()}“ speichern?`, text: 'Wenn du nicht speicherst, bleibt die Datei auf dem alten Stand. In der Schwalbe ist trotzdem alles noch da.', knoepfe: [['speichern', 'Speichern'], ['nein', 'Nicht speichern'], ['abbrechen', 'Abbrechen']] });
+      if (w === 'abbrechen' || !w) return;
+      if (w === 'speichern' && !(await speichern())) return;
+    }
+    A.datei.status?.({ ungespeichert: false, name: '' });
+    zeigeStart();
+  }
+  function waehle({ titel, text, knoepfe }) {
+    return new Promise((fertig) => {
+      const s2 = document.createElement('div'); s2.className = 'schleier';
+      s2.innerHTML = `<div class="fenster" role="dialog" aria-modal="true" style="width:min(460px,94vw)"><h2>${esc(titel)}</h2><p class="leise">${esc(text)}</p><div class="reihe" style="justify-content:flex-end;gap:8px">${knoepfe.map(([k, t], i) => `<button type="button" class="btn${i ? ' weiss' : ''}" data-w="${k}">${esc(t)}</button>`).join('')}</div></div>`;
+      document.body.appendChild(s2);
+      s2.addEventListener('click', (ev) => { const b = ev.target.closest('[data-w]'); if (b) { s2.remove(); fertig(b.dataset.w); } else if (ev.target === s2) { s2.remove(); fertig(null); } });
+      s2.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') { s2.remove(); fertig(null); } });
+      s2.querySelector('[data-w]').focus();
+    });
+  }
+
+  // ---------- Datei-Ansicht (wie „Datei“ in Office) ----------
+  async function backstage(bereich = 'info') {
+    document.querySelector('.backstage')?.remove();
+    const b = document.createElement('div'); b.className = 'backstage';
+    const NAV = [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'kommentar', 'Info'], ['-'], ['speichern', 'word', 'Speichern'], ['unter', 'export', 'Speichern unter'], ['export', 'pdf', 'Exportieren'], ['drucken', 'drucker', 'Drucken'], ['-'], ['optionen', 'zahnrad', 'Optionen'], ['zu', 'links', 'Schließen']];
+    b.innerHTML = `<nav class="bs-nav"><button type="button" class="bs-zurueck" data-bs="zurueck">${sym('links', 18)}<span>Zurück</span></button>${NAV.map(([k, ic, t]) => (k === '-' ? '<hr>' : `<button type="button" data-bs="${k}" class="${k === bereich ? 'an' : ''}">${sym(ic, 17)}<span>${t}</span></button>`)).join('')}<div class="platz"></div><div class="bs-vogel">${vogel('ruhezustand-2', 54)}</div></nav><section class="bs-inhalt"></section>`;
+    document.body.appendChild(b);
+    const inhalt = b.querySelector('.bs-inhalt');
+    const zu = () => b.remove();
+    const zeige = async (k) => {
+      b.querySelectorAll('.bs-nav [data-bs]').forEach((x) => x.classList.toggle('an', x.dataset.bs === k));
+      if (k === 'neu') {
+        inhalt.innerHTML = `<h1>Neu</h1><div class="bs-vorlagen">${VORLAGEN.map((v) => `<button type="button" class="bs-vorlage" data-vorlage="${v.k}"><span class="bs-blatt"><i></i><i></i><i></i></span><b>${esc(v.titel)}</b><small>${esc(v.unter)}</small></button>`).join('')}</div>
+          <h2>Oder schreiben lassen</h2><div class="bs-wunsch"><input id="bs-wunsch" placeholder="Ein Satz reicht, z. B. „Kündigung fürs Fitnessstudio zum Monatsende“"><button type="button" class="btn" data-bs-wunsch>Schreiben</button></div>`;
+        inhalt.querySelector('#bs-wunsch').addEventListener('keydown', (e) => { if (e.key === 'Enter') inhalt.querySelector('[data-bs-wunsch]').click(); });
+      } else if (k === 'oeffnen') {
+        const [zuletzt, docs] = await Promise.all([A.zuletzt?.() || [], A.dokumente.liste()]);
+        inhalt.innerHTML = `<h1>Öffnen</h1><button type="button" class="bs-gross" data-bs-durchsuchen>${sym('oeffnen', 20)}<span><b>Durchsuchen …</b><small>Word-Datei (.docx) oder Text vom PC wählen · Strg+O</small></span></button>
+          <h2>Zuletzt verwendete Dateien</h2>${(zuletzt?.length ? zuletzt : []).map((z) => `<button type="button" class="bs-zeile" data-bs-datei="${esc(z.pfad)}">${sym('word', 18)}<span><b>${esc(z.name)}</b><small>${esc(z.pfad)}</small></span><em>${esc(wann(z.zeit))}</em></button>`).join('') || '<p class="leise">Noch keine Datei geöffnet.</p>'}
+          <h2>In der Schwalbe</h2>${docs.filter((d) => !d.datei).slice(0, 12).map((d) => `<button type="button" class="bs-zeile" data-bs-dok="${esc(d.id)}">${sym('kommentar', 18)}<span><b>${esc(d.name)}</b><small>${esc(d.anfang || 'leer')}</small></span><em>${esc(wann(d.geaendert))}</em></button>`).join('') || '<p class="leise">Keine.</p>'}`;
+      } else if (k === 'info') {
+        const info = S.d.datei ? await A.datei.info(S.d.datei) : null;
+        const text = blatt().innerText.replace(/\s+/g, ' ').trim(); const woerter = text ? text.split(' ').length : 0;
+        const komOffen = (S.d.kommentare || []).filter((x) => !x.erledigt).length; const aend = Pruefen.alle(blatt()).length;
+        const zeile = (t, w) => `<div class="bs-info"><span>${t}</span><b>${w}</b></div>`;
+        inhalt.innerHTML = `<h1>Info</h1><div class="bs-titel">${sym('word', 26)}<div><b>${esc(dateiName())}</b><small>${S.d.datei ? esc(S.d.datei) : 'Noch nicht als Datei gespeichert – liegt nur in der Schwalbe.'}</small></div></div>
+          <div class="bs-knoepfe">${S.d.datei ? `<button type="button" class="btn weiss" data-bs-ordner>${sym('oeffnen', 15)} Im Ordner zeigen</button>` : `<button type="button" class="btn" data-bs="speichern">${sym('word', 15)} Als Datei speichern</button>`}<button type="button" class="btn weiss" data-bs-umbenennen>Umbenennen</button></div>
+          <div class="bs-spalten"><div>
+            <h2>Eigenschaften</h2>${zeile('Größe', info?.da ? `${Math.max(1, Math.round(info.groesse / 1024))} KB` : '–')}${zeile('Wörter', woerter.toLocaleString('de-DE'))}${zeile('Zeichen', text.length.toLocaleString('de-DE'))}${zeile('Seiten', app.querySelector('.seitenzahl')?.textContent || '1')}${zeile('Autor', esc(Pruefen.autor()))}
+            ${zeile('Zuletzt in Datei gespeichert', S.d.dateiStand ? esc(wann(S.d.dateiStand)) : '–')}${zeile('Erstellt', esc(wann(S.d.erstellt)))}
+          </div><div>
+            <h2>Dokument prüfen</h2><p class="leise">Bevor du es weitergibst: ${komOffen} offene${komOffen === 1 ? 'r' : ''} Kommentar${komOffen === 1 ? '' : 'e'}, ${aend} verfolgte Änderung${aend === 1 ? '' : 'en'}.</p>
+            <button type="button" class="btn weiss" data-bs-saeubern ${komOffen || aend || (S.d.kommentare || []).length ? '' : 'disabled'}>Alle Änderungen annehmen und Kommentare entfernen</button>
+            <h2>Schutz</h2><p class="leise">Alles speichert sich nebenbei in der Schwalbe. Auch ohne Speichern geht nichts verloren, die Datei auf dem PC ändert sich aber erst mit „Speichern“${S.einst?.autoInDatei ? ' – automatisches Speichern in die Datei ist an' : ''}.</p>
+          </div></div>`;
+      } else if (k === 'unter' || k === 'export') {
+        inhalt.innerHTML = `<h1>${k === 'unter' ? 'Speichern unter' : 'Exportieren'}</h1><p class="leise">${k === 'unter' ? 'Legt eine neue Datei an. Ab dann speichert Strg+S in diese.' : 'Macht eine Kopie in einem anderen Format. Dein Dokument bleibt, wo es ist.'}</p>
+          <div class="bs-formate">${(k === 'unter' ? [['docx', 'word', 'Word-Dokument', '.docx – öffnet sich in Word, LibreOffice & Co.'], ['txt', 'kommentar', 'Nur Text', '.txt – ohne Formatierung'], ['md', 'kommentar', 'Markdown', '.md – Text mit einfachen Auszeichnungen']]
+            : [['pdf', 'pdf', 'PDF', 'Zum Verschicken und Drucken – sieht überall gleich aus'], ['docx-kopie', 'word', 'Word-Kopie', 'Eine .docx-Kopie, ohne dein Dokument umzuhängen'], ['txt-kopie', 'kommentar', 'Nur Text', '.txt – ohne Formatierung']]).map(([f, ic, t, x]) => `<button type="button" class="bs-gross" data-bs-format="${f}">${sym(ic, 22)}<span><b>${t}</b><small>${x}</small></span></button>`).join('')}</div>`;
+      }
+    };
+    b.addEventListener('click', async (ev) => {
+      const n = ev.target.closest('[data-bs]')?.dataset.bs;
+      if (n === 'zurueck') return zu();
+      if (n === 'speichern') { zu(); speichern(); return; }
+      if (n === 'drucken') { zu(); aktionen.drucken(); return; }
+      if (n === 'optionen') { zu(); optionen(); return; }
+      if (n === 'zu') { zu(); dokumentSchliessen(); return; }
+      if (n) return zeige(n);
+      const v = ev.target.closest('[data-vorlage]'); if (v) { zu(); aktionen.vorlage(v.closest('[data-vorlage]').dataset.vorlage ? { dataset: { k: v.dataset.vorlage } } : v); return; }
+      if (ev.target.closest('[data-bs-wunsch]')) { const t = inhalt.querySelector('#bs-wunsch').value.trim(); if (!t) return; zu(); const d = await A.dokumente.neu(t.slice(0, 60), '<p><br></p>'); await oeffne(d.id); frageSchwalbe(`Schreib mir einen ersten Entwurf: ${t}`, t); return; }
+      if (ev.target.closest('[data-bs-durchsuchen]')) { zu(); aktionen.importieren(); return; }
+      const df = ev.target.closest('[data-bs-datei]'); if (df) { zu(); const r = await A.datei.importieren(df.dataset.bsDatei); if (r?.fehler) meldung(r.fehler.nachricht); else oeffne(r.id); return; }
+      const dd = ev.target.closest('[data-bs-dok]'); if (dd) { zu(); oeffne(dd.dataset.bsDok); return; }
+      if (ev.target.closest('[data-bs-ordner]')) { A.datei.zeigen(S.d.datei); return; }
+      if (ev.target.closest('[data-bs-umbenennen]')) { zu(); const el = app.querySelector('.oo-dok b'); if (el) aktionen.umbenennen(el); return; }
+      if (ev.target.closest('[data-bs-saeubern]')) { merkeStand(); Pruefen.alle(blatt()).forEach(Pruefen.annehmen); blatt().querySelectorAll('span.kom').forEach((x) => Pruefen.entpacken(x)); S.d.kommentare = []; geaendert(); zeichneKommentare(); zeige('info'); meldung('Änderungen angenommen, Kommentare entfernt.'); return; }
+      const f = ev.target.closest('[data-bs-format]')?.dataset.bsFormat;
+      if (f) {
+        zu();
+        if (f === 'pdf') aktionen.pdf();
+        else if (f === 'docx-kopie') aktionen.docx();
+        else if (f === 'txt-kopie') { const r = await A.datei.textKopie?.({ name: S.d.name, text: blatt().innerText }); if (r?.ok) meldung('Gespeichert.', { knopf: 'Im Ordner zeigen', aktion: () => A.datei.zeigen(r.datei) }); }
+        else speichern({ unter: true, format: f });
+      }
+    });
+    b.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') zu(); });
+    b.tabIndex = -1; b.focus();
+    zeige(bereich);
+  }
+
+  // ---------- Optionen (wie in Office) ----------
+  async function optionen(bereich = 'allgemein') {
+    const e = await A.einstellungen.lesen(); const eb = e.eingebaut || {};
+    const s2 = document.createElement('div'); s2.className = 'schleier';
+    const BEREICHE = [['allgemein', 'Allgemein'], ['speichern', 'Speichern'], ['bearbeiten', 'Bearbeiten'], ['ki', 'Schwalbe (KI)'], ['ueber', 'Über']];
+    const an = (k, t, x, wert) => `<label class="op-zeile op-haken"><input type="checkbox" data-op="${k}" ${wert ? 'checked' : ''}><span><b>${t}</b><small>${x}</small></span></label>`;
+    const feld = (t, x, inp) => `<div class="op-zeile"><span><b>${t}</b><small>${x}</small></span>${inp}</div>`;
+    s2.innerHTML = `<div class="fenster optionen" role="dialog" aria-modal="true" aria-label="Optionen"><nav class="op-nav"><h2>Optionen</h2>${BEREICHE.map(([k, t]) => `<button type="button" data-opb="${k}">${t}</button>`).join('')}</nav>
+      <div class="op-inhalt">
+        <section data-ops="allgemein"><h3>Allgemein</h3><p class="leise">Name und Kürzel gelten für alle Vögel von Ori Office – bei Kommentaren und Änderungen steht dann dein Name.</p>
+          ${feld('Dein Name', 'Erscheint bei Kommentaren und Änderungen', `<input class="feld" data-op="autorName" value="${esc(e.autorName || '')}" placeholder="${esc(Pruefen.autor())}">`)}
+          ${feld('Kürzel', 'Zwei, drei Buchstaben', `<input class="feld kurz" data-op="initialen" maxlength="4" value="${esc(e.initialen || '')}" placeholder="NP">`)}
+          ${feld('Beim Start', 'Was die Schwalbe zuerst zeigt', `<select class="feld" data-op="startAnsicht"><option value="start" ${e.startAnsicht !== 'zuletzt' ? 'selected' : ''}>Startseite</option><option value="zuletzt" ${e.startAnsicht === 'zuletzt' ? 'selected' : ''}>Zuletzt bearbeitetes Dokument</option></select>`)}</section>
+        <section data-ops="speichern" hidden><h3>Speichern</h3>
+          ${feld('Standardordner', 'Hier schlägt „Speichern unter“ vor', `<div class="op-ordner"><input class="feld" data-op="standardOrdner" value="${esc(e.standardOrdner || '')}" placeholder="Dokumente"><button type="button" class="btn weiss" data-op-ordner>Wählen …</button></div>`)}
+          ${feld('Neue Dokumente', 'Was beim ersten „Speichern“ passiert', `<select class="feld" data-op="standardFormat"><option value="docx" ${e.standardFormat !== 'schwalbe' ? 'selected' : ''}>Als Word-Datei (.docx)</option><option value="schwalbe" ${e.standardFormat === 'schwalbe' ? 'selected' : ''}>Nur in der Schwalbe behalten</option></select>`)}
+          ${an('autoInDatei', 'Automatisch in die Datei speichern', 'Wie AutoSave in Office: Jede Änderung landet nach ein paar Sekunden in der Datei auf dem PC.', e.autoInDatei)}
+          <p class="leise">In der Schwalbe selbst wird immer alles sofort gesichert – auch bei einem Absturz geht nichts verloren.</p></section>
+        <section data-ops="bearbeiten" hidden><h3>Bearbeiten</h3>
+          ${feld('Standardschrift', 'Für den Text auf dem Blatt und in Word-Dateien', `<select class="feld" data-op="standardSchrift">${SCHRIFTEN.map((f) => `<option ${f === (e.standardSchrift || 'Source Serif 4') ? 'selected' : ''} style="font-family:'${f}'">${f}</option>`).join('')}</select>`)}
+          ${feld('Standardgröße', 'In Punkt', `<select class="feld kurz" data-op="standardGroesse">${[10, 11, 12, 13, 14].map((g) => `<option ${Number(e.standardGroesse || 12) === g ? 'selected' : ''}>${g}</option>`).join('')}</select>`)}
+          ${an('rechtschreibung', 'Rechtschreibung prüfen', 'Rote Wellenlinie unter Tippfehlern, Rechtsklick zeigt Vorschläge.', e.rechtschreibung !== false)}
+          ${an('autokorrektur', 'Autokorrektur', 'Macht beim Tippen: „Anführungszeichen“, Satzanfang groß, ZWei Großbuchstaben → Zwei, -- → –, ... → …, (c) → ©, -> → →, z.B. → z. B.', e.autokorrektur !== false)}</section>
+        <section data-ops="ki" hidden><h3>Schwalbe (KI)</h3>
+          <div class="ezeile"><div class="t"><b>Wer schreibt mit</b><span>Claude auf diesem PC, über deinen Heim-PC oder mit API-Schlüssel.</span></div><div class="segment">${[['claude', 'Dieser PC'], ['heim', 'Heim-PC'], ['api', 'API']].map(([k, t]) => `<label><input type="radio" name="weg" value="${k}" ${(e.weg || 'claude') === k ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div></div>
+          <div class="ezeile w-heim"><div class="t"><b>Adresse vom Heim-PC</b><span>Dort unter Einstellungen → Heim-PC.</span></div><input class="feld" id="e-heimadr" value="${esc(e.heimAdresse)}" placeholder="http://mein-pc:4747"></div>
+          <div class="ezeile w-heim"><div class="t"><b>Kopplungscode</b><span>${e.heimCodeGesetzt ? 'Gespeichert – leer lassen zum Behalten.' : 'Vom Heim-PC kopieren.'}</span></div><input class="feld" id="e-heimcode" type="password" placeholder="Code"></div>
+          <div class="ezeile w-api"><div class="t"><b>API-Schlüssel</b><span>${e.apiSchluesselGesetzt ? 'Gespeichert – leer lassen zum Behalten.' : 'Beginnt mit sk-ant-'}</span></div><input class="feld" id="e-key" type="password" placeholder="sk-ant-…"></div>
+          <div class="ezeile w-modell"><div class="t"><b>Modell</b><span>Opus schreibt am besten, Sonnet ist schneller.</span></div><select class="feld" id="e-modell" style="width:140px">${['opus', 'sonnet', 'haiku'].map((m) => `<option ${(e.claudeModell || 'opus') === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>
+          <div class="ezeile"><div class="t"><b>Eingebautes Claude</b><span>${eb.da && eb.token ? `Eingerichtet (${esc(eb.version)})` : 'Nicht eingerichtet – geht im Startfenster → Zahnrad → „Claude einrichten“.'}</span></div></div>
+          <div class="ezeile"><div class="t"><b>Verbindung</b><span class="status">Noch nicht getestet.</span></div><button type="button" class="btn weiss" data-testen>Testen</button></div></section>
+        <section data-ops="ueber" hidden><h3>Über die Schwalbe</h3><div class="op-ueber">${vogel('winkt', 70)}<div><b>Schwalbe ${esc(e.version || '')}</b><small>Teil von Ori Office · Schreibt mit, fliegt schnell.</small></div></div>
+          <h4>Neu in dieser Version</h4><ul class="leise"><li>Speichern wie in Office: Strg+S schreibt in die geöffnete Datei, „Speichern unter“, Nachfrage beim Schließen</li><li>Datei-Ansicht mit Neu, Öffnen, Info, Exportieren, Drucken</li><li>Optionen mit Name, Speichern, Standardschrift, Autokorrektur</li><li>Kommentare, Änderungen verfolgen, Rechtschreibung</li></ul>
+          <div class="reihe" style="gap:8px"><button type="button" class="btn weiss" data-op-rundgang>Rundgang starten</button></div></section>
+      </div>
+      <div class="op-fuss"><button type="button" class="btn weiss" data-zu>Abbrechen</button><button type="button" class="btn" data-speichern>OK</button></div></div>`;
+    document.body.appendChild(s2);
+    const zeigeB = (k) => { s2.querySelectorAll('[data-ops]').forEach((x) => { x.hidden = x.dataset.ops !== k; }); s2.querySelectorAll('[data-opb]').forEach((x) => x.classList.toggle('an', x.dataset.opb === k)); };
+    const zeigeWeg = () => { const w = s2.querySelector('input[name="weg"]:checked')?.value; s2.querySelectorAll('.w-heim').forEach((x) => { x.hidden = w !== 'heim'; }); s2.querySelectorAll('.w-api').forEach((x) => { x.hidden = w !== 'api'; }); s2.querySelectorAll('.w-modell').forEach((x) => { x.hidden = w === 'api'; }); };
+    zeigeB(bereich); zeigeWeg(); s2.addEventListener('change', zeigeWeg);
+    const werte = () => {
+      const w = { weg: s2.querySelector('input[name="weg"]:checked').value, heimAdresse: s2.querySelector('#e-heimadr').value.trim(), heimCode: s2.querySelector('#e-heimcode').value.trim(), apiSchluessel: s2.querySelector('#e-key').value.trim(), claudeModell: s2.querySelector('#e-modell').value };
+      s2.querySelectorAll('[data-op]').forEach((x) => { w[x.dataset.op] = x.type === 'checkbox' ? x.checked : x.dataset.op === 'standardGroesse' ? Number(x.value) : x.value.trim(); });
+      return w;
+    };
+    s2.addEventListener('click', async (ev) => {
+      const b2 = ev.target.closest('[data-opb]'); if (b2) return zeigeB(b2.dataset.opb);
+      if (ev.target === s2 || ev.target.closest('[data-zu]')) return s2.remove();
+      if (ev.target.closest('[data-op-ordner]')) { const o = await A.datei.ordnerWaehlen?.(); if (o && !o.fehler) s2.querySelector('[data-op="standardOrdner"]').value = o; return; }
+      if (ev.target.closest('[data-op-rundgang]')) { s2.remove(); aktionen.rundgang?.(); return; }
+      if (ev.target.closest('[data-speichern]')) { S.einst = await A.einstellungen.setzen(werte()); einstellungenAnwenden(); s2.remove(); meldung('Optionen gespeichert.'); if (S.ansicht === 'start') zeigeStart(); return; }
+      if (ev.target.closest('[data-testen]')) { await A.einstellungen.setzen(werte()); const st = s2.querySelector('.status'); st.textContent = 'Frage Claude …'; const r = await A.hirnTesten(); st.textContent = r?.fehler ? `Klappt nicht: ${r.fehler.nachricht}` : `Claude ist da (${r.weg === 'heim' ? 'über den Heim-PC' : r.weg === 'eingebaut' ? 'eingebautes Claude' : r.weg === 'api' ? 'API' : 'dieser PC'}).`; }
+    });
+    s2.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s2.remove(); });
+  }
+  function einstellungenAnwenden() {
+    const e = S.einst || {};
+    if (e.autorName) Pruefen.setzeAutor(e.autorName);
+    document.documentElement.style.setProperty('--seite-schrift', `'${String(e.standardSchrift || 'Source Serif 4').replace(/'/g, '')}'`);
+    document.documentElement.style.setProperty('--seite-groesse', `${Number(e.standardGroesse) || 12}pt`);
+    S.rechtschreibung = e.rechtschreibung !== false;
+    const b = blatt(); if (b) b.spellcheck = S.rechtschreibung;
+  }
+
+  // ---------- Autokorrektur ----------
+  const AK_ERSATZ = { '(c)': '©', '(r)': '®', '(tm)': '™', '->': '→', '<-': '←', '=>': '⇒', '...': '…', '--': '–', '1/2': '½', '1/4': '¼', '3/4': '¾', 'z.B.': 'z. B.', 'z.b.': 'z. B.', 'd.h.': 'd. h.', 'u.a.': 'u. a.', 'o.ä.': 'o. Ä.', 'bzw': null };
+  const AK_ABK = /\b(z|d|u|o|s|v|ca|bzw|usw|vgl|Nr|Str|Tel|evtl|ggf|inkl|zzgl|etc|Dr|Hr|Fr|bspw|sog|ff|S|Abs)\.\s*$/;
+  function autokorrektur(ev) {
+    if (S.einst?.autokorrektur === false || S.d?.verfolgen || ev.inputType !== 'insertText') return false;
+    const zeichen = ev.data; if (!zeichen) return false;
+    const sel = getSelection(); if (!sel.rangeCount || !sel.isCollapsed) return false;
+    const r = sel.getRangeAt(0); const tn = r.startContainer; if (tn.nodeType !== 3) return false;
+    const vorher = tn.data.slice(0, r.startOffset);
+    // Anführungszeichen „…“
+    if (zeichen === '"') { const davor = vorher.slice(-1); document.execCommand('insertText', false, !davor || /[\s(\[{\u00a0–-]/.test(davor) ? '„' : '“'); ev.preventDefault(); return true; }
+    if (!/^[\s.,;:!?)]$/.test(zeichen)) return false;
+    const m = /(\S+)$/.exec(vorher); if (!m) return false;
+    const wort = m[1]; let neu = null;
+    if (AK_ERSATZ[wort] !== undefined && AK_ERSATZ[wort] !== null) neu = AK_ERSATZ[wort];
+    else if (/^[A-ZÄÖÜ]{2}[a-zäöüß]{2,}$/.test(wort)) neu = wort[0] + wort.slice(1).toLowerCase(); // ZWei → Zwei
+    else if (/^[a-zäöü][a-zäöüß]+$/.test(wort) && /\s$/.test(zeichen)) {
+      // Satzanfang groß: am Absatzanfang oder nach . ! ?
+      let blk = tn.parentElement; while (blk && !/^(P|H[1-6]|LI|TD|TH|BLOCKQUOTE|ARTICLE)$/.test(blk.tagName)) blk = blk.parentElement;
+      if (blk && blk.tagName !== 'ARTICLE') {
+        const vr = document.createRange(); vr.selectNodeContents(blk); vr.setEnd(tn, r.startOffset - wort.length);
+        const davor = vr.toString();
+        if ((!davor.trim() || /[.!?]\s+$/.test(davor)) && !AK_ABK.test(davor) && !/\d\.\s*$/.test(davor)) neu = wort[0].toUpperCase() + wort.slice(1);
+      }
+    }
+    if (!neu || neu === wort) return false;
+    ev.preventDefault();
+    const er = document.createRange(); er.setStart(tn, r.startOffset - wort.length); er.setEnd(tn, r.startOffset);
+    sel.removeAllRanges(); sel.addRange(er);
+    document.execCommand('insertText', false, neu + zeichen);
+    return true;
+  }
+
   // ---------- Eigener Verlauf (Rückgängig) für Änderungen, die nicht über den Browser laufen ----------
   // (Verfolgen, Annehmen/Ablehnen, Kommentare) – Strg+Z kennt die sonst nicht.
   const hist = { zurueck: [], vor: [], zuletzt: 0, art: '' };
@@ -920,8 +1136,8 @@
     'bild-aus': (el) => { const b = S.bild; if (!b) return; b.dataset.aus = el.dataset.a; geaendert(); zeigeSchwebe(); },
     'bild-weg': () => { const b = S.bild; if (!b) return; b.remove(); S.bild = null; geaendert(); zeigeSchwebe(); },
     zoom: (el) => { S.zoom = Math.max(50, Math.min(200, (S.zoom || 100) + Number(el.dataset.d))); const r = app.querySelector('.blattrahmen'); if (r) r.style.zoom = S.zoom / 100; const b = app.querySelector('.zoom b'); if (b) b.textContent = `${S.zoom} %`; },
-    start: () => zeigeStart(),
-    einstellungen: () => einstellungen(),
+    start: () => (S.ansicht === 'dokument' ? dokumentSchliessen() : zeigeStart()),
+    einstellungen: () => optionen(),
     rundgang: () => window.Rundgang?.start(S.ansicht === 'start' ? RUNDGANG_START() : RUNDGANG(), true),
     oeffne: (el, ev) => { if (ev?.target?.closest('[data-aktion="loeschen"]')) return; oeffne(el.dataset.id); },
     loeschen: async (el) => {
@@ -944,6 +1160,8 @@
     'live-oeffnen': () => { const [, id] = (S.live?.dataset.quelle || '').split(':'); if (id) A.albatros.oeffnen(id); },
     'live-loesen': () => { merkeStand(); if (!S.live) return; S.live.removeAttribute('data-quelle'); S.live.removeAttribute('data-quelle-name'); S.live.removeAttribute('contenteditable'); S.live.classList.remove('live-fehlt'); S.live = null; geaendert(); zeigeSchwebe(); meldung('Verknüpfung gelöst – die Tabelle kannst du jetzt frei bearbeiten.'); },
     'live-weg': () => { merkeStand(); if (!S.live) return; S.live.remove(); S.live = null; geaendert(); zeigeSchwebe(); },
+    speichern: () => speichern(),
+    backstage: () => backstage(S.d?.datei ? 'info' : 'info'),
     kommentar: () => {
       bereichZurueck();
       const sel = getSelection(); if (!sel.rangeCount || !inBlatt(sel.anchorNode)) { meldung('Erst Text markieren, dann Kommentar.'); return; }
@@ -1043,6 +1261,15 @@
     const sel = getSelection(); if (sel.rangeCount && inBlatt(sel.anchorNode)) S.bereich = sel.getRangeAt(0).cloneRange();
     frageSchwalbe(`Korrigiere die Rechtschreibung des Wortes „${wort}“ im markierten Text (nur dieses Wort, sonst nichts ändern).`, `„${wort}“ korrigieren`);
   });
+  document.addEventListener('keydown', (ev) => {
+    if (!(ev.ctrlKey || ev.metaKey) || ev.altKey) return;
+    const k = ev.key.toLowerCase();
+    if (k === 's' && S.ansicht === 'dokument') { ev.preventDefault(); ev.stopPropagation(); speichern({ unter: ev.shiftKey }); }
+    else if (k === 'o') { ev.preventDefault(); aktionen.importieren(); }
+    else if (k === 'n' && !ev.shiftKey) { ev.preventDefault(); aktionen.neu(); }
+    else if (k === 'p' && S.ansicht === 'dokument') { ev.preventDefault(); aktionen.drucken(); }
+  }, true);
+  A.beimSpeichernUndZu?.(async () => { if (await speichern()) A.schliessen(); });
   A.beimOeffnen(async (o) => { if (o.id) oeffne(o.id); else if (o.datei) { const r = await A.datei.importieren(o.datei); if (!r?.fehler) oeffne(r.id); } });
   window.SchwalbeTest = { saeubern, bloecke };
 
