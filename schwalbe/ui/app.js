@@ -953,12 +953,26 @@
   app.addEventListener('input', (ev) => { if (ev.target.matches('.kf')) { S.d[ev.target.dataset.kf] = ev.target.value.slice(0, 300); kopfFussZeigen(); geaendert(); } });
   app.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.datei[data-aktion]')) { ev.preventDefault(); aktionen.oeffne(ev.target, ev); } });
   // Datei aufs Fenster ziehen
+  // Sichtbare Rückmeldung beim Drüberziehen
+  let ziehTiefe = 0;
+  const hatDatei = (ev) => [...(ev.dataTransfer?.types || [])].includes('Files');
+  const ziehAnzeige = (an) => {
+    document.body.classList.toggle('zieht-datei', an);
+    let z = document.querySelector('.zieh-hinweis');
+    if (an && !z && S.ansicht !== 'dokument') { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${vogel('liest', 70)}<b>Loslassen zum Öffnen</b><small>Word-Datei (.docx) oder Text</small></div>`; document.body.appendChild(z); }
+    if (!an) z?.remove();
+  };
+  document.addEventListener('dragenter', (ev) => { if (!hatDatei(ev)) return; ziehTiefe++; ziehAnzeige(true); });
+  document.addEventListener('dragleave', () => { ziehTiefe = Math.max(0, ziehTiefe - 1); if (!ziehTiefe) ziehAnzeige(false); });
   document.addEventListener('dragover', (ev) => ev.preventDefault());
   document.addEventListener('drop', async (ev) => {
+    ziehTiefe = 0; ziehAnzeige(false);
     const f = ev.dataTransfer?.files?.[0]; if (!f) return;
     ev.preventDefault();
-    const p = A.pfadVon(f); if (!/\.(docx|txt|md)$/i.test(p)) return meldung('Nur .docx oder .txt.');
-    const r = await A.datei.importieren(p); if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id);
+    const p = A.pfadVon(f); if (!/\.(docx|txt|md)$/i.test(p)) return meldung('Das kann ich nicht öffnen – nur .docx oder .txt.');
+    const lade = document.createElement('div'); lade.className = 'zieh-hinweis lade'; lade.innerHTML = `<div>${vogel('liest', 70)}<b>Öffne „${esc(f.name)}“ …</b></div>`; document.body.appendChild(lade);
+    const r = await A.datei.importieren(p); lade.remove();
+    if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id);
   });
   window.addEventListener('focus', () => { if (S.ansicht === 'dokument' && blatt()?.querySelector('table[data-quelle]')) liveAktualisieren(); });
   A.beimOeffnen(async (o) => { if (o.id) oeffne(o.id); else if (o.datei) { const r = await A.datei.importieren(o.datei); if (!r?.fehler) oeffne(r.id); } });
