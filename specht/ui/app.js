@@ -120,11 +120,11 @@
     const offen = S.ansicht && S.ansicht !== 'uebersicht' ? S.ansicht : 'uebersicht';
     return `<header class="oo-kopf"><button type="button" class="oo-ikon" data-a="ansicht" data-z="uebersicht" aria-label="Übersicht">${specht(30, S.klopft ? 'klopft' : '')}</button>
       <div class="oo-dok"><b>Specht</b><small>IT-Helfer · ${esc(klopfText())}</small></div>
+      <button type="button" class="m-datei" data-a="datei">Datei</button>
       <nav class="oo-menue" aria-label="Bereiche">${OO_REITER.map(([k, t]) => `<button type="button" class="m${offen === k ? ' an' : ''}" data-a="ansicht" data-z="${k}">${t}</button>`).join('')}</nav>
       <div class="platz"></div>
       <button type="button" class="oo-hilfe" data-a="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
-      <button type="button" class="oo-teilen" data-a="ansicht" data-z="einstellungen">Einstellungen</button>
-      <button type="button" class="oo-ori" data-a="ori" title="Specht fragen">${oriVogel(24)}Ori</button></header>`;
+</header>`;
   }
   function kopfleiste() {
     return `<header class="wandkopf">${kopf()}<div class="platz"></div>${S.anpassen ? '<button type="button" class="btn klein haupt" data-a="anpassen">Fertig</button>' : ''}${syncPille()}<button type="button" class="rundknopf" data-a="ansicht" data-z="einstellungen" aria-label="Einstellungen">${sym('zahnrad', 17)}</button></header>`;
@@ -135,13 +135,17 @@
     const kopfz = `<div class="kopfz"><h3 class="oo-wer2"><span><b>Specht</b><small>Admin, grummelt, hilft trotzdem</small></span></h3>${verlauf.length ? `<button type="button" class="mini" data-a="gross">${S.gross ? 'Zur Wand' : 'Ausklappen'}</button><button type="button" class="mini" data-a="chat-neu">Neue Frage</button>` : ''}<button type="button" class="oo-pfeil" data-a="helfer-klappen" title="Einklappen" aria-label="Specht einklappen">‹</button></div>`;
     const inhalt = verlauf.length
       ? `<div class="gespraech" aria-live="polite">${verlauf.map(nachricht).join('')}${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt" aria-label="Specht denkt nach"><i></i><i></i><i></i></span></div></div>` : ''}</div>`
-      : `<div class="fr-in"><div><h1>${keinWissen() ? 'Hallo, ich bin Specht.' : 'Was ist los<br>in der IT?'}</h1>
+      : `<div class="oo-schnell">${[['PC ist langsam', 'Ein PC ist total langsam – was prüfe ich der Reihe nach?'], ['WLAN weg', 'Bei jemandem ist das WLAN weg – was prüfe ich?'], ['Drucker druckt nicht', 'Ein Drucker druckt nicht – was prüfe ich?'], ['Passwort vergessen', 'Jemand hat sein Passwort vergessen – wie gehe ich vor?']].map(([t, f]) => `<button type="button" data-a="vorschlag" data-t="${esc(f)}">${OO.sym('M13 2L4 14h7l-1 8 9-12h-7z', 15)} ${t}</button>`).join('')}</div>
+          <div class="oo-hallo">${specht(34)}<span>Beschreib, was klemmt – ich kenne eure Server und die Anleitungen. Ich grummel, aber ich helfe.</span></div>
+          ${keinWissen() ? '<button type="button" class="btn haupt oo-wissenknopf" data-a="wissen-laden">Wissens-Datei laden</button>' : ''}`
+      + `<div class="fr-in" hidden><div><h1>${keinWissen() ? 'Hallo, ich bin Specht.' : 'Was ist los<br>in der IT?'}</h1>
           ${keinWissen() ? '<p class="fr-text">Lade einmal deine Wissens-Datei, dann kenne ich eure Server.</p><button type="button" class="btn haupt" data-a="wissen-laden">Wissens-Datei laden</button>' : `<div class="bsp">${vorschlaege.slice(0, 3).map((t) => `<button type="button" data-a="vorschlag" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>`}</div>
           <span class="vogel">${specht(150, S.denkt ? 'denkt' : '', true)}</span></div>
           ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt"><i></i><i></i><i></i></span></div></div>` : ''}`;
     return `<section class="k frage" aria-label="Specht fragen">${kopfz}${inhalt}
       ${S.anhaenge?.length ? `<div class="anhaenge">${S.anhaenge.map((a, i) => `<span class="anhang">${a.bild ? `<img src="${a.bild}" alt="">` : '📄'}<b>${esc(a.name)}</b><button type="button" data-a="anhang-weg" data-i="${i}" aria-label="Anhang entfernen">✕</button></span>`).join('')}</div>` : ''}
-      <div class="eing"><textarea id="frage" rows="1" placeholder="${verlauf.length ? 'Nachfragen …' : 'Beschreib\'s in einem Satz …'}" aria-label="Deine Frage an Specht"></textarea><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></section>`;
+      <div class="oo-ori-karte">${oriVogel(34)}<span><b>${esc(ORI_SPRUECHE[ORI_NR % ORI_SPRUECHE.length])}</b></span></div>
+      <div class="eing"><textarea id="frage" rows="1" placeholder="${verlauf.length ? 'Nachfragen …' : 'Was klemmt?'}" aria-label="Deine Frage an Specht"></textarea><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></section>`;
   }
   const kopfzeile = (w, titel, rechts = '') => `<div class="kopfz"><h3><button type="button" class="wtitel" data-a="ansicht" data-z="${w}">${esc(titel)}</button></h3>${rechts}${S.anpassen ? `<button type="button" class="mini" data-a="w-gross" data-id="${w}" title="Größer oder kleiner">↔</button><button type="button" class="mini" data-a="w-weg" data-id="${w}" title="Ausblenden">✕</button>` : ''}</div>`;
   const W_INHALT = {
@@ -521,7 +525,7 @@
         <div class="oo-inhalt${S.helferZu ? ' zu' : ''}">
           <div class="oo-links">
             <div class="oo-sitzvogel" aria-hidden="true">${specht(84)}</div>
-            <aside class="oo-seite">${frageKachel()}<div class="oo-ori-karte">${oriVogel(34)}<span><b>${esc(ORI_SPRUECHE[ORI_NR % ORI_SPRUECHE.length])}</b></span></div></aside>
+            <aside class="oo-seite">${frageKachel()}</aside>
             <div class="oo-schiene"><button type="button" class="oo-klapp" data-a="helfer-klappen" aria-label="Specht zeigen">›</button><button type="button" class="oo-schienenvogel" data-a="helfer-klappen" aria-label="Specht">${specht(34)}</button></div>
           </div>
           <div class="oo-rechts">
@@ -612,6 +616,59 @@
     { ziel: '.oo-hilfe', titel: 'Nochmal?', text: 'Das ? startet diesen Rundgang neu. Mehr sag ich nicht.' },
   ] });
   setTimeout(function rgVersuch() { if (document.querySelector('.oo-karte') && !document.querySelector('.schleier')) window.Rundgang?.start(RUNDGANG()); else setTimeout(rgVersuch, 1500); }, 1500);
+  // ---------- Datei-Ansicht (gemeinsam mit allen Vögeln) ----------
+  const NEU_IN_VERSION = ['Datei-Ansicht mit Wissen, Konto & Sync und Optionen wie in den anderen Vögeln', 'Schnellknöpfe im Helfer', 'Screenshots und Logdateien an Fragen anhängen'];
+  const SA = { einstellungen: { lesen: async () => ({ ...S.d.einstellungen, version: S.d.version }), setzen: async (w) => { if (!w.lizenzSchluessel) delete w.lizenzSchluessel; const r = await SP.einstellungen(w); if (!r?.fehler) S.d.einstellungen = r; return r; } }, hirnTesten: () => SP.hirnTesten() };
+  function dateiAnsicht(start = 'wissen') {
+    const T = OO.teile;
+    OO.backstage({
+      nav: [['wissen', 'buch', 'Wissen'], ['konto', 'info', 'Konto & Sync'], ['tagebuch', 'liste', 'Tagebuch'], '-', ['optionen', 'optionen', 'Optionen']],
+      start, vogel: specht(54),
+      beimSchliessen: () => zeichne(false),
+      zeige: async (k, inhalt, api) => {
+        // Knöpfe mit data-a laufen über Spechts eigene Aktionen
+        inhalt.onclick = (ev) => { const el = ev.target.closest('[data-a]'); if (el && AKTIONEN[el.dataset.a]) { AKTIONEN[el.dataset.a](el, ev); setTimeout(() => api.zeige(k), 400); } };
+        if (k === 'wissen') {
+          const w = S.d.wissen;
+          inhalt.innerHTML = `${T.titel('Wissen')}${T.kopf('buch', keinWissen() ? 'Noch keine Wissens-Datei' : `${w.SERVER.length} Server · ${w.NETZ.length} Netzgeräte`, keinWissen() ? 'Lade sie einmal – danach liegt sie nur in deinem Konto, nicht in der App.' : `Stand: ${w.STAND || 'unbekannt'}`)}
+            <div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-a="wissen-laden">${OO.sym('oeffnen', 16)} ${keinWissen() ? 'Wissens-Datei laden' : 'Neue Datei laden'}</button></div>
+            <p class="oo-leise">Eine neue Datei ersetzt Server, Netz und Backup. Tagebuch und Anleitungen werden nur ergänzt. Passwörter gehören nicht hinein – die bleiben in Passbolt.</p>
+            ${(() => { const g = eintraege('gewollt_aus'); return g.length ? `<h2>Gewollt aus</h2>${g.map((x) => T.zeile(`data-a="eintrag-weg" data-id="${esc(x.id)}"`, 'schliessen', zielVon(x.ziel)?.name || x.ziel, `${zielVon(x.ziel)?.rolle || ''} · wird nicht als Problem gezeigt – klicken zum Entfernen`)).join('')}` : ''; })()}`;
+        } else if (k === 'konto') {
+          const ko = S.d.konto; const sy = S.d.sync;
+          inhalt.innerHTML = `${T.titel('Konto & Sync')}${ko ? `${T.kopf('info', ko.email, `${sy.text} · ${S.d.geraet}`)}<div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-a="sync-jetzt">Jetzt synchronisieren</button><button type="button" class="oo-btn weiss" data-a="abmelden">Abmelden</button></div>`
+            : `${T.kopf('info', 'Nicht angemeldet', 'Alles bleibt nur auf diesem Gerät.')}<div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-a="erster-start">Anmelden</button></div>`}
+            <p class="oo-leise">Abgeglichen werden Notizen, Tagebuch, Anleitungen, Freigaben, „gewollt aus“ und der Chat. Keine Passwörter.</p>`;
+        } else if (k === 'tagebuch') {
+          const l = eintraege('stoerung').slice().sort((a, b) => String(b.datum).localeCompare(String(a.datum)));
+          inhalt.innerHTML = `${T.titel('Tagebuch')}<div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-tb="kopieren">${OO.sym('export', 16)} Als Text kopieren</button><button type="button" class="oo-btn weiss" data-tb="oeffnen">Im Specht öffnen</button></div>
+            ${l.length ? l.slice(0, 30).map((x) => T.zeile(`data-tb-id="${esc(x.id)}"`, x.status === 'offen' ? 'info' : 'haken', x.was, `${x.status === 'offen' ? 'offen' : 'gelöst'}${x.loesung ? ` · ${x.loesung}` : ''}`, datum(x.datum))).join('') : '<p class="oo-leise">Noch nichts eingetragen.</p>'}`;
+          inhalt.onclick = async (ev) => {
+            const tb = ev.target.closest('[data-tb]')?.dataset.tb;
+            if (tb === 'kopieren') { await navigator.clipboard.writeText(l.map((x) => `${datum(x.datum)} · ${x.status === 'offen' ? 'OFFEN' : 'gelöst'} · ${x.was}${x.loesung ? ` → ${x.loesung}` : ''}`).join('\n')); meldung('Tagebuch kopiert.'); }
+            if (tb === 'oeffnen') { api.zu(); S.ansicht = 'stoerungen'; zeichne(); }
+            const id = ev.target.closest('[data-tb-id]')?.dataset.tbId; if (id) { api.zu(); AKTIONEN['stoerung-oeffnen']?.({ dataset: { id } }); }
+          };
+        } else if (k === 'optionen') {
+          const e = S.d.einstellungen;
+          const haken = (op, t, x, an) => `<label class="oo-op-zeile haken"><input type="checkbox" data-op="${op}" ${an ? 'checked' : ''}><span><b>${t}</b><small>${x}</small></span></label>`;
+          const zeile = (t, x, inp) => `<div class="oo-op-zeile"><span><b>${t}</b><small>${x}</small></span>${inp}</div>`;
+          await OO.optionen(inhalt, { A: SA, app: 'Specht', vogelName: 'Specht', vogel: specht(64), neu: NEU_IN_VERSION,
+            extra: [
+              ['klopfen', 'Abklopfen', () => `${haken('autoKlopfen', 'Automatisch abklopfen', 'Ping auf alle Server und Switches – nur im Firmennetz sinnvoll.', e.autoKlopfen)}
+                ${zeile('Wie oft', 'Abstand zwischen zwei Runden', `<select class="oo-feld kurz2" data-op="intervallMin" data-zahl>${[1, 2, 5, 10, 15, 30].map((m) => `<option value="${m}" ${Number(e.intervallMin) === m ? 'selected' : ''}>alle ${m} Min.</option>`).join('')}</select>`)}
+                ${haken('meldungenAn', 'In der Taskleiste melden', 'Wenn etwas neu rot wird.', e.meldungenAn)}`],
+              ['lizenz', 'Lizenz-Tool', () => `<p class="oo-leise">Nur lesen – für die Lizenz-Übersicht.</p>${zeile('Adresse', 'Supabase-URL', `<input class="oo-feld" data-op="lizenzUrl" value="${esc(e.lizenzUrl || '')}" placeholder="https://….supabase.co">`)}${zeile('Schlüssel', e.lizenzSchluesselGesetzt ? 'Gespeichert – leer lassen zum Behalten.' : 'anon-Schlüssel aus dem Lizenz-Tool', '<input class="oo-feld" data-op="lizenzSchluessel" type="password" autocomplete="off">')}`],
+            ],
+            zurueck: () => api.zeige('wissen'),
+            fertig: (wie) => { api.zu(); if (wie === 'rundgang') AKTIONEN.rundgang?.(); else meldung('Optionen gespeichert.'); },
+            nachSpeichern: async (r) => { if (r && !r.fehler) S.d.einstellungen = r; } });
+          // leere Schlüssel nicht überschreiben
+        }
+      },
+    });
+  }
+  OO.auswahllisten();
   const AKTIONEN = {
     rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
     'wissen-laden': async () => {
@@ -621,7 +678,8 @@
       S.d.wissen = r.wissen; S.d.eintraege = r.eintraege; S.klopft = !!S.d.einstellungen?.autoKlopfen;
       zeichne(); meldung(`Wissen geladen: ${r.server} Server${r.neu ? `, ${r.neu} Einträge dazu` : ''}.`);
     },
-    ansicht: (el) => { S.ansicht = el.dataset.z; S.stoerung = null; S.bearbeite = null; if (S.ansicht === 'lizenzen') S.lizenzen = null; zeichne(); },
+    datei: () => dateiAnsicht(),
+    ansicht: (el) => { if (el.dataset.z === 'einstellungen') { dateiAnsicht('optionen'); return; } S.ansicht = el.dataset.z; S.stoerung = null; S.bearbeite = null; if (S.ansicht === 'lizenzen') S.lizenzen = null; zeichne(); },
     helfer: () => { S.helfer = !S.helfer; zeichne(false); },
     'helfer-klappen': () => { S.helferZu = !S.helferZu; zeichne(false); },
     ori: () => { if (S.helferZu) S.helferZu = false; zeichne(false); setTimeout(() => document.getElementById('frage')?.focus(), 30); },

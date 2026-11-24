@@ -559,3 +559,20 @@ body{background:var(--oo-kraft)!important;background-image:none!important}
 .zieh-hinweis>div{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fffdf8;padding:26px 40px;border-radius:16px;box-shadow:0 20px 50px -20px rgba(10,14,30,.45)}
 .zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:#7a2416}
 .zieh-hinweis small{color:#6b6f80}
+:root{--oo-f:#c0392b;--oo-fm:#d9645a;--oo-fd:#8e2a20;--oo-fh:#f8dcd8}
+.oo-kopf .m-datei{border:0;border-radius:8px;background:rgba(255,255,255,.16);color:#fff;font:600 13.5px 'Bricolage Grotesque',sans-serif;padding:7px 12px;margin-left:14px;cursor:pointer}
+.oo-kopf .m-datei:hover{background:rgba(255,255,255,.26)}
+/* Helfer wie bei den anderen Vögeln */
+.oo-schnell{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 12px}
+.oo-schnell button{display:flex;align-items:center;gap:7px;min-height:38px;padding:0 10px;border:0;border-radius:999px;background:#f8e3e0;color:#8e2a20;font:700 12.5px 'Bricolage Grotesque',sans-serif;text-align:left;cursor:pointer}
+.oo-schnell button:hover{background:#f3d2cd}
+.oo-schnell svg{flex:none}
+.oo-hallo{display:flex;gap:10px;align-items:flex-start;font:400 14.5px/1.45 'Source Serif 4',serif;color:#8a8399;margin-bottom:12px}
+.oo-hallo svg{flex:none;margin-top:2px}
+.oo-wissenknopf{align-self:flex-start}
+.k.frage .fr-in[hidden]{display:none}
+.oo-seite>.k.frage{flex:1;display:flex;flex-direction:column;min-height:0}
+.k.frage .gespraech{flex:1;min-height:0;overflow:auto}
+.k.frage .oo-ori-karte{margin-top:auto}
+.k.frage .eing textarea{min-height:44px;line-height:1.4}
+.k.frage .eing textarea{overflow:hidden;resize:none}
