@@ -139,3 +139,4 @@ header .ver{margin-right:6px}
 .weiter-titel{color:#1d2742;opacity:.75}
 .weiter .datei{box-shadow:0 0 0 1px #e8e1d3,0 10px 20px -14px rgba(29,39,66,.4)!important}
 .weiter .leer{color:#7a7f8e}
+.buehne{background:color-mix(in srgb,var(--hell) 45%,#f6f2ea)!important;transition:background-color .4s}
