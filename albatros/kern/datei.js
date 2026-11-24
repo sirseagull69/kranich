@@ -184,8 +184,10 @@ async function xlsxLesen(datei) {
   const blaetter = [];
   wb.eachSheet((ws) => {
     const b = leeresBlatt(ws.name);
-    ws.eachRow({ includeEmpty: false }, (row, ze) => {
-      row.eachCell({ includeEmpty: false }, (cell, sp) => {
+    ws.eachRow({ includeEmpty: true }, (row, ze) => {
+      if (!row.cellCount) return;
+      row.eachCell({ includeEmpty: true }, (cell, sp) => {
+        if ((cell.value === null || cell.value === undefined) && !cell.style?.border && !cell.style?.fill && !cell.note) return;
         const a = F.adresse(sp - 1, ze - 1);
         const v = cell.value;
         let roh = null;
@@ -199,12 +201,30 @@ async function xlsxLesen(datei) {
         else if (v !== null && v !== undefined) roh = String(v);
         if (roh !== null && String(roh).trim() !== '') b.zellen[a] = roh;
         if (cell.font?.bold) b.fett[a] = true;
+        // Schrift, Ausrichtung, Rahmen, Notiz
+        const st = {};
+        const f = cell.font || {};
+        if (f.italic) st.k = true;
+        if (f.underline) st.u = true;
+        if (f.strike) st.s = true;
+        if (f.size && Math.round(f.size) !== 11) st.gr = Math.round(f.size);
+        const fa = f.color?.argb; if (fa && fa.length === 8 && !/^FF000000$/i.test(fa)) st.fa = `#${fa.slice(2).toLowerCase()}`;
+        const al = cell.alignment || {};
+        if (/^(center|right)$/.test(al.horizontal || '')) st.aus = al.horizontal;
+        if (/^(top|middle)$/.test(al.vertical || '')) st.va = al.vertical;
+        if (al.wrapText) st.umbruch = true;
+        const rb = cell.border || {}; const rand = {};
+        for (const [k, seite] of [['o', 'top'], ['u', 'bottom'], ['l', 'left'], ['r', 'right']]) { const x = rb[seite]?.style; if (x) rand[k] = /medium|thick|double/.test(x) ? 2 : 1; }
+        if (Object.keys(rand).length) st.rand = rand;
+        if (Object.keys(st).length) (b.stil ||= {})[a] = st;
+        const note = cell.note; const nt = typeof note === 'string' ? note : note?.texts ? note.texts.map((t) => t.text).join('') : '';
+        if (nt && nt.trim()) (b.notizen ||= {})[a] = nt.trim().slice(0, 2000);
         const fmt = String(cell.numFmt || '');
         const art = formatAusExcel(fmt);
         if (art && !(b.formate[a] === 'datum' && art !== 'datum' && /^[dmy]/i.test(fmt))) b.formate[a] = art;
 
         const farbe = cell.fill?.fgColor?.argb;
-        if (cell.fill?.type === 'pattern' && farbe && farbe.length === 8 && farbe !== 'FFFFFFFF') b.farben[a] = `#${farbe.slice(2)}`;
+        if (cell.fill?.type === 'pattern' && farbe && farbe.length === 8 && farbe !== 'FFFFFFFF') b.farben[a] = `#${farbe.slice(2).toLowerCase()}`;
       });
     });
     ws.columns?.forEach((c, i) => { if (c.width) b.breiten[F.nrZuSpalte(i)] = Math.round(c.width * 7.5); });
@@ -243,8 +263,28 @@ async function xlsxSchreiben(tabelle, datei) {
       const fmt = b.formate?.[a] || datumArt;
       if (fmt && typeof fmt === 'object' && fmt.eigen) cell.numFmt = String(fmt.eigen).replace(/T/g, 'd').replace(/J/g, 'y');
       else if (FORMAT_EXCEL[fmt]) cell.numFmt = FORMAT_EXCEL[fmt];
-      if (b.fett?.[a]) cell.font = { bold: true };
+    }
+    // Formatierung (auch für leere Zellen mit Farbe/Rahmen)
+    const mitFormat = new Set([...Object.keys(b.zellen), ...Object.keys(b.fett || {}), ...Object.keys(b.farben || {}), ...Object.keys(b.stil || {}), ...Object.keys(b.notizen || {})]);
+    for (const a of mitFormat) {
+      if (!/^[A-Z]{1,3}\d+$/.test(a)) continue;
+      const cell = ws.getCell(a); const st = b.stil?.[a] || {};
+      const font = {};
+      if (b.fett?.[a]) font.bold = true;
+      if (st.k) font.italic = true;
+      if (st.u) font.underline = true;
+      if (st.s) font.strike = true;
+      if (st.gr) font.size = Number(st.gr);
+      if (st.fa && /^#[0-9a-f]{6}$/i.test(st.fa)) font.color = { argb: `FF${st.fa.slice(1).toUpperCase()}` };
+      if (Object.keys(font).length) cell.font = font;
       if (b.farben?.[a]) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${b.farben[a].replace('#', '').toUpperCase()}` } };
+      const al = {};
+      if (st.aus) al.horizontal = st.aus;
+      if (st.va) al.vertical = st.va;
+      if (st.umbruch) al.wrapText = true;
+      if (Object.keys(al).length) cell.alignment = al;
+      if (st.rand) { const bd = {}; for (const [k, seite] of [['o', 'top'], ['u', 'bottom'], ['l', 'left'], ['r', 'right']]) if (st.rand[k]) bd[seite] = { style: st.rand[k] === 2 ? (seite === 'bottom' ? 'double' : 'medium') : 'thin', color: { argb: 'FF1D2742' } }; cell.border = bd; }
+      if (b.notizen?.[a]) cell.note = String(b.notizen[a]);
     }
     for (const [sp, px] of Object.entries(b.breiten || {})) ws.getColumn(F.spalteZuNr(sp) + 1).width = Math.max(6, Math.round(px / 7.5));
     for (const v of b.verbunden || []) { try { ws.mergeCells(v); } catch { /* überlappt */ } }

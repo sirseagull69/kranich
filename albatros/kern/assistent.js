@@ -28,6 +28,8 @@ Antworte NUR mit einem JSON-Objekt, ohne Text davor oder danach, ohne Markdown:
   "formate": { "D2:E14": "eur" },
   "farben": { "E3": "#f6d5c4", "A1:F1": null },
   "fett": { "A1:F1": true },
+  "stil": { "A1:F1": { "aus": "center", "gr": 13 }, "E14": { "rand": { "o": 1, "u": 2 } }, "B5": { "k": true, "fa": "#b23a28", "umbruch": true } },
+  "notizen": { "E3": "Kurzer Hinweis an der Zelle", "E4": null },
   "breiten": { "B": 220 },
   "diagramm": { "werte": "E2:E13", "beschriftung": "B2:B13", "art": "balken", "titel": "Ausgaben November" },
   "regeln": [{ "bereich": "E2:E40", "art": "kleiner", "wert": "0", "farbe": "#f3c9c4" }],
@@ -38,6 +40,7 @@ Antworte NUR mit einem JSON-Objekt, ohne Text davor oder danach, ohne Markdown:
   "name": "Name der Tabelle (nur bei neuer Tabelle)"
 }
 Alle Felder außer "antwort" sind optional – lass weg, was du nicht brauchst.
+"stil" kennt: k (kursiv), u (unterstrichen), s (durchgestrichen), gr (Schriftgröße in pt), fa (Schriftfarbe #rrggbb), aus ("center"|"right"), va ("top"|"middle"), umbruch (true), rand ({o,u,l,r}: 1 = dünn, 2 = doppelt/dick). Ein Wert null entfernt die Eigenschaft.
 
 Regeln:
 - Formeln wie im deutschen Excel: Funktionsnamen deutsch, Trenner ";", Dezimalkomma (0,19). Es gibt: ${require('../ui/formeln').FUNKTIONEN.join(', ')}. Ganze Spalten (B:B) gehen. EINDEUTIG, FILTER, SORTIEREN, SEQUENZ und Feldrechnungen (C2:C9*2) füllen automatisch die Zellen darunter.

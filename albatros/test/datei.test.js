@@ -39,3 +39,18 @@ test('Excel: verbunden, fixiert, Regeln, Listen, Datum, Makros', async () => {
   const bin = fs.readFileSync(path.join(__dirname, 'daten', 'vbaProject.bin'));
   assert.match(V.moduleLesen(bin)[0].code, /Sub say_hello/);
 });
+
+test('Excel: Kursiv, Größe, Schriftfarbe, Ausrichtung, Umbruch, Rahmen, Notiz hin und zurück', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'alb-'));
+  const t = { name: 'Stil', blaetter: [{ name: 'S', zellen: { A1: 'Titel', B2: 'lang und umbrochen' }, formate: {}, farben: { C3: '#d4ecdc' }, fett: { A1: true }, breiten: {},
+    stil: { A1: { k: true, u: true, gr: 16, fa: '#b23a28', aus: 'center' }, B2: { umbruch: true, va: 'top' }, C3: { rand: { o: 1, u: 2, l: 1, r: 1 } } }, notizen: { A1: 'Bitte prüfen' } }] };
+  const f = path.join(dir, 's.xlsx');
+  await D.xlsxSchreiben(t, f);
+  const [b] = await D.xlsxLesen(f);
+  assert.deepStrictEqual(b.stil.A1, { k: true, u: true, gr: 16, fa: '#b23a28', aus: 'center' });
+  assert.deepStrictEqual(b.stil.B2, { umbruch: true, va: 'top' });
+  assert.deepStrictEqual(b.stil.C3.rand, { o: 1, u: 2, l: 1, r: 1 });
+  assert.strictEqual(b.farben.C3, '#d4ecdc');
+  assert.strictEqual(b.notizen.A1, 'Bitte prüfen');
+  assert.strictEqual(b.fett.A1, true);
+});

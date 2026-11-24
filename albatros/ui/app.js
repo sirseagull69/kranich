@@ -13,7 +13,7 @@
     zurueck: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3', vor: 'M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3', plus: 'M12 5v14M5 12h14', muell: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
     sortieren: 'M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4', diagramm: 'M4 20V10M10 20V4M16 20v-7M22 20H2', export: 'M12 3v12M7 10l5 5 5-5M5 21h14', oeffnen: 'M3 7h6l2 2h10v10H3z',
     senden: 'M12 19V5M5 12l7-7 7 7', summe: 'M18 4H6l6 8-6 8h12', fx: 'M9 20c2 0 2-2 3-8s1-8 3-8M7 12h8', lupe: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3', farbe: 'M12 3l7 7-7 7-7-7 7-7zM19 18a2 2 0 0 0 4 0c0-1.5-2-4-2-4s-2 2.5-2 4z',
-    tabelle: 'M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16', verbinden: 'M3 5h18v14H3zM7 12h10M14 9l3 3-3 3M10 9l-3 3 3 3', fixieren: 'M12 17v5M8 3h8l-1 6 3 3H6l3-3z', filter: 'M3 5h18l-7 8v6l-4-2v-4z', hervor: 'M4 20h16M7 16l5-11 5 11M9 12h6', liste: 'M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01', pivot: 'M3 3h18v18H3zM3 9h18M9 3v18M13 13h4M13 17h4', makro: 'M7 4l13 8-13 8z', drucker: 'M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z', zeile: 'M3 6h18M3 12h18M12 15v6M9 18h6', spalte: 'M6 3v18M12 3v18M15 12h6M18 9v6', gruppe: 'M4 6h16M4 12h10M4 18h6',
+    tabelle: 'M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16', linksb: 'M3 6h18M3 12h12M3 18h16', mitte: 'M3 6h18M6 12h12M4 18h16', rechtsb: 'M3 6h18M9 12h12M5 18h16', rahmen: 'M3 3h18v18H3zM3 12h18M12 3v18', pinsel: 'M18 3l3 3-9 9-3-3zM9 12l-4 4c-1 1-1 4-3 5 3 0 5-1 6-2l4-4', notiz: 'M4 4h16v12l-4 4H4zM16 20v-4h4', verbinden: 'M3 5h18v14H3zM7 12h10M14 9l3 3-3 3M10 9l-3 3 3 3', fixieren: 'M12 17v5M8 3h8l-1 6 3 3H6l3-3z', filter: 'M3 5h18l-7 8v6l-4-2v-4z', hervor: 'M4 20h16M7 16l5-11 5 11M9 12h6', liste: 'M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01', pivot: 'M3 3h18v18H3zM3 9h18M9 3v18M13 13h4M13 17h4', makro: 'M7 4l13 8-13 8z', drucker: 'M6 9V3h12v6M6 18H4v-7h16v7h-2M8 14h8v7H8z', zeile: 'M3 6h18M3 12h18M12 15v6M9 18h6', spalte: 'M6 3v18M12 3v18M15 12h6M18 9v6', gruppe: 'M4 6h16M4 12h10M4 18h6',
   };
   const sym = (n, g = 16, d = 2) => `<svg width="${g}" height="${g}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${d}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="${ICON[n] || ''}"/></svg>`;
   const vogel = (anim, g) => { const v = window.VOGEL?.[anim] || window.VOGEL?.['ruhezustand-3']; return v ? v.replace(/__G__/g, g).replace(' aria-hidden="true"', ' role="img" aria-label="Albatros"') : ''; };
@@ -108,12 +108,14 @@
     speicherUhr = setTimeout(async () => { const r = await A.tabellen.speichern(S.t); const c = document.querySelector('.gespeichert'); if (c) c.textContent = r?.fehler ? 'nicht gespeichert!' : 'gespeichert'; }, 500);
   }
   // Rückgängig: bei kleinen Änderungen nur die betroffenen Zellen merken, sonst das ganze Blatt
-  const zustand = (b, ad) => [b.zellen[ad], b.formate[ad], b.farben[ad], b.fett[ad]];
-  function zuruecksetzen(b, ad, [z, fo, fa, fe]) {
+  const zustand = (b, ad) => [b.zellen[ad], b.formate[ad], b.farben[ad], b.fett[ad], b.stil?.[ad], b.notizen?.[ad]];
+  function zuruecksetzen(b, ad, [z, fo, fa, fe, stl, no]) {
     if (z === undefined) delete b.zellen[ad]; else b.zellen[ad] = z;
     if (fo === undefined) delete b.formate[ad]; else b.formate[ad] = fo;
     if (fa === undefined) delete b.farben[ad]; else b.farben[ad] = fa;
     if (fe) b.fett[ad] = true; else delete b.fett[ad];
+    if (stl) (b.stil ||= {})[ad] = stl; else if (b.stil) delete b.stil[ad];
+    if (no) (b.notizen ||= {})[ad] = no; else if (b.notizen) delete b.notizen[ad];
   }
   function merke(adressen) {
     let e;
@@ -199,12 +201,12 @@
   function leiste() {
     const r = S.reiter || 'start'; const tz = '<span class="tz"></span>';
     if (r === 'datei') return `${wzk('start', `${sym('links', 15)} Alle Tabellen`, 'Zurück zur Übersicht')}${wzk('neu', `${sym('plus', 15, 2.4)} Neu`, 'Neue Tabelle')}${tz}<span style="position:relative">${wzk('exportmenue', `${sym('export', 15)} Exportieren`, 'Als Excel, CSV oder PDF')}</span>${wzk('drucken', `${sym('drucker', 15)} Drucken / PDF`, 'Strg+P')}${tz}${wzk('umbenennen', 'Umbenennen', 'Tabelle umbenennen')}${wzk('einstellungen', `${sym('zahnrad', 15)} Einstellungen`, 'Einstellungen')}`;
-    if (r === 'einfuegen') return `${wzk('zeile-dazu', `${sym('zeile', 15)} Zeile`, 'Zeile darunter einfügen')}${wzk('spalte-dazu', `${sym('spalte', 15)} Spalte`, 'Spalte rechts einfügen')}${wzk('blatt-dazu', `${sym('plus', 15, 2.4)} Blatt`, 'Neues Blatt')}${tz}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Übersicht (Pivot): Summen je Kategorie, Monat …')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}`;
+    if (r === 'einfuegen') return `${wzk('zeile-dazu', `${sym('zeile', 15)} Zeile`, 'Zeile darunter einfügen')}${wzk('spalte-dazu', `${sym('spalte', 15)} Spalte`, 'Spalte rechts einfügen')}${wzk('zeile-weg', `${sym('muell', 15)} Zeile`, 'Markierte Zeilen löschen')}${wzk('spalte-weg', `${sym('muell', 15)} Spalte`, 'Markierte Spalten löschen')}${wzk('blatt-dazu', `${sym('plus', 15, 2.4)} Blatt`, 'Neues Blatt')}${tz}${wzk('notiz', `${sym('notiz', 15)} Notiz`, 'Notiz an die Zelle (Umschalt+F2)')}${tz}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Übersicht (Pivot): Summen je Kategorie, Monat …')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}`;
     if (r === 'formeln') return `<button type="button" class="wz" data-aktion="unten" data-fn="SUMME" title="Summe unter die Markierung">${sym('summe', 15)} Summe</button><button type="button" class="wz" data-aktion="unten" data-fn="MITTELWERT" title="Durchschnitt unter die Markierung">Mittelwert</button><button type="button" class="wz" data-aktion="unten" data-fn="ANZAHL" title="Anzahl unter die Markierung">Zählen</button><button type="button" class="wz" data-aktion="unten" data-fn="MAX" title="Größter Wert unter die Markierung">Max</button><button type="button" class="wz" data-aktion="unten" data-fn="MIN" title="Kleinster Wert unter die Markierung">Min</button>${tz}${wzk('erklaeren', `${sym('fx', 15)} Formel erklären`, 'Albatros erklärt die Formel')}`;
     if (r === 'daten') return `${wzk('sortieren', `${sym('sortieren', 15)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 15)} Filter`, 'Filter an/aus (Strg+Umschalt+L)')}${wzk('hervorheben', `${sym('hervor', 15)} Hervorheben`, 'Automatisch färben')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}${tz}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Pivot')}${blatt().pivot ? wzk('pivot-neu', 'Neu aufbauen', 'Übersicht neu aufbauen') : ''}${wzk('suchen', `${sym('lupe', 15)} Suchen`, 'Suchen & Ersetzen (Strg+F)')}`;
     if (r === 'makros') return `${wzk('makros', `${sym('makro', 15)} Makros verwalten`, 'Aufnehmen, schreiben, ausführen')}${S.aufnahme ? '' : wzk('aufnahme-start', '<span style="color:#c0392b">●</span> Aufnehmen', 'Makro aufnehmen')}${S.t.makros.filter((m) => m.knopf).length ? tz : ''}${S.t.makros.filter((m) => m.knopf).map((m) => `<button type="button" class="wz makroknopf" data-aktion="makro-los" data-id="${esc(m.id)}" title="Makro ausführen">${sym('makro', 13)} ${esc(m.name)}</button>`).join('')}${S.t.vba?.length ? `${tz}${wzk('makros', `Excel-Makros (${S.t.vba.length})`, 'Aus der Datei')}` : ''}`;
     if (r === 'ansicht') return `${wzk('fixieren', `${sym('fixieren', 15)} Fixieren`, 'Zeilen/Spalten festhalten')}${wzk('helfer-klappen', S.helferZu ? 'Albatros zeigen' : 'Albatros ausblenden', 'Seitenleiste')}`;
-    return `${wzk('rueckgaengig', sym('zurueck', 15), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 15), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}<span class="farbwahl">${wzk('farbmenue', sym('farbe', 15), 'Farbe')}</span>${wzk('verbinden', sym('verbinden', 15), 'Zellen verbinden / lösen')}${tz}${wzk('summe-unten', `${sym('summe', 15)} Summe`, 'Summe unter die Markierung')}${wzk('sortieren', `${sym('sortieren', 15)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 15)} Filtern`, 'Filter an/aus')}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${tz}${wzk('suchen', sym('lupe', 15), 'Suchen & Ersetzen (Strg+F)')}`;
+    return `${wzk('rueckgaengig', sym('zurueck', 15), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 15), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}${wzk('kursiv', '<i style="font:italic 600 15px Georgia,serif">K</i>', 'Kursiv (Strg+I)')}${wzk('unterstrichen', '<u style="font-weight:700">U</u>', 'Unterstrichen (Strg+U)')}<button type="button" class="wz" data-aktion="groessemenue" data-schwebe-auf title="Schriftgröße">${esc(String(stilAnker().gr || 11))} ▾</button><button type="button" class="wz schriftfarbe" data-aktion="schriftfarbe" data-schwebe-auf title="Schriftfarbe"><span class="A">A</span><i style="background:${esc(stilAnker().fa || '#1d2742')}"></i></button><span class="farbwahl">${wzk('farbmenue', sym('farbe', 15), 'Füllfarbe')}</span>${tz}<button type="button" class="wz" data-aktion="ausrichtungmenue" data-schwebe-auf title="Ausrichtung und Zeilenumbruch">${sym(stilAnker().aus === 'center' ? 'mitte' : stilAnker().aus === 'right' ? 'rechtsb' : 'linksb', 15)} ▾</button><button type="button" class="wz" data-aktion="randmenue" data-schwebe-auf title="Rahmen">${sym('rahmen', 15)} ▾</button>${wzk('verbinden', sym('verbinden', 15), 'Zellen verbinden / lösen')}${tz}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}${wzk('pinsel', sym('pinsel', 15), 'Format übertragen: erst Quelle, dann Ziel markieren', S.pinsel ? 'aria-pressed="true"' : '')}${tz}${wzk('summe-unten', `${sym('summe', 15)} Summe`, 'Summe unter die Markierung')}${wzk('sortieren', sym('sortieren', 15), 'Nach der markierten Spalte sortieren')}${wzk('filter', sym('filter', 15), 'Filter an/aus')}${wzk('diagramm', sym('diagramm', 15), 'Diagramm aus der Markierung')}${wzk('suchen', sym('lupe', 15), 'Suchen & Ersetzen (Strg+F)')}`;
   }
   function zeigeLeiste() { const l = app.querySelector('.oo-leiste'); if (l) l.innerHTML = leiste(); app.querySelectorAll('.oo-menue .m').forEach((m) => m.classList.toggle('an', m.dataset.reiter === (S.reiter || 'start'))); }
 
@@ -313,6 +315,18 @@
       const st = stile.get(ad);
       const farbe = st?.farbe || b.farben[ad];
       if (farbe) stil += `background-color:${esc(farbe)};`;
+      const zs = b.stil?.[ad];
+      if (zs) {
+        if (zs.k) stil += 'font-style:italic;';
+        if (zs.u || zs.s) stil += `text-decoration:${zs.u ? 'underline' : ''}${zs.u && zs.s ? ' ' : ''}${zs.s ? 'line-through' : ''};`;
+        if (zs.gr) stil += `font-size:${Math.max(6, Math.min(Number(zs.gr) || 11, 48)) * 1.3}px;`;
+        if (zs.fa && /^#[0-9a-f]{6}$/i.test(zs.fa)) stil += `color:${zs.fa};`;
+        if (/^(left|center|right)$/.test(zs.aus || '')) stil += `text-align:${zs.aus};`;
+        if (/^(top|middle|bottom)$/.test(zs.va || '')) stil += `vertical-align:${zs.va};`;
+        if (zs.umbruch) { kl.push('umbruch'); }
+        if (zs.rand) for (const [k, seite] of [['o', 'top'], ['u', 'bottom'], ['l', 'left'], ['r', 'right']]) if (zs.rand[k]) stil += `border-${seite}:${zs.rand[k] === 2 ? '2.5px' : '1.5px'} solid #1d2742;`;
+      }
+      if (b.notizen?.[ad]) kl.push('mitnotiz');
       if (st?.balken) stil += `background-image:linear-gradient(90deg,${esc(st.balken.farbe)} ${Math.round(st.balken.anteil * 100)}%,transparent ${Math.round(st.balken.anteil * 100)}%);background-size:100% 62%;background-position:0 50%;background-repeat:no-repeat;`;
       if (sp < fx.sp) { kl.push('fix'); stil += `left:${links[sp]}px;`; }
       const lq = listeFuer(b, ad);
@@ -320,7 +334,7 @@
       const text = zeigeZelle(b, ad, w);
       let inhalt = ze > 0 && chips.has(sp) && typeof w === 'string' && text && !/^(gesamt|summe)$/i.test(text) ? `<span class="tchip" style="background:${chipFarbe(text)}">${esc(text)}</span>` : esc(text);
       if (ze === fkopf && sp <= g.sp) { kl.push('mitfilter'); inhalt += `<span class="fknopf${b.filter.spalten?.[Fo.nrZuSpalte(sp)] ? ' an' : ''}" data-filter="${sp}" title="Filtern und sortieren">▾</span>`; }
-      return `<td data-a="${ad}"${span} class="${kl.join(' ')}"${stil ? ` style="${stil}"` : ''}>${inhalt}</td>`;
+      return `<td data-a="${ad}"${span} class="${kl.join(' ')}"${stil ? ` style="${stil}"` : ''}${b.notizen?.[ad] ? ` title="${esc(b.notizen[ad])}"` : ''}>${inhalt}</td>`;
     };
     const zeile = (ze) => { let h = `<tr><th class="nr ${ze >= a.ze1 && ze <= a.ze2 ? 'sel' : ''}${weg.has(ze - 1) || weg.has(ze + 1) ? ' luecke' : ''}" data-zeile="${ze}">${ze + 1}</th>`; for (let sp = 0; sp < spalten; sp++) h += zelle(sp, ze); return `${h}</tr>`; };
     let gesamt = 46; for (let sp = 0; sp < spalten; sp++) gesamt += breite(sp);
@@ -559,6 +573,7 @@
       neu[z.ze >= abZe ? Fo.adresse(z.sp, z.ze + anzahl) : ad] = roh;
     }
     b.zellen = neu; b.formate = schiebe(b.formate); b.farben = schiebe(b.farben); b.fett = schiebe(b.fett);
+    if (b.stil) b.stil = schiebe(b.stil); if (b.notizen) b.notizen = schiebe(b.notizen);
     metaSchieben(b, abZe, anzahl, 'ze');
   }
   function metaSchieben(b, ab, n, achse) {
@@ -567,19 +582,42 @@
     if (b.regeln) b.regeln.forEach((r) => { r.bereich = sb(r.bereich); });
     if (b.listen) b.listen = Object.fromEntries(Object.entries(b.listen).map(([k, v]) => [sb(k), v]));
   }
-  function spalteEinfuegen(abSp) {
+  function spalteEinfuegen(abSp, anzahl = 1) {
     const b = blatt(); const neu = {};
-    const schiebe = (obj) => { const aus = {}; for (const [ad, v] of Object.entries(obj)) { const z = Fo.zerlege(ad); aus[z.sp >= abSp ? Fo.adresse(z.sp + 1, z.ze) : ad] = v; } return aus; };
+    const schiebe = (obj) => { const aus = {}; for (const [ad, v] of Object.entries(obj)) { const z = Fo.zerlege(ad); aus[z.sp >= abSp ? Fo.adresse(z.sp + anzahl, z.ze) : ad] = v; } return aus; };
     for (const [ad, v] of Object.entries(b.zellen)) {
       const z = Fo.zerlege(ad);
-      const roh = String(v).startsWith('=') ? String(v).replace(/(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\w(])/g, (m, d1, sp, d2, n) => (Fo.spalteZuNr(sp) >= abSp ? `${d1}${Fo.nrZuSpalte(Fo.spalteZuNr(sp) + 1)}${d2}${n}` : m)) : v;
-      neu[z.sp >= abSp ? Fo.adresse(z.sp + 1, z.ze) : ad] = roh;
+      const roh = String(v).startsWith('=') ? String(v).replace(/(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\w(])/g, (m, d1, sp, d2, n) => (Fo.spalteZuNr(sp) >= abSp ? `${d1}${Fo.nrZuSpalte(Fo.spalteZuNr(sp) + anzahl)}${d2}${n}` : m)) : v;
+      neu[z.sp >= abSp ? Fo.adresse(z.sp + anzahl, z.ze) : ad] = roh;
     }
     b.zellen = neu; b.formate = schiebe(b.formate); b.farben = schiebe(b.farben); b.fett = schiebe(b.fett);
-    const br = {}; for (const [k, v] of Object.entries(b.breiten)) { const n = Fo.spalteZuNr(k); br[n >= abSp ? Fo.nrZuSpalte(n + 1) : k] = v; } b.breiten = br;
-    metaSchieben(b, abSp, 1, 'sp');
-    if (b.filter?.spalten) b.filter.spalten = Object.fromEntries(Object.entries(b.filter.spalten).map(([k, v]) => { const n = Fo.spalteZuNr(k); return [n >= abSp ? Fo.nrZuSpalte(n + 1) : k, v]; }));
+    if (b.stil) b.stil = schiebe(b.stil); if (b.notizen) b.notizen = schiebe(b.notizen);
+    const br = {}; for (const [k, v] of Object.entries(b.breiten)) { const n = Fo.spalteZuNr(k); br[n >= abSp ? Fo.nrZuSpalte(n + anzahl) : k] = v; } b.breiten = br;
+    metaSchieben(b, abSp, anzahl, 'sp');
+    if (b.filter?.spalten) b.filter.spalten = Object.fromEntries(Object.entries(b.filter.spalten).map(([k, v]) => { const n = Fo.spalteZuNr(k); return [n >= abSp ? Fo.nrZuSpalte(n + anzahl) : k, v]; }));
   }
+  function leereZeilen(b, pruef) { for (const k of ['zellen', 'formate', 'farben', 'fett', 'stil', 'notizen']) if (b[k]) for (const ad of Object.keys(b[k])) if (pruef(Fo.zerlege(ad))) delete b[k][ad]; }
+  function zeilenLoeschen(ze1, ze2) { const b = blatt(); merke('alle'); leereZeilen(b, (z) => z.ze >= ze1 && z.ze <= ze2); zeileEinfuegen(ze2 + 1, -(ze2 - ze1 + 1)); geaendert(); zeichneTabelle(); waehle(S.anker.sp, Math.max(0, ze1)); }
+  function spaltenLoeschen(sp1, sp2) { const b = blatt(); merke('alle'); leereZeilen(b, (z) => z.sp >= sp1 && z.sp <= sp2); for (let n = sp1; n <= sp2; n++) delete b.breiten[Fo.nrZuSpalte(n)]; spalteEinfuegen(sp2 + 1, -(sp2 - sp1 + 1)); geaendert(); zeichneTabelle(); waehle(Math.max(0, sp1), S.anker.ze); }
+  // Zellstil: Kursiv, Unterstrichen, Größe, Schriftfarbe, Ausrichtung, Umbruch, Rahmen
+  function stilSetzen(werte) { fuerAuswahl((ad) => { const b = blatt(); const alt = b.stil?.[ad] || {}; const neu = { ...alt, ...werte }; for (const [k, v] of Object.entries(neu)) if (v === null || v === false || v === '' || v === undefined) delete neu[k]; if (Object.keys(neu).length) (b.stil ||= {})[ad] = neu; else if (b.stil) delete b.stil[ad]; }); }
+  const stilAnker = () => blatt().stil?.[Fo.adresse(S.anker.sp, S.anker.ze)] || {};
+  function randSetzen(art) {
+    const a = auswahl(); const b = blatt();
+    fuerAuswahl((ad) => {
+      const { sp, ze } = Fo.zerlege(ad); const alt = { ...(b.stil?.[ad] || {}) }; let r = {};
+      if (art === 'alle') r = { o: 1, u: 1, l: 1, r: 1 };
+      else if (art === 'aussen') r = { ...(alt.rand || {}), ...(ze === a.ze1 ? { o: 1 } : {}), ...(ze === a.ze2 ? { u: 1 } : {}), ...(sp === a.sp1 ? { l: 1 } : {}), ...(sp === a.sp2 ? { r: 1 } : {}) };
+      else if (art === 'unten') r = { ...(alt.rand || {}), ...(ze === a.ze2 ? { u: 1 } : {}) };
+      else if (art === 'doppelt') r = { ...(alt.rand || {}), ...(ze === a.ze2 ? { u: 2 } : {}) };
+      if (art === 'keine' || !Object.keys(r).length) delete alt.rand; else alt.rand = r;
+      if (Object.keys(alt).length) (b.stil ||= {})[ad] = alt; else if (b.stil) delete b.stil[ad];
+    });
+  }
+  // Format übertragen (Pinsel): Format der aktiven Zelle merken, beim nächsten Markieren anwenden
+  function formatMerken() { const b = blatt(); const ad = Fo.adresse(S.anker.sp, S.anker.ze); S.pinsel = { formate: b.formate[ad], farben: b.farben[ad], fett: b.fett[ad], stil: b.stil?.[ad] ? { ...b.stil[ad] } : undefined }; meldung('Format gemerkt – jetzt die Zielzellen markieren.'); }
+  function formatAnwenden() { const p = S.pinsel; if (!p) return; S.pinsel = null; fuerAuswahl((ad) => { const b = blatt(); for (const k of ['formate', 'farben']) { if (p[k] !== undefined) b[k][ad] = p[k]; else delete b[k][ad]; } if (p.fett) b.fett[ad] = true; else delete b.fett[ad]; if (p.stil) (b.stil ||= {})[ad] = { ...p.stil }; else if (b.stil) delete b.stil[ad]; }); }
+
   // Sortiert die Zeilen unter der Überschrift nach der aktiven Spalte (Formeln bleiben, wo sie sind)
   function sortiere(spWahl, aufWahl) {
     const b = blatt(); const sp = spWahl ?? S.anker.sp; const g = groesse(b);
@@ -589,7 +627,7 @@
       const roh = []; let formel = false; let leer = true;
       for (let s = 0; s <= g.sp; s++) { const v = b.zellen[Fo.adresse(s, ze)]; if (v !== undefined) leer = false; if (String(v ?? '').startsWith('=')) formel = true; roh.push(v); }
       if (formel || leer) break; // Summenzeile/Leerzeile = Ende der Daten
-      zeilen.push({ ze, roh, w: S.werte[Fo.adresse(sp, ze)], f: Array.from({ length: g.sp + 1 }, (_, s) => [b.formate[Fo.adresse(s, ze)], b.farben[Fo.adresse(s, ze)], b.fett[Fo.adresse(s, ze)]]) });
+      zeilen.push({ ze, roh, w: S.werte[Fo.adresse(sp, ze)], f: Array.from({ length: g.sp + 1 }, (_, s) => [b.formate[Fo.adresse(s, ze)], b.farben[Fo.adresse(s, ze)], b.fett[Fo.adresse(s, ze)], b.stil?.[Fo.adresse(s, ze)], b.notizen?.[Fo.adresse(s, ze)]]) });
     }
     if (zeilen.length < 2) { meldung('Nichts zu sortieren.'); return; }
     const auf = aufWahl ?? !(S.sortiertAuf && S.sortiertSp === sp);
@@ -599,7 +637,7 @@
     merke(ziele);
     notiere(`tab.sortiere(${JSON.stringify(Fo.nrZuSpalte(sp))}, ${JSON.stringify(auf ? 'auf' : 'ab')}, ${kopf});`);
     const aufnahme = S.aufnahme; S.aufnahme = null;
-    sortiert.forEach((z, i) => { const ze = zeilen[i].ze; z.roh.forEach((v, s) => { const ad = Fo.adresse(s, ze); if (v === undefined) delete b.zellen[ad]; else b.zellen[ad] = v; const [fo, fa, fe] = z.f[s]; if (fo) b.formate[ad] = fo; else delete b.formate[ad]; if (fa) b.farben[ad] = fa; else delete b.farben[ad]; if (fe) b.fett[ad] = true; else delete b.fett[ad]; }); });
+    sortiert.forEach((z, i) => { const ze = zeilen[i].ze; z.roh.forEach((v, s) => { const ad = Fo.adresse(s, ze); if (v === undefined) delete b.zellen[ad]; else b.zellen[ad] = v; const [fo, fa, fe, stl, no] = z.f[s]; if (stl) (b.stil ||= {})[ad] = stl; else if (b.stil) delete b.stil[ad]; if (no) (b.notizen ||= {})[ad] = no; else if (b.notizen) delete b.notizen[ad]; if (fo) b.formate[ad] = fo; else delete b.formate[ad]; if (fa) b.farben[ad] = fa; else delete b.farben[ad]; if (fe) b.fett[ad] = true; else delete b.fett[ad]; }); });
     S.aufnahme = aufnahme;
     geaendert(); zeichneTabelle();
     meldung(`Sortiert nach Spalte ${Fo.nrZuSpalte(sp)} (${auf ? 'aufsteigend' : 'absteigend'}). Nochmal klicken dreht um.`);
@@ -693,12 +731,24 @@
   function anwenden(r) {
     const b = blatt(); let n = 0;
     const jede = (obj, fn) => { for (const [k, v] of Object.entries(obj || {})) for (const ad of (k.includes(':') ? sammle(k) : [k.toUpperCase()])) if (Fo.zerlege(ad)) { fn(ad, v); n++; } };
-    const hatWas = r.zellen || r.formate || r.farben || r.fett || r.breiten || r.regeln || r.listen || r.verbinden || r.fixieren;
+    const hatWas = r.zellen || r.formate || r.farben || r.fett || r.stil || r.notizen || r.breiten || r.regeln || r.listen || r.verbinden || r.fixieren;
     if (hatWas) merke();
     jede(r.zellen, (ad, v) => setze(ad, v === null ? null : String(v)));
     jede(r.formate, (ad, v) => { if (v) b.formate[ad] = v; else delete b.formate[ad]; });
     jede(r.farben, (ad, v) => { if (v && /^#[0-9a-f]{6}$/i.test(v)) b.farben[ad] = v; else delete b.farben[ad]; });
     jede(r.fett, (ad, v) => { if (v) b.fett[ad] = true; else delete b.fett[ad]; });
+    const ERLAUBT_STIL = { k: 'b', u: 'b', s: 'b', umbruch: 'b', gr: 'n', fa: 'f', aus: ['center', 'right', 'left'], va: ['top', 'middle', 'bottom'], rand: 'r' };
+    jede(r.stil, (ad, v) => {
+      if (!v || typeof v !== 'object') { if (b.stil) delete b.stil[ad]; return; }
+      const neu = { ...(b.stil?.[ad] || {}) };
+      for (const [k, x] of Object.entries(v)) {
+        const art = ERLAUBT_STIL[k]; if (!art) continue;
+        if (x === null || x === false) { delete neu[k]; continue; }
+        if (art === 'b') neu[k] = true; else if (art === 'n' && Number(x) >= 6 && Number(x) <= 48) neu[k] = Number(x); else if (art === 'f' && /^#[0-9a-f]{6}$/i.test(x)) neu[k] = x; else if (Array.isArray(art) && art.includes(x)) { if (x === 'left' || x === 'bottom') delete neu[k]; else neu[k] = x; } else if (art === 'r' && typeof x === 'object') { const rr = {}; for (const s2 of ['o', 'u', 'l', 'r']) if (x[s2] === 1 || x[s2] === 2) rr[s2] = x[s2]; if (Object.keys(rr).length) neu.rand = rr; else delete neu.rand; }
+      }
+      if (Object.keys(neu).length) (b.stil ||= {})[ad] = neu; else if (b.stil) delete b.stil[ad];
+    });
+    jede(r.notizen, (ad, v) => { if (v) (b.notizen ||= {})[ad] = String(v).slice(0, 2000); else if (b.notizen) delete b.notizen[ad]; });
     if (Array.isArray(r.regeln)) for (const rg of r.regeln) { const ber = String(rg?.bereich || '').toUpperCase(); if (Fo.bereich(ber) && W.ARTEN[rg.art]) { b.regeln = [...(b.regeln || []), { bereich: ber, art: rg.art, wert: rg.wert === undefined ? undefined : String(rg.wert), wert2: rg.wert2 === undefined ? undefined : String(rg.wert2), farbe: /^#[0-9a-f]{6}$/i.test(rg.farbe || '') ? rg.farbe : '#f8e1a8' }]; n++; } }
     if (r.listen && typeof r.listen === 'object') for (const [ber, q] of Object.entries(r.listen)) { const k = String(ber).toUpperCase(); if (!Fo.bereich(k.split(' ')[0]) || !q) continue; if (Array.isArray(q.werte)) { b.listen = { ...(b.listen || {}), [k]: { werte: q.werte.map(String) } }; n++; } else if (q.bereich) { b.listen = { ...(b.listen || {}), [k]: { bereich: String(q.bereich) } }; n++; } }
     if (Array.isArray(r.verbinden)) for (const v of r.verbinden) { const k = String(v).toUpperCase(); if (/^[A-Z]{1,3}\d+:[A-Z]{1,3}\d+$/.test(k) && !(b.verbunden || []).includes(k)) { b.verbunden = [...(b.verbunden || []), k]; n++; } }
@@ -833,6 +883,34 @@
     wiederholen: () => wiederholen(),
     fett: () => { const an = !blatt().fett[Fo.adresse(S.anker.sp, S.anker.ze)]; notiere(`tab.fett(${bereichJs()}, ${an});`); fuerAuswahl((ad) => { if (an) blatt().fett[ad] = true; else delete blatt().fett[ad]; }); },
     format: (el) => { const art = el.dataset.art; const an = blatt().formate[Fo.adresse(S.anker.sp, S.anker.ze)] !== art; notiere(`tab.format(${bereichJs()}, ${JSON.stringify(an ? art : null)});`); fuerAuswahl((ad) => { if (an) blatt().formate[ad] = art; else delete blatt().formate[ad]; }); },
+    kursiv: () => { const an = !stilAnker().k; stilSetzen({ k: an || null }); zeigeLeiste(); },
+    unterstrichen: () => { const an = !stilAnker().u; stilSetzen({ u: an || null }); zeigeLeiste(); },
+    groessemenue: (el) => {
+      const m = schwebe('groessen', [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 36].map((g) => `<button type="button" data-gr="${g}">${g}</button>`).join(''), el);
+      m.addEventListener('click', (ev) => { const b = ev.target.closest('[data-gr]'); if (!b) return; stilSetzen({ gr: Number(b.dataset.gr) === 11 ? null : Number(b.dataset.gr) }); m.remove(); zeigeLeiste(); });
+    },
+    schriftfarbe: (el) => {
+      const m = schwebe('farben', [['#1d2742', 'Schwarz'], ['#2f7a4d', 'Grün'], ['#b23a28', 'Rot'], ['#2c5aa0', 'Blau'], ['#d2541b', 'Orange'], ['#6a4fc7', 'Lila'], ['#7a7f8e', 'Grau'], ['', 'Standard']].map(([f, n]) => `<button type="button" data-fa="${f}" title="${n}" aria-label="${n}" style="background:${f || '#fff'}">${f ? '' : '✕'}</button>`).join(''), el);
+      m.addEventListener('click', (ev) => { const b = ev.target.closest('[data-fa]'); if (!b) return; stilSetzen({ fa: b.dataset.fa || null }); m.remove(); zeigeLeiste(); });
+    },
+    ausrichtungmenue: (el) => {
+      const z = stilAnker();
+      const m = schwebe('menue', `<button type="button" data-aus="left">${sym('linksb', 15)} Links</button><button type="button" data-aus="center">${sym('mitte', 15)} Mitte</button><button type="button" data-aus="right">${sym('rechtsb', 15)} Rechts</button><hr><button type="button" data-va="top">Oben</button><button type="button" data-va="middle">Mittig</button><button type="button" data-va="bottom">Unten</button><hr><button type="button" data-umbruch>${z.umbruch ? '✓ ' : ''}Zeilenumbruch</button>`, el);
+      m.addEventListener('click', (ev) => { const b = ev.target.closest('button'); if (!b) return; if (b.dataset.aus) stilSetzen({ aus: b.dataset.aus === 'left' ? null : b.dataset.aus }); if (b.dataset.va) stilSetzen({ va: b.dataset.va === 'bottom' ? null : b.dataset.va }); if (b.hasAttribute('data-umbruch')) stilSetzen({ umbruch: !z.umbruch || null }); m.remove(); zeigeLeiste(); });
+    },
+    randmenue: (el) => {
+      const m = schwebe('menue', [['alle', 'Alle Rahmen'], ['aussen', 'Außenrahmen'], ['unten', 'Linie unten'], ['doppelt', 'Dicke Linie unten (Summe)'], ['keine', 'Kein Rahmen']].map(([k, t]) => `<button type="button" data-rand="${k}">${t}</button>`).join(''), el);
+      m.addEventListener('click', (ev) => { const b = ev.target.closest('[data-rand]'); if (!b) return; randSetzen(b.dataset.rand); m.remove(); });
+    },
+    pinsel: () => { if (S.pinsel) { S.pinsel = null; zeigeLeiste(); return; } formatMerken(); zeigeLeiste(); },
+    notiz: async () => {
+      const ad = Fo.adresse(S.anker.sp, S.anker.ze); const b = blatt();
+      const s2 = fensterAuf(`${fensterKopf(`Notiz an ${ad}`, 'Erscheint, wenn man mit der Maus über die Zelle fährt. Leer lassen löscht die Notiz.')}<textarea class="feld" id="notiztext" rows="4" style="width:100%;resize:vertical">${esc(b.notizen?.[ad] || '')}</textarea><div class="reihe" style="justify-content:flex-end;margin-top:10px"><button type="button" class="btn weiss" data-zu>Abbrechen</button><button type="button" class="btn" data-notiz-ok>Speichern</button></div>`, { breite: 460 });
+      const t = s2.querySelector('#notiztext'); t.focus();
+      s2.addEventListener('click', (ev) => { if (!ev.target.closest('[data-notiz-ok]')) return; merke([ad]); const v = t.value.trim(); if (v) (b.notizen ||= {})[ad] = v.slice(0, 2000); else if (b.notizen) delete b.notizen[ad]; s2.schliessen(); geaendert(); zeichneTabelle(); });
+    },
+    'zeile-weg': () => { const a = auswahl(); zeilenLoeschen(a.ze1, a.ze2); meldung(a.ze1 === a.ze2 ? `Zeile ${a.ze1 + 1} gelöscht.` : `Zeilen ${a.ze1 + 1}–${a.ze2 + 1} gelöscht.`, { knopf: 'Rückgängig', aktion: rueckgaengig }); },
+    'spalte-weg': () => { const a = auswahl(); spaltenLoeschen(a.sp1, a.sp2); meldung(`Spalte${a.sp1 === a.sp2 ? ` ${Fo.nrZuSpalte(a.sp1)}` : `n ${Fo.nrZuSpalte(a.sp1)}–${Fo.nrZuSpalte(a.sp2)}`} gelöscht.`, { knopf: 'Rückgängig', aktion: rueckgaengig }); },
     farbmenue: (el) => {
       const da = document.querySelector('.farben'); if (da) { da.remove(); return; }
       const m = document.createElement('div'); m.className = 'farben';
@@ -956,6 +1034,7 @@
       setze(ad, v);
       for (const k of ['formate', 'farben']) { if (b[k][q] !== undefined) b[k][ad] = b[k][q]; else delete b[k][ad]; }
       if (b.fett[q]) b.fett[ad] = true; else delete b.fett[ad];
+      if (b.stil?.[q]) (b.stil ||= {})[ad] = { ...b.stil[q] }; else if (b.stil) delete b.stil[ad];
     }
     if (r === 'unten') S.ende = { sp: a.sp2, ze: a.ze2 + n }; else if (r === 'rechts') S.ende = { sp: a.sp2 + n, ze: a.ze2 };
     else if (r === 'oben') { S.anker = { sp: a.sp1, ze: Math.max(0, a.ze1 - n) }; S.ende = { sp: a.sp2, ze: a.ze2 }; } else { S.anker = { sp: Math.max(0, a.sp1 - n), ze: a.ze1 }; S.ende = { sp: a.sp2, ze: a.ze2 }; }
@@ -1255,7 +1334,7 @@
         if (vd === 'weg') continue;
         const span = vd ? ` colspan="${Math.min(vd.sp2, r.sp2) - sp + 1}" rowspan="${Math.min(vd.ze2, r.ze2) - ze + 1}"` : '';
         const w = S.werte[ad]; const st = stile.get(ad); const farbe = st?.farbe || b.farben[ad];
-        const stil = `${typeof w === 'number' ? 'text-align:right;' : ''}${vd ? 'text-align:center;' : ''}${b.fett[ad] ? 'font-weight:700;' : ''}${farbe ? `background:${farbe};` : ''}${st?.balken ? `background:linear-gradient(90deg,${st.balken.farbe} ${Math.round(st.balken.anteil * 100)}%,transparent ${Math.round(st.balken.anteil * 100)}%);` : ''}${w instanceof Fo.Fehler ? 'color:#c0392b;' : ''}`;
+        const stil = `${typeof w === 'number' ? 'text-align:right;' : ''}${vd ? 'text-align:center;' : ''}${b.fett[ad] ? 'font-weight:700;' : ''}${farbe ? `background:${farbe};` : ''}${(() => { const z = b.stil?.[ad]; if (!z) return ''; let x = ''; if (z.k) x += 'font-style:italic;'; if (z.u) x += 'text-decoration:underline;'; if (z.gr) x += `font-size:${Number(z.gr)}pt;`; if (z.fa) x += `color:${z.fa};`; if (z.aus) x += `text-align:${z.aus};`; if (z.umbruch) x += 'white-space:normal;'; if (z.rand) for (const [k, sd] of [['o', 'top'], ['u', 'bottom'], ['l', 'left'], ['r', 'right']]) if (z.rand[k]) x += `border-${sd}:${z.rand[k] === 2 ? '2px double' : '1px solid'} #1d2742;`; return x; })()}${st?.balken ? `background:linear-gradient(90deg,${st.balken.farbe} ${Math.round(st.balken.anteil * 100)}%,transparent ${Math.round(st.balken.anteil * 100)}%);` : ''}${w instanceof Fo.Fehler ? 'color:#c0392b;' : ''}`;
         h += `<td${span}${stil ? ` style="${stil}"` : ''}>${esc(zeigeZelle(b, ad, w))}</td>`;
       }
       return `${h}</tr>`;
@@ -1476,7 +1555,9 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     if (z.sp !== S.ende.sp || z.ze !== S.ende.ze) { S.ende = z; zeigeAuswahl(); }
   });
   document.addEventListener('mouseup', (ev) => {
+    const warZiehen = zieht;
     zieht = false;
+    if (S.pinsel && warZiehen && S.ansicht === 'tabelle') { formatAnwenden(); zeigeLeiste(); }
     if (fuell) { const f = fuell; fuell = null; app.querySelectorAll('td.fuellziel').forEach((x) => x.classList.remove('fuellziel')); if (f.ziel) fuelleAus(f.a, f.ziel, { reihe: ev.ctrlKey || ev.metaKey }); }
   });
 
@@ -1490,6 +1571,9 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     if (strg && ev.key.toLowerCase() === 'z') { ev.preventDefault(); rueckgaengig(); return; }
     if (strg && (ev.key.toLowerCase() === 'y' || (ev.shiftKey && ev.key.toLowerCase() === 'z'))) { ev.preventDefault(); wiederholen(); return; }
     if (strg && ev.key.toLowerCase() === 'b') { ev.preventDefault(); aktionen.fett(); return; }
+    if (strg && ev.key.toLowerCase() === 'i' && S.ansicht === 'tabelle' && !S.bearbeiten) { ev.preventDefault(); aktionen.kursiv(); return; }
+    if (strg && ev.key.toLowerCase() === 'u' && S.ansicht === 'tabelle' && !S.bearbeiten) { ev.preventDefault(); aktionen.unterstrichen(); return; }
+    if (ev.shiftKey && ev.key === 'F2' && S.ansicht === 'tabelle') { ev.preventDefault(); aktionen.notiz(); return; }
     if (strg && ev.key.toLowerCase() === 'f') { ev.preventDefault(); suchen(); return; }
     if (strg && ev.key.toLowerCase() === 'h') { ev.preventDefault(); suchen(true); return; }
     if (strg && ev.shiftKey && ev.key.toLowerCase() === 'l') { ev.preventDefault(); filterUmschalten(); return; }
