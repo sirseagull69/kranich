@@ -30,10 +30,11 @@ const VOEGEL = {
   },
   albatros: {
     kiel: true,
-    basis: { schwanz: '16,64 6,56 30,61', koerper: '16,64 72,64 50,44', fluegel: '34,53 62,53 8,16', hals: '68,64 82,42 78,62', kopf: '82,42 98,48 82,50', bein: '36,64 52,64 46,79' },
-    extras: [{ nach: 'fluegel', punkte: '8,16 19,21 15,27', farbe: '#1b4d2d' }, { nach: 'kopf', punkte: '96,47 99,52 94,50', farbe: '#c27a18' }],
+    basis: { schwanz: '16,64 6,56 30,61', koerper: '16,64 72,64 50,44', fluegel: '34,53 62,53 8,16', hals: '68,64 82,42 78,62', kopf: '82,42 92,45 81,50', bein: '36,64 52,64 46,79' },
+    // dunkler Kopf, schmaler oranger Schnabel, weißes Auge (wie die Geschwister)
+    extras: [{ nach: 'fluegel', punkte: '8,16 19,21 15,27', farbe: '#1b4d2d' }, { nach: 'kopf', punkte: '90,44 99,46 90,47', farbe: '#e8a23a' }, { nach: 'kopf', punkte: '84,44 86.5,44 85.5,46', farbe: '#ffffff' }],
     farben: { '#c2410c': '#1d5e3a', '#ff8a4c': '#2f8a55', '#ffc9a8': '#a8d9b5', '#2d1a10': '#1d2742', '#e8590c': '#2f8a55', '#fff0e6': '#e6f4eb', '#7a3a1c': '#14472b' },
-    rolleFarbe: { schwanz: '#2f8a55', koerper: '#a8d9b5', fluegel: '#ffffff', hals: '#2f8a55', kopf: '#e8a23a', bein: '#1b4d2d' },
+    rolleFarbe: { schwanz: '#2f8a55', koerper: '#a8d9b5', fluegel: '#ffffff', hals: '#2f8a55', kopf: '#1d2742', bein: '#1b4d2d' },
   },
   specht: {
     // Specht, gebaut wie die Geschwister (waagrecht, weißer Flügel, Körper in hellem Hauston):
@@ -43,6 +44,14 @@ const VOEGEL = {
     extras: [{ nach: 'kopf', punkte: '80,30 75,22 88,26', farbe: '#e8483a' }, { nach: 'kopf', punkte: '89,33 99,35 89,37', farbe: '#e0a63a' }],
     farben: { '#c2410c': '#8f2a1c', '#ff8a4c': '#c8372d', '#ffc9a8': '#f2b9b0', '#2d1a10': '#1d2742', '#e8590c': '#c8372d', '#fff0e6': '#fbe9e5', '#7a3a1c': '#7e2518' },
     rolleFarbe: { schwanz: '#c8372d', koerper: '#f2b9b0', fluegel: '#ffffff', hals: '#c8372d', kopf: '#1d2742', bein: '#8f2a1c' },
+  },
+  schwalbe: {
+    // Schwalbe fürs Schreiben: Gabelschwanz, Sichelflügel mit dunkler Spitze, rostrote Kehle, kurzer Schnabel.
+    kiel: true,
+    basis: { schwanz: '20,62 -4,46 32,59', koerper: '20,62 70,64 50,46', fluegel: '34,54 62,53 12,14', hals: '66,64 79,42 75,62', kopf: '79,42 95,46 80,52', bein: '36,64 52,64 46,79' },
+    extras: [{ nach: 'schwanz', punkte: '20,62 -2,78 30,62', farbe: '#2c5aa0' }, { nach: 'hals', punkte: '68,62 79,44 77,61', farbe: '#c4502a' }, { nach: 'kopf', punkte: '94,45 99,47 94,48', farbe: '#1d2742' }],
+    farben: { '#c2410c': '#1e3f75', '#ff8a4c': '#2c5aa0', '#ffc9a8': '#b9cdf0', '#2d1a10': '#1d2742', '#e8590c': '#2c5aa0', '#fff0e6': '#eaf0fb', '#7a3a1c': '#173360' },
+    rolleFarbe: { schwanz: '#1e3f75', koerper: '#eef3fb', fluegel: '#2c5aa0', hals: '#1e3f75', kopf: '#1e3f75', bein: '#1e3f75' },
   },
 
 };
