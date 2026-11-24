@@ -1,7 +1,7 @@
 {
   "name": "origami",
   "productName": "origami",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "origami – dein KI-Assistent aus der Familie Selbst gfaltet, als eigene App. Öffnet origami vom Heim-PC in einem eigenen Fenster.",
   "author": "Nils Pohler",
   "main": "main/main.js",

@@ -19,3 +19,8 @@ form{margin-top:18px;display:flex;flex-direction:column;gap:12px}
 .btn.zart:hover{background:#f7d6c1}
 .fehler{color:#b42318;font-size:14px;min-height:1em}
 .tipp{font-size:13px;margin:18px 0 0}
+.berge{position:fixed;left:0;right:0;bottom:0;width:100%;height:170px;pointer-events:none;z-index:0}
+.blatt{position:relative;z-index:1;margin-bottom:90px}
+.ori{width:170px;height:170px;margin:-96px auto 8px;border-radius:50%;background:var(--blatt);box-shadow:0 12px 26px -12px rgba(60,30,10,.35);align-items:center}
+.ori svg{width:140px!important;height:140px!important}
+.blatt{padding-top:20px;margin-top:80px}
