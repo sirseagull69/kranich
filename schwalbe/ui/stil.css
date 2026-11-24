@@ -355,8 +355,7 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 /* =====================================================================
    KLAR – ruhiger, flacher Arbeitsplatz wie in Office (eine Ebene statt Karten in Karten)
    ===================================================================== */
-.oo-flaeche{padding:0;background:#ebe6dc}
-.oo-flaeche .oo-berge{display:none}
+.oo-flaeche{padding:0}
 .oo-inhalt{gap:0;grid-template-columns:300px minmax(0,1fr)}
 .oo-inhalt.zu{grid-template-columns:48px minmax(0,1fr)}
 /* Helfer: festes Seitenteil links */
@@ -378,3 +377,57 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .seite{box-shadow:0 1px 3px rgba(30,30,40,.12),0 12px 28px -14px rgba(30,30,40,.25);border-left:0}
 .statuszeile{background:#faf7f0}
 .oo-leiste .abstand{width:96px}.oo-leiste .groesse{width:76px}.oo-leiste .schrift{width:120px}
+
+/* =====================================================================
+   LEISTEN – drei Entwürfe (Optionen › Werkzeugleiste). Farbakzente bleiben.
+   ===================================================================== */
+.oo-menue [data-reiter]{display:none}
+.oo-links{background:rgba(255,253,248,.9)}
+.statuszeile{background:rgba(250,247,240,.92)}
+.oo-leiste .platz{flex:1}
+.oo-leiste .klapp,.klappmenue .klapp{gap:6px;font-weight:700}
+.wz .pfeil{font-size:10px;opacity:.55;margin-left:1px}
+.wz .zahl{font-style:normal;background:var(--farbe);color:#fff;border-radius:9px;font:800 10.5px 'Bricolage Grotesque',sans-serif;padding:1px 6px;margin-left:2px}
+/* Aufklappmenü */
+.klappmenue{position:fixed;z-index:1400;display:flex;flex-direction:column;gap:2px;min-width:220px;padding:6px;background:var(--papier);border-radius:12px;box-shadow:0 0 0 1px var(--linie),0 22px 36px -16px rgba(20,30,60,.45)}
+.klappmenue>.wz{justify-content:flex-start;gap:9px;height:36px;padding:0 10px;border:0;background:none;border-radius:8px;font:600 13.5px 'Bricolage Grotesque',sans-serif;color:var(--tinte);cursor:pointer}
+.klappmenue .wz{border:0;background:none;border-radius:8px;cursor:pointer;color:var(--tinte);min-width:34px;height:34px;display:inline-flex;align-items:center;justify-content:center;font:700 14px 'Bricolage Grotesque',sans-serif}
+.klappmenue>.wz{justify-content:flex-start;padding:0 12px}
+.klappmenue .wz:hover{background:var(--sand)}.klappmenue .wz.an,.klappmenue .wz[aria-pressed="true"]{background:var(--hell)}
+.klappmenue .wz:disabled{opacity:.4}
+.klappmenue .km-reihe{display:flex;align-items:center;gap:2px;padding:2px}
+.klappmenue select{border:0;border-radius:8px;background:var(--sand);font:600 13px 'Bricolage Grotesque',sans-serif;padding:7px 6px;color:var(--tinte)}
+.klappmenue .wz-feld{display:flex;flex-direction:column;gap:3px;font:700 11px 'Bricolage Grotesque',sans-serif;color:var(--leise);padding:4px 8px}
+.klappmenue .wz-feld input{font:500 13px 'Bricolage Grotesque',sans-serif;border:1px solid var(--linie);border-radius:8px;padding:7px 8px}
+.klappmenue .wz-haken{display:flex;gap:8px;align-items:center;font:600 13px 'Bricolage Grotesque',sans-serif;padding:6px 10px}
+.klappmenue .farbwahl{display:inline-flex}
+
+/* ---------- A: ruhig, Werkzeuge beim Markieren ---------- */
+.lv-a .oo-leiste{min-height:44px;padding:4px 14px;gap:2px}
+.textblase{position:absolute;z-index:22;display:flex;align-items:center;gap:1px;padding:4px 6px;background:var(--tinte);border-radius:12px;box-shadow:0 16px 28px -12px rgba(10,14,30,.6);animation:blase-ein .12s ease-out}
+@keyframes blase-ein{from{opacity:0;transform:translateY(4px)}}
+.textblase .wz{border:0;background:none;color:#eef2fa;min-width:30px;height:30px;padding:0 7px;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;gap:5px;font:700 13px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.textblase .wz:hover{background:rgba(255,255,255,.12)}.textblase .wz.an{background:rgba(255,255,255,.2)}
+.textblase .tz{width:1px;height:16px;background:rgba(255,255,255,.2);margin:0 4px}
+.textblase select{border:0;border-radius:7px;background:rgba(255,255,255,.1);color:#eef2fa;font:600 12.5px 'Bricolage Grotesque',sans-serif;padding:5px 4px}
+.textblase select option{color:#1d2742}
+.textblase .farbwahl{display:inline-flex}.textblase .balken{display:block;height:3px;width:16px;border-radius:2px;position:absolute;bottom:4px}
+.textblase .farbwahl .wz{position:relative}
+
+/* ---------- B: eine schlanke Zeile ---------- */
+.lv-b .oo-leiste{min-height:44px;padding:4px 14px;gap:2px;justify-content:center}
+
+/* ---------- C: Werkzeugkasten rechts ---------- */
+.lv-c .oo-rechts{display:grid;grid-template-columns:minmax(0,1fr) 248px;grid-template-rows:minmax(0,1fr)}
+.lv-c .oo-karte{grid-column:1;grid-row:1}
+.lv-c .oo-leiste{grid-column:2;grid-row:1;flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:auto;gap:0;padding:6px 0;border-bottom:0;border-left:1px solid #ddd5c6;background:rgba(255,253,248,.94);min-height:0}
+.lv-c .wk{padding:10px 14px 12px;border-bottom:1px solid var(--linie)}
+.lv-c .wk h4{margin:0 0 8px;font:800 11px 'Bricolage Grotesque',sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--farbe);display:flex;align-items:center;gap:6px}
+.lv-c .wk-reihe{display:flex;align-items:center;gap:2px;margin-bottom:6px;flex-wrap:wrap}
+.lv-c .wk-reihe select{flex:1;width:auto!important;min-width:0}
+.lv-c .wk-liste{display:flex;flex-direction:column;gap:1px}
+.lv-c .wk-liste .wz{justify-content:flex-start;gap:9px;height:32px;font:600 13px 'Bricolage Grotesque',sans-serif;width:100%}
+.lv-c .wk-liste .wz-feld{display:flex;flex-direction:column;gap:3px;font:700 11px 'Bricolage Grotesque',sans-serif;color:var(--leise);margin-bottom:6px}
+.lv-c .wk-liste .wz-feld input{font:500 13px 'Bricolage Grotesque',sans-serif;border:1px solid var(--linie);border-radius:8px;padding:6px 8px}
+.lv-c .wk-liste .wz-haken{display:flex;gap:8px;align-items:center;font:600 13px 'Bricolage Grotesque',sans-serif;padding:4px 2px}
+.lv-c .schreibtisch{grid-template-columns:minmax(120px,.6fr) minmax(0,794px) minmax(0,.4fr)}

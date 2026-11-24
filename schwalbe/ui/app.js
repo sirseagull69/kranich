@@ -259,6 +259,7 @@
   const TZ = '<span class="tz"></span>';
   function wz2(akt, inhalt, titel, aus) { return `<button type="button" class="wz" data-aktion="${akt}" title="${esc(titel)}" aria-label="${esc(titel)}"${aus ? ' disabled' : ''}>${inhalt}</button>`; }
   function leiste() {
+    return leisteNeu();
     const r = S.reiter || 'start';
     if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 17)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 17)} Aus Albatros`, 'Tabelle aus Albatros einfügen – bleibt live und rechnet mit')}${wa('bild', `${sym('bild', 17)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 17)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 17)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 17)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 17)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 17)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
     if (r === 'pruefen') {
@@ -282,6 +283,71 @@
       ${wz('justifyLeft', sym('links2', 17), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 17), 'Zentriert')}${wz('justifyRight', sym('rechts', 17), 'Rechtsbündig')}${wz('justifyFull', sym('block', 17), 'Blocksatz')}
       <select class="abstand" aria-label="Zeilenabstand" title="Zeilenabstand"><option value="">Abstand</option>${['1.0', '1.15', '1.5', '2.0'].map((v) => `<option>${v}</option>`).join('')}</select>${TZ}
       ${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}`;
+  }
+  // ---------- Drei Leisten-Entwürfe: a = ruhig + Blase, b = eine Zeile, c = Werkzeugkasten rechts ----------
+  const lv = () => (S.einst?.leistenArt || 'a');
+  const KLAPP = '<span class="pfeil">▾</span>';
+  function teilEinfuegen() { return `${wa('tabelle', `${sym('tabelle', 16)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 16)} Aus Albatros (live)`, 'Tabelle aus Albatros – bleibt live')}${wa('bild', `${sym('bild', 16)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 16)} Link`, 'Link einfügen (Strg+K)')}${wa('umbruch', `${sym('umbruch', 16)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 16)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis')}${wa('linie', `${sym('strich', 16)} Trennlinie`, 'Trennlinie')}${wa('datum', `${sym('kalender', 16)} Heutiges Datum`, 'Heutiges Datum')}`; }
+  function teilPruefen() {
+    const n = blatt() ? Pruefen.alle(blatt()).length : 0;
+    return `${wa('kommentar', `${sym('kommentar', 16)} Kommentar`, 'Kommentar zur Markierung (Strg+Alt+M)')}${wa('verfolgen', `${sym('spur', 16)} Änderungen verfolgen`, 'Änderungen verfolgen an/aus', ` aria-pressed="${Boolean(S.d.verfolgen)}"`)}${wa('endfassung', `${sym('auge', 16)} ${S.endfassung ? 'Endfassung' : 'Markiert'}`, 'Änderungen zeigen oder Endfassung', ` aria-pressed="${Boolean(S.endfassung)}"`)}${wz2('aend-vor', `${sym('vor', 16)} Nächste Änderung`, 'Nächste Änderung', !n)}${wz2('aend-alle-an', `${sym('haken', 16)} Alle annehmen`, 'Alle Änderungen annehmen', !n)}${wz2('aend-alle-ab', `${sym('kreuz', 16)} Alle ablehnen`, 'Alle Änderungen ablehnen', !n)}${wa('rechtschreibung', `${sym('abc', 16)} Rechtschreibung`, 'Rote Wellenlinien an/aus', ` aria-pressed="${S.rechtschreibung !== false}"`)}`;
+  }
+  function teilSeite() { return `<label class="wz-feld">Kopfzeile<input class="kf" data-kf="kopf" value="${esc(S.d.kopf || '')}" placeholder="z. B. Firma · Thema"></label><label class="wz-feld">Fußzeile<input class="kf" data-kf="fuss" value="${esc(S.d.fuss || '')}" placeholder="z. B. Name"></label><label class="wz-haken"><input type="checkbox" class="kf-seiten" ${S.d.seitenzahlen ? 'checked' : ''}> Seitenzahlen</label>${wa('suchen', `${sym('lupe', 16)} Suchen & Ersetzen`, 'Suchen & Ersetzen (Strg+F)')}`; }
+  const selAbsatz = () => '<select class="absatz" aria-label="Absatzart" title="Absatzart"><option value="p">Text</option><option value="h1">Überschrift 1</option><option value="h2">Überschrift 2</option><option value="h3">Überschrift 3</option><option value="blockquote">Zitat</option></select>';
+  const selSchrift = () => `<select class="schrift" aria-label="Schriftart" title="Schriftart"><option value="">Schrift</option>${SCHRIFTEN.map((f) => `<option style="font-family:'${f}'">${f}</option>`).join('')}</select>`;
+  const selGroesse = () => `<select class="groesse" aria-label="Schriftgröße" title="Schriftgröße"><option value="">Größe</option>${GROESSEN.map((g) => `<option value="${g}">${g}</option>`).join('')}</select>`;
+  const selAbstand = () => `<select class="abstand" aria-label="Zeilenabstand" title="Zeilenabstand"><option value="">Abstand</option>${['1.0', '1.15', '1.5', '2.0'].map((v) => `<option>${v}</option>`).join('')}</select>`;
+  const farben = () => `<span class="farbwahl"><button type="button" class="wz" data-aktion="farbmenue" data-art="farbe" title="Schriftfarbe" aria-label="Schriftfarbe"><span class="A">A</span><i class="balken" style="background:${S.farbe || '#b23a28'}"></i></button><button type="button" class="wz" data-aktion="farbmenue" data-art="mark" title="Textmarker" aria-label="Textmarker">${sym('marker', 16)}<i class="balken" style="background:${S.mark || '#fff59d'}"></i></button></span>`;
+  const FK = () => `${wz('bold', '<b>F</b>', 'Fett (Strg+B)')}${wz('italic', '<i style="font-family:\'Source Serif 4\',serif">K</i>', 'Kursiv (Strg+I)')}`;
+  const US = () => `${wz('underline', '<u>U</u>', 'Unterstrichen (Strg+U)')}${wz('strikeThrough', '<s>S</s>', 'Durchgestrichen')}`;
+  const LISTEN = () => `${wz('insertUnorderedList', sym('ul', 17), 'Aufzählung')}${wz('insertOrderedList', sym('ol', 17), 'Nummerierung')}`;
+  const EINZUG = () => `${wz('outdent', sym('einzugweg', 17), 'Einzug verkleinern')}${wz('indent', sym('einzug', 17), 'Einzug vergrößern')}`;
+  const AUSRICHT = () => `${wz('justifyLeft', sym('links2', 17), 'Linksbündig')}${wz('justifyCenter', sym('mitte', 17), 'Zentriert')}${wz('justifyRight', sym('rechts', 17), 'Rechtsbündig')}${wz('justifyFull', sym('block', 17), 'Blocksatz')}`;
+  const UNDO = () => `${wz('undo', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wz('redo', sym('vor', 16), 'Wiederholen (Strg+Y)')}`;
+  const klappKnopf = (m, inhalt, titel) => `<button type="button" class="wz klapp" data-aktion="klapp" data-m="${m}" title="${esc(titel)}" aria-haspopup="true">${inhalt}${KLAPP}</button>`;
+  function pruefZahl() { const n = blatt() ? Pruefen.alle(blatt()).length : 0; return n ? `<i class="zahl">${n}</i>` : ''; }
+  function leisteNeu() {
+    const a = lv();
+    if (a === 'c') {
+      return `<section class="wk"><h4>Text</h4><div class="wk-reihe">${selAbsatz()}</div><div class="wk-reihe">${selSchrift()}${selGroesse()}</div><div class="wk-reihe">${FK()}${US()}${farben()}</div></section>
+        <section class="wk"><h4>Absatz</h4><div class="wk-reihe">${AUSRICHT()}</div><div class="wk-reihe">${LISTEN()}${EINZUG()}</div><div class="wk-reihe">${selAbstand()}${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}</div></section>
+        <section class="wk wk-liste"><h4>Einfügen</h4>${teilEinfuegen()}</section>
+        <section class="wk wk-liste"><h4>Überprüfen ${pruefZahl()}</h4>${teilPruefen()}</section>
+        <section class="wk wk-liste"><h4>Seite</h4>${teilSeite()}</section>`;
+    }
+    if (a === 'b') {
+      return `${UNDO()}${TZ}${selAbsatz()}${selSchrift()}${selGroesse()}${TZ}${FK()}${US()}${farben()}${TZ}${LISTEN()}${klappKnopf('ausrichten', sym('links2', 17), 'Ausrichtung, Einzug, Abstand')}${TZ}
+        ${klappKnopf('einfuegen', `${sym('plus', 16)} Einfügen`, 'Tabelle, Bild, Link …')}${klappKnopf('pruefen', `${sym('kommentar', 16)} Überprüfen${pruefZahl()}`, 'Kommentare und Änderungen')}${klappKnopf('seite', `${sym('word', 16)} Seite`, 'Kopf- und Fußzeile, Suchen')}`;
+    }
+    return `${UNDO()}${TZ}${selAbsatz()}${FK()}${LISTEN()}${TZ}${klappKnopf('format', 'Aa', 'Mehr Format: Schrift, Größe, Farbe, Ausrichtung')}<span class="platz"></span>
+      ${klappKnopf('einfuegen', `${sym('plus', 16)} Einfügen`, 'Tabelle, Bild, Link …')}${klappKnopf('pruefen', `${sym('kommentar', 16)} Überprüfen${pruefZahl()}`, 'Kommentare und Änderungen')}${klappKnopf('seite', `${sym('word', 16)} Seite`, 'Kopf- und Fußzeile, Suchen')}`;
+  }
+  function klappMenue(el, m) {
+    const alt = document.querySelector('.klappmenue'); const war = alt?.dataset.m; alt?.remove(); if (war === m) return;
+    const box = document.createElement('div'); box.className = `klappmenue km-${m}`; box.dataset.m = m;
+    box.innerHTML = m === 'einfuegen' ? teilEinfuegen() : m === 'pruefen' ? teilPruefen() : m === 'seite' ? teilSeite()
+      : m === 'ausrichten' ? `<div class="km-reihe">${AUSRICHT()}</div><div class="km-reihe">${EINZUG()}${selAbstand()}</div>`
+      : `<div class="km-reihe">${selSchrift()}${selGroesse()}</div><div class="km-reihe">${US()}${farben()}${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}</div><div class="km-reihe">${AUSRICHT()}</div><div class="km-reihe">${EINZUG()}${selAbstand()}</div>`;
+    app.appendChild(box);
+    const r = el.getBoundingClientRect(); box.style.top = `${r.bottom + 6}px`;
+    box.style.left = `${Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 12))}px`;
+    setTimeout(() => document.addEventListener('mousedown', function weg(ev) { if (!box.contains(ev.target) && !ev.target.closest('.farbmenue') && !el.contains(ev.target)) { box.remove(); document.removeEventListener('mousedown', weg); } }), 0);
+  }
+  // Variante A: kleine Blase über markiertem Text
+  function zeigeTextblase() {
+    let b = app.querySelector('.textblase');
+    const sel = getSelection();
+    const an = lv() === 'a' && sel.rangeCount && !sel.isCollapsed && inBlatt(sel.anchorNode) && sel.toString().trim() && !app.querySelector('.schwebeleiste:not([hidden])');
+    if (!an) { if (b) b.hidden = true; return; }
+    const karte = app.querySelector('.oo-karte'); if (!karte) return;
+    if (!b) { b = document.createElement('div'); b.className = 'textblase'; karte.appendChild(b); }
+    b.innerHTML = `${wz('bold', '<b>F</b>', 'Fett')}${wz('italic', '<i style="font-family:\'Source Serif 4\',serif">K</i>', 'Kursiv')}${wz('underline', '<u>U</u>', 'Unterstrichen')}${farben()}<span class="tz"></span>${selAbsatz()}<span class="tz"></span>${wa('kommentar', `${sym('kommentar', 15)} Kommentar`, 'Kommentar')}${wa('blase-fragen', `${oriVogel(16)} Schwalbe fragen`, 'Die Schwalbe zur Markierung fragen')}`;
+    b.hidden = false;
+    const a = b.querySelector('.absatz'); let k = sel.anchorNode; while (k && k !== blatt() && !(k.nodeType === 1 && /^(H1|H2|H3|P|BLOCKQUOTE|LI)$/.test(k.tagName))) k = k.parentNode; if (a && k?.nodeType === 1) a.value = /^(H1|H2|H3|BLOCKQUOTE)$/.test(k.tagName) ? k.tagName.toLowerCase() : 'p';
+    b.querySelectorAll('.wz[data-cmd]').forEach((x) => x.classList.toggle('an', document.queryCommandState(x.dataset.cmd)));
+    const kr = karte.getBoundingClientRect(); const r = sel.getRangeAt(0).getBoundingClientRect();
+    let top = r.top - kr.top - b.offsetHeight - 10; if (top < 6) top = r.bottom - kr.top + 10;
+    b.style.top = `${top}px`; b.style.left = `${Math.max(8, Math.min(r.left - kr.left + r.width / 2 - b.offsetWidth / 2, kr.width - b.offsetWidth - 8))}px`;
   }
   function zeigeLeiste() { const l = app.querySelector('.oo-leiste'); if (l) l.innerHTML = leiste(); app.querySelectorAll('.oo-menue [data-reiter]').forEach((m) => m.classList.toggle('an', m.dataset.reiter === (S.reiter || 'start'))); auswahlGeaendert(); }
   function kopfFussZeigen() {
@@ -620,6 +686,7 @@
       const f = app.querySelector('.schrift'); if (f) { const n = cs.fontFamily.split(',')[0].replace(/["']/g, '').trim(); f.value = SCHRIFTEN.includes(n) ? n : ''; }
     }
     zeigeSchwebe();
+    zeigeTextblase();
   }
   function bloeckeDerAuswahl() {
     const s = blatt(); const r = S.bereich; if (!r || !inBlatt(r.startContainer)) return [];
@@ -892,6 +959,7 @@
         <section data-ops="allgemein"><h3>Allgemein</h3><p class="leise">Name und Kürzel gelten für alle Vögel von Ori Office – bei Kommentaren und Änderungen steht dann dein Name.</p>
           ${feld('Dein Name', 'Erscheint bei Kommentaren und Änderungen', `<input class="feld" data-op="autorName" value="${esc(e.autorName || '')}" placeholder="${esc(Pruefen.autor())}">`)}
           ${feld('Kürzel', 'Zwei, drei Buchstaben', `<input class="feld kurz" data-op="initialen" maxlength="4" value="${esc(e.initialen || '')}" placeholder="NP">`)}
+          ${feld('Werkzeugleiste', 'Wie die Werkzeuge aussehen', `<select class="feld" data-op="leistenArt"><option value="a" ${(e.leistenArt || 'a') === 'a' ? 'selected' : ''}>A · Ruhig: Werkzeuge erscheinen beim Markieren</option><option value="b" ${e.leistenArt === 'b' ? 'selected' : ''}>B · Eine schlanke Zeile</option><option value="c" ${e.leistenArt === 'c' ? 'selected' : ''}>C · Werkzeugkasten rechts</option></select>`)}
           ${feld('Beim Start', 'Was die Schwalbe zuerst zeigt', `<select class="feld" data-op="startAnsicht"><option value="start" ${e.startAnsicht !== 'zuletzt' ? 'selected' : ''}>Startseite</option><option value="zuletzt" ${e.startAnsicht === 'zuletzt' ? 'selected' : ''}>Zuletzt bearbeitetes Dokument</option></select>`)}</section>
         <section data-ops="speichern" hidden><h3>Speichern</h3>
           ${feld('Standardordner', 'Hier schlägt „Speichern unter“ vor', `<div class="op-ordner"><input class="feld" data-op="standardOrdner" value="${esc(e.standardOrdner || '')}" placeholder="Dokumente"><button type="button" class="btn weiss" data-op-ordner>Wählen …</button></div>`)}
@@ -942,6 +1010,8 @@
     document.documentElement.style.setProperty('--seite-groesse', `${Number(e.standardGroesse) || 12}pt`);
     S.rechtschreibung = e.rechtschreibung !== false;
     const b = blatt(); if (b) b.spellcheck = S.rechtschreibung;
+    document.body.classList.remove('lv-a', 'lv-b', 'lv-c'); document.body.classList.add(`lv-${lv()}`);
+    if (S.ansicht === 'dokument') zeigeLeiste();
   }
 
   // ---------- Autokorrektur ----------
@@ -1108,6 +1178,8 @@
   const aktionen = {
     dateimenue: (el) => dateiMenue(el),
     farbmenue: (el) => farbMenue(el, el.dataset.art),
+    klapp: (el) => klappMenue(el, el.dataset.m),
+    'blase-fragen': () => { if (S.helferZu) aktionen['helfer-klappen'](); setTimeout(() => app.querySelector('#frage')?.focus(), 60); },
     'reiter-seite': () => { S.reiter = 'seite'; zeigeLeiste(); setTimeout(() => app.querySelector('.kf')?.focus(), 30); },
     tabelle: async () => {
       const w = await eingabe({ titel: 'Tabelle einfügen', felder: [{ label: 'Spalten', typ: 'number', wert: 3, min: 1, max: 12 }, { label: 'Zeilen', typ: 'number', wert: 3, min: 1, max: 60 }], ja: 'Einfügen' });
@@ -1204,8 +1276,9 @@
     springe: (el) => { const h = [...blatt().querySelectorAll('h1,h2,h3')].filter((x) => x.textContent.trim() && !x.closest('nav.inhalt'))[Number(el.dataset.i)]; h?.scrollIntoView({ behavior: 'smooth', block: 'start' }); },
   };
 
-  app.addEventListener('mousedown', (ev) => { if (ev.target.closest('.oo-leiste .wz, .schwebeleiste button')) ev.preventDefault(); });
+  app.addEventListener('mousedown', (ev) => { if (ev.target.closest('.oo-leiste .wz, .schwebeleiste button, .klappmenue .wz, .textblase .wz')) ev.preventDefault(); });
   app.addEventListener('click', (ev) => {
+    const km = ev.target.closest('.klappmenue'); if (km && ev.target.closest('button') && !ev.target.closest('[data-aktion="farbmenue"]')) setTimeout(() => km.remove(), 0);
     const rt = ev.target.closest('[data-reiter]'); if (rt) { S.reiter = rt.dataset.reiter; zeigeLeiste(); return; }
     const c = ev.target.closest('[data-cmd]');
     if (c) { if (c.dataset.cmd === 'undo') { rueckgaengig(); return; } if (c.dataset.cmd === 'redo') { wiederholen(); return; } bereichZurueck(); document.execCommand(c.dataset.cmd); geaendert(); auswahlGeaendert(); return; }
