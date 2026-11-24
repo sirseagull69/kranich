@@ -23,8 +23,13 @@ const APPS = [
   ['specht', '#f8e2dc', '#b23a28', vogel('specht'), 150, 150, 720],
   ['origami', '#ffeadb', '#e8743b', ORI['ruhezustand-3'] || ORI['ruhezustand-2'], 150, 150, 720],
 ];
-for (const [ordner, hell, farbe, quelle, x, y, g] of APPS) {
-  const svg = karte(hell, farbe, platziere(quelle, x, y, g));
+// Lagen aus werkzeug/icon-lagen.json (vom Prüfer werkzeug/icon-pruefen.py ermittelt) haben Vorrang
+let LAGEN = {}; try { LAGEN = JSON.parse(fs.readFileSync(path.join(__dirname, 'icon-lagen.json'), 'utf8')); } catch { /* keine */ }
+const NUR_VOGEL = process.env.NUR_VOGEL === '1';
+for (const [ordner, hell, farbe, quelle, x0, y0, g0] of APPS) {
+  const [x, y, g] = LAGEN[ordner] || [x0, y0, g0];
+  const svg = NUR_VOGEL ? `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">${platziere(quelle, x, y, g)}</svg>` : karte(hell, farbe, platziere(quelle, x, y, g));
+  if (NUR_VOGEL) { const n = ordner === '.' ? 'kranich' : ordner; fs.writeFileSync(`/tmp/vogel-${n}.svg`, svg); execFileSync('rsvg-convert', ['-w', '1024', '-h', '1024', '-o', `/tmp/vogel-${n}.png`, `/tmp/vogel-${n}.svg`]); continue; }
   const bau = path.join(__dirname, '..', ordner, 'bau');
   fs.writeFileSync(path.join(bau, 'icon.svg'), svg);
   execFileSync('rsvg-convert', ['-w', '512', '-h', '512', '-o', path.join(bau, 'icon.png'), path.join(bau, 'icon.svg')]);
@@ -33,8 +38,11 @@ for (const [ordner, hell, farbe, quelle, x, y, g] of APPS) {
 
 // Startfenster: cremefarbene Karte, Eselsohr in Tinte, die vier Vögel als Familie
 const KREIS = [['kranich', '#ece6fd', 300, 330], ['albatros', '#dcf0e3', 600, 330], ['schwalbe', '#dbe6f7', 300, 630], ['specht', '#f8e2dc', 600, 630]];
+const [fx, fy, fs2] = LAGEN.startfenster || [0, 0, 1];
 const familie = KREIS.map(([id, hell, cx, cy]) => `<circle cx="${cx + 62}" cy="${cy + 62}" r="140" fill="${hell}"/>${platziere(vogel(id), cx - 78, cy - 78, 280)}`).join('');
-const start = karte('#fbf3e4', '#1d2742', familie);
+const famGruppe = `<g transform="translate(${fx} ${fy}) scale(${fs2})">${familie}</g>`;
+if (NUR_VOGEL) { fs.writeFileSync('/tmp/vogel-startfenster.svg', `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">${famGruppe}</svg>`); execFileSync('rsvg-convert', ['-w', '1024', '-h', '1024', '-o', '/tmp/vogel-startfenster.png', '/tmp/vogel-startfenster.svg']); process.exit(0); }
+const start = karte('#fbf3e4', '#1d2742', famGruppe);
 const lb = path.join(__dirname, '..', 'launcher', 'bau');
 fs.writeFileSync(path.join(lb, 'icon.svg'), start);
 execFileSync('rsvg-convert', ['-w', '512', '-h', '512', '-o', path.join(lb, 'icon.png'), path.join(lb, 'icon.svg')]);
