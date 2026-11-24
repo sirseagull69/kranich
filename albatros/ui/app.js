@@ -821,22 +821,29 @@
     const daten = diagrammDaten(q);
     const s = document.createElement('div'); s.className = 'schleier';
     let aktuell = art;
-    const bau = () => window.Diagramm.svg({ ...daten, art: aktuell, titel });
+    let reihe = null;
+    const bau = () => window.Diagramm.svg({ ...daten, art: aktuell, titel, reihe });
     s.innerHTML = `<div class="fenster" role="dialog" aria-modal="true" aria-label="Diagramm" style="width:min(900px,95vw)"><div class="reihe"><h2 class="h" style="flex:1">Diagramm</h2>
         <input class="feld" id="d-titel" value="${esc(titel)}" placeholder="Titel" style="width:220px">
         <button type="button" class="rund" data-zu aria-label="Schließen">✕</button></div>
+        <div class="segment d-reihe" hidden></div>
         <div class="segment d-arten">${window.Diagramm.ARTEN.map(([k, t]) => `<label><input type="radio" name="dart" value="${k}" ${k === art ? 'checked' : ''}><span>${t}</span></label>`).join('')}</div>
       <div class="diagramm">${bau()}</div>
       <div class="reihe"><span class="leise" style="font-size:13px">${q.reihen.map((r) => esc(`${r.name} (${r.bereich})`)).join(' · ')}${q.namen ? ` · Namen aus ${esc(q.namen)}` : ''}</span><div class="platz"></div><button type="button" class="btn weiss" data-bild>Als Bild speichern</button><button type="button" class="btn" data-insblatt>Ins Blatt setzen</button></div></div>`;
     document.body.appendChild(s);
-    const neuZeichnen = () => { s.querySelector('.diagramm').innerHTML = bau(); s.querySelector('.diagramm svg').setAttribute('style', 'width:100%;height:auto'); };
+    const neuZeichnen = () => {
+      s.querySelector('.diagramm').innerHTML = bau(); s.querySelector('.diagramm svg').setAttribute('style', 'width:100%;height:auto');
+      const rw = s.querySelector('.d-reihe'); const zeigen = (aktuell === 'kreis' || aktuell === 'ring') && q.reihen.length > 1;
+      rw.hidden = !zeigen;
+      if (zeigen && !rw.childElementCount) rw.innerHTML = `<span class="leise" style="font-size:13px">Zeigt:</span>${q.reihen.map((r, i) => `<label><input type="radio" name="dreihe" value="${i}"><span>${esc(r.name)}</span></label>`).join('')}`;
+    };
     neuZeichnen();
-    s.addEventListener('change', (ev) => { if (ev.target.name === 'dart') { aktuell = ev.target.value; neuZeichnen(); } });
+    s.addEventListener('change', (ev) => { if (ev.target.name === 'dart') { aktuell = ev.target.value; neuZeichnen(); } if (ev.target.name === 'dreihe') { reihe = Number(ev.target.value); neuZeichnen(); } });
     s.addEventListener('input', (ev) => { if (ev.target.id === 'd-titel') { titel = ev.target.value; neuZeichnen(); } });
     s.addEventListener('click', async (ev) => {
       if (ev.target === s || ev.target.closest('[data-zu]')) return s.remove();
       if (ev.target.closest('[data-bild]')) { const r = await A.datei.bild(await window.Diagramm.alsBild(bau()), titel || S.t.name); if (r?.ok) meldung('Gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); }
-      if (ev.target.closest('[data-insblatt]')) { diagrammInsBlatt(q, aktuell, titel); s.remove(); }
+      if (ev.target.closest('[data-insblatt]')) { diagrammInsBlatt(reihe !== null && (aktuell === 'kreis' || aktuell === 'ring') ? { ...q, reihen: [q.reihen[reihe]] } : q, aktuell, titel); s.remove(); }
     });
     s.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s.remove(); });
     s.querySelector('[data-insblatt]').focus();

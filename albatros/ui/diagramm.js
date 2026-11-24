@@ -38,8 +38,15 @@
       return s;
     };
 
+    let kopf2 = '';
     if (art === 'kreis' || art === 'ring') {
-      const werte = reihen[0].werte.map((v) => Math.max(0, typeof v === 'number' ? v : 0));
+      // Bei mehreren Reihen: gewählte Reihe, sonst die mit den meisten Werten (z. B. Ausgaben statt der einen Einnahme)
+      const zaehle = (r) => r.werte.filter((v) => typeof v === 'number' && v > 0).length;
+      const ri = Number.isInteger(opt.reihe) && reihen[opt.reihe] ? opt.reihe : reihen.reduce((b, r, i) => (zaehle(r) > zaehle(reihen[b]) ? i : b), 0);
+      const alle = reihen[ri].werte.map((v, i) => ({ v: Math.max(0, typeof v === 'number' ? v : 0), name: nameVon(i) })).filter((x) => x.v > 0);
+      const werte = alle.map((x) => x.v); const namen2 = alle.map((x) => x.name);
+      if (!werte.length) return rahmen(`<text x="${W / 2}" y="${H / 2}" text-anchor="middle" ${TEXT} font-size="15" fill="#7a7f8e">Keine positiven Werte</text>`);
+      if (mehr && !titel) kopf2 = `<text x="20" y="30" ${SCHRIFT} font-weight="800" font-size="15" fill="#5d6478">${esc(kuerzen(reihen[ri].name, 40))}</text>`;
       const summe = werte.reduce((a, b) => a + b, 0) || 1;
       const r = Math.min(H / 2 - 34, W * 0.24); const cx = Math.min(W * 0.32, r + 40); const cy = oben + (H - oben) / 2;
       const innen = art === 'ring' ? r * 0.58 : 0;
@@ -56,8 +63,8 @@
       });
       if (innen) teile += `<text x="${cx}" y="${cy + 6}" text-anchor="middle" ${SCHRIFT} font-weight="800" font-size="17" fill="#1d2742">${esc(kurz(summe))}</text>`;
       const lx = cx + r + 40; const zeilen = Math.min(werte.length, Math.floor((H - oben - 10) / 24));
-      const leg = werte.slice(0, zeilen).map((v, i) => `<rect x="${lx}" y="${oben + 10 + i * 24}" width="12" height="12" rx="3" fill="${F[i % F.length]}"/><text x="${lx + 19}" y="${oben + 21 + i * 24}" ${TEXT} font-size="13" fill="#1d2742">${esc(kuerzen(nameVon(i), 22))}</text><text x="${W - 20}" y="${oben + 21 + i * 24}" text-anchor="end" ${SCHRIFT} font-size="12.5" fill="#5d6478">${esc(kurz(v))}</text>`).join('');
-      return rahmen(teile + leg);
+      const leg = werte.slice(0, zeilen).map((v, i) => `<rect x="${lx}" y="${oben + 10 + i * 24}" width="12" height="12" rx="3" fill="${F[i % F.length]}"/><text x="${lx + 19}" y="${oben + 21 + i * 24}" ${TEXT} font-size="13" fill="#1d2742">${esc(kuerzen(namen2[i], 22))}</text><text x="${W - 20}" y="${oben + 21 + i * 24}" text-anchor="end" ${SCHRIFT} font-size="12.5" fill="#5d6478">${esc(kurz(v))}</text>`).join('');
+      return rahmen(kopf2 + teile + leg);
     }
 
     const gestapelt = art === 'gestapelt';
