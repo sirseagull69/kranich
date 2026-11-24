@@ -1,7 +1,7 @@
 {
   "name": "schwalbe",
   "productName": "Schwalbe",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Schwalbe – Schreiben, einfach. Der Word-Ersatz der Familie Selbst gfaltet, mit Claude als Helfer.",
   "author": "Nils Pohler",
   "main": "main/main.js",

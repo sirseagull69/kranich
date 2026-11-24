@@ -294,3 +294,4 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:var(--dunkel)}
 .zieh-hinweis small{color:var(--leise)}
 .zieh-hinweis.lade{border-style:solid;background:rgba(219,230,247,.6)}
+.kopf .version{font:600 11px 'Bricolage Grotesque',sans-serif;opacity:.7;margin-left:6px;align-self:flex-end;margin-bottom:3px}

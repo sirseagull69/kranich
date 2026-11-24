@@ -198,7 +198,7 @@
     S.einst = await A.einstellungen.lesen();
     if (!S.autorGesetzt) { S.autorGesetzt = true; Pruefen.setzeAutor(S.einst?.name || await A.systemName?.() || 'Ich'); }
     const wer = S.einst?.weg === 'api' ? 'API' : S.einst?.weg === 'heim' ? 'Heim-PC' : `Claude · ${esc(S.einst?.claudeModell || 'opus')}`;
-    app.innerHTML = `<header class="kopf"><span class="marke">${vogel('ruhezustand-2', 34)}<b>Schwalbe</b></span><div class="platz"></div>
+    app.innerHTML = `<header class="kopf"><span class="marke">${vogel('ruhezustand-2', 34)}<b>Schwalbe</b>${S.einst?.version ? `<small class="version">${esc(S.einst.version)}</small>` : ''}</span><div class="platz"></div>
         <span class="chip">${wer}</span>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="rund" data-aktion="importieren" title="Datei öffnen" aria-label="Datei öffnen">${sym('oeffnen', 18)}</button>
@@ -954,7 +954,6 @@
   app.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && ev.target.matches('.datei[data-aktion]')) { ev.preventDefault(); aktionen.oeffne(ev.target, ev); } });
   // Datei aufs Fenster ziehen
   // Sichtbare Rückmeldung beim Drüberziehen
-  let ziehTiefe = 0;
   const hatDatei = (ev) => [...(ev.dataTransfer?.types || [])].includes('Files');
   const ziehAnzeige = (an) => {
     document.body.classList.toggle('zieht-datei', an);
@@ -962,11 +961,16 @@
     if (an && !z && S.ansicht !== 'dokument') { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${vogel('liest', 70)}<b>Loslassen zum Öffnen</b><small>Word-Datei (.docx) oder Text</small></div>`; document.body.appendChild(z); }
     if (!an) z?.remove();
   };
-  document.addEventListener('dragenter', (ev) => { if (!hatDatei(ev)) return; ziehTiefe++; ziehAnzeige(true); });
-  document.addEventListener('dragleave', () => { ziehTiefe = Math.max(0, ziehTiefe - 1); if (!ziehTiefe) ziehAnzeige(false); });
-  document.addEventListener('dragover', (ev) => ev.preventDefault());
+  // Über dragover statt enter/leave: zuverlässig auch beim Ziehen aus dem Explorer
+  let ziehUhr = null;
+  document.addEventListener('dragover', (ev) => {
+    ev.preventDefault();
+    if (!hatDatei(ev) && !ev.dataTransfer?.items?.length) return;
+    try { ev.dataTransfer.dropEffect = 'copy'; } catch { /* egal */ }
+    ziehAnzeige(true); clearTimeout(ziehUhr); ziehUhr = setTimeout(() => ziehAnzeige(false), 180);
+  });
   document.addEventListener('drop', async (ev) => {
-    ziehTiefe = 0; ziehAnzeige(false);
+    clearTimeout(ziehUhr); ziehAnzeige(false);
     const f = ev.dataTransfer?.files?.[0]; if (!f) return;
     ev.preventDefault();
     const p = A.pfadVon(f); if (!/\.(docx|txt|md)$/i.test(p)) return meldung('Das kann ich nicht öffnen – nur .docx oder .txt.');
