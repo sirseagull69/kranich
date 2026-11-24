@@ -38,7 +38,7 @@
     origami: { name: 'Ori', rolle: 'Fragen & Erledigen', spruch: 'Sag einfach, was du brauchst.', hell: '#ffe3d1', mittel: '#ffb48a', farbe: '#d2541b', dunkel: '#7a2c0e' },
     albatros: { name: 'Albatros', rolle: 'Tabellen', spruch: 'Jede Zahl an ihrem Platz.', hell: '#d8eedf', mittel: '#a9dcbb', farbe: '#2f7a4d', dunkel: '#173f28' },
     kranich: { name: 'Kranich', rolle: 'Folien & Gestalten', spruch: 'Langweilig? Nicht mit mir.', hell: '#e8e0fb', mittel: '#c9b9f6', farbe: '#6a4fc7', dunkel: '#33246f' },
-    schreiben: { name: 'Eule', rolle: 'Schreiben', spruch: 'Ein gutes Wort zur rechten Zeit.', hell: '#f5e7c8', mittel: '#ead09a', farbe: '#9a6a12', dunkel: '#4d3507' },
+    schreiben: { name: 'Schwalbe', rolle: 'Schreiben', spruch: 'Schreibt mit. Fliegt schnell.', hell: '#dbe6f7', mittel: '#b9cdf0', farbe: '#2c5aa0', dunkel: '#1e3f75' },
     specht: { name: 'Specht', rolle: 'IT-Helfer', spruch: 'Ich klopf erst, wenn du willst.', hell: '#f8e0d9', mittel: '#f0b5a7', farbe: '#b23a28', dunkel: '#5c1910' },
   };
   const art = (a) => ART[a.id] || { name: a.name, rolle: a.aufgabe, spruch: '', hell: a.hell, mittel: a.hell, farbe: a.farbe, dunkel: '#1d2742' };

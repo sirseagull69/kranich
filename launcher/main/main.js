@@ -16,7 +16,7 @@ const APPS = [
   { id: 'kranich', name: 'Kranich', aufgabe: 'Gestalten', farbe: '#7c5cd6', hell: '#ece6fd', art: 'programm', datei: 'Kranich', release: 'https://github.com/sirseagull69/kranich/releases/latest' },
   { id: 'albatros', name: 'Albatros', aufgabe: 'Tabellen', farbe: '#2f8a55', hell: '#dcf0e3', art: 'programm', datei: 'Albatros' },
   { id: 'specht', name: 'Specht', aufgabe: 'IT-Helfer', farbe: '#b23a28', hell: '#f8e2dc', art: 'programm', datei: 'Specht' },
-  { id: 'schreiben', name: 'Schreibprogramm', aufgabe: 'Schreiben', farbe: '#c47f17', hell: '#f8ead2', art: 'programm', datei: 'Schreiben', bald: true },
+  { id: 'schreiben', name: 'Schwalbe', aufgabe: 'Schreiben', farbe: '#2c5aa0', hell: '#dbe6f7', art: 'programm', datei: 'Schwalbe' },
 ];
 
 // ---------- Einstellungen ----------
@@ -71,6 +71,18 @@ function zuletzt() {
       } catch { /* kaputt */ }
     }
   } catch { /* Albatros noch nie benutzt */ }
+  // Schwalbe-Dokumente
+  const dOrdner = path.join(app.getPath('appData'), 'Schwalbe', 'dokumente');
+  try {
+    for (const f of fs.readdirSync(dOrdner)) {
+      if (!/^[a-z0-9-]{6,40}\.json$/.test(f)) continue;
+      try {
+        const d = JSON.parse(fs.readFileSync(path.join(dOrdner, f), 'utf8'));
+        const text = String(d.html || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        liste.push({ app: 'schreiben', id: d.id, name: d.name, geaendert: d.geaendert, info: `Dokument · ${text ? text.split(' ').length : 0} Wörter`, vorschau: '' });
+      } catch { /* kaputt */ }
+    }
+  } catch { /* Schwalbe noch nie benutzt */ }
   return liste.sort((a, b) => String(b.geaendert).localeCompare(String(a.geaendert))).slice(0, 12);
 }
 

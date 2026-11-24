@@ -11,12 +11,13 @@ const EIGEN = {
   kranich: ['bild', 'folien', 'webseite', 'schreibt', 'applaus', 'triumph', 'stellt-bereit', 'stimmt-ab'],
   albatros: ['rechnet', 'tabelle-baut', 'sortiert', 'vergleicht', 'wertet-aus', 'rechnung', 'traegt-ein', 'eingetragen'],
   specht: ['pc-check', 'sicherheit', 'terminal', 'neustart', 'backup', 'testet', 'sicher', 'prueft'],
+  schreiben: ['schreibt', 'liest', 'fasst-zusammen', 'gemerkt', 'plant', 'wissen'],
 };
 
 global.window = {};
 require('../ui/voegel-ori.js');
 const ori = require('./ori-quelle.json');
-const quelle = { origami: ori, ...window.VOEGEL_ORI };
+const quelle = { origami: ori, ...window.VOEGEL_ORI, schreiben: window.VOEGEL_ORI.schwalbe };
 const platz = (svg) => svg.replace(/(<svg[^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, '$1 width="__G__" height="__G__"');
 
 const aus = {}; const eigen = {};
