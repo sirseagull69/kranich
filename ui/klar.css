@@ -349,3 +349,27 @@ body.zieht-datei .kl-ablage{background:#ece6fd;border-color:#7c5cd6;transform:sc
 .kranichleiste .oo-ori-karte{display:flex;align-items:center;gap:6px;margin:8px 0 6px;color:#a8431a}
 .kranichleiste .oo-ori-karte b{font:600 18px 'Caveat',cursive;color:#a8431a;line-height:1.15}
 .kranichleiste .oo-ori-karte .ori-bild{width:46px;height:46px;margin:-8px -2px -8px -6px;flex:none}
+:root{--oo-f:#7c5cd6;--oo-fm:#9b82e3;--oo-fd:#4a2f9a;--oo-fh:#ece6fd}
+.wb-kopf>.kr-datei{margin-left:14px;background:rgba(255,255,255,.16);color:#fff}
+.wb-kopf>.kr-datei:hover{background:rgba(255,255,255,.26)}
+.oo-text{width:100%;height:auto;padding:10px 12px;font:400 14.5px/1.5 'Source Serif 4',serif;margin-bottom:8px}
+/* Rechte Spalte ruhig: Folien groß, Ebenen/Bausteine zugeklappt */
+.wb-klapp{border-top:1px solid #ece6da;margin-top:6px;padding-top:4px}
+.wb-klapp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:9px 6px;font:700 13px 'Bricolage Grotesque',sans-serif;color:#4a2f9a;border-radius:8px}
+.wb-klapp>summary::-webkit-details-marker{display:none}
+.wb-klapp>summary::before{content:'›';font-size:16px;transition:transform .15s;display:inline-block;width:10px}
+.wb-klapp[open]>summary::before{transform:rotate(90deg)}
+.wb-klapp>summary small{font:400 12.5px 'Source Serif 4',serif;color:#9a9486;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wb-klapp>summary:hover{background:#f4f0fb}
+/* Notizen unter der Folie */
+.notizleiste{position:absolute;left:14px;right:190px;bottom:14px;z-index:6;display:flex;align-items:flex-start;gap:10px;padding:8px 12px;border-radius:12px;background:#fffdf9;box-shadow:0 0 0 1px #e6dfd0,0 10px 22px -14px rgba(20,24,40,.35)}
+.notizleiste[hidden]{display:none}
+.nl-titel{flex:none;font:700 12.5px 'Bricolage Grotesque',sans-serif;color:#4a2f9a;padding-top:5px;white-space:nowrap}.nl-titel small{font:400 12px 'Source Serif 4',serif;color:#9a9486;margin-left:4px}
+.notizleiste textarea{flex:1;border:0;background:none;resize:none;font:400 14px/1.45 'Source Serif 4',serif;color:#1d2742;padding:4px 0;max-height:96px;outline:0;field-sizing:content;min-height:24px}
+.leinwandrahmen:has(.notizleiste:not([hidden])) .hinweisband{bottom:74px!important}
+/* Vortrag-Menü */
+.vortrag-schwebe{width:300px;padding:14px 16px;border-radius:14px;background:#fffdf9;box-shadow:0 0 0 1px #e6dfd0,0 22px 40px -14px rgba(20,24,40,.4)}
+.vortrag-schwebe .vs-kopf{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}.vortrag-schwebe .vs-kopf b{font-size:16px}.vortrag-schwebe .vs-kopf small{color:#9a9486;font:400 13px 'Source Serif 4',serif}
+.vortrag-schwebe .vortragsfeld{display:flex;flex-direction:column;gap:6px}
+.vortrag-schwebe select,.vortrag-schwebe input:not([type="checkbox"]){width:100%}
+.werkzeugleiste .klappknopf[aria-expanded="true"]{background:#efeaf8}

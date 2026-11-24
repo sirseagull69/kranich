@@ -470,7 +470,7 @@
         <button type="button" class="kl-marke" data-aktion="zum-start" title="Alle Entwürfe">${sym('links', 18)}${figur('ruhend', 30)}<b class="h">Kranich</b></button>
         <span class="wb-trenner"></span>
         <div class="sk-projekt wb-projekt"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><small><span class="boardtitel">${esc(seite()?.name || '')}</span> · <span class="boardmass">${esc(seite()?.mass || `${seite()?.breite} × ${seite()?.hoehe}`)}</span> · <span class="speicherchip">gespeichert</span></small></div>
-        ${S.modus === 'bild' ? '' : klappMenue('Datei', '', [['zum-start', 'links', 'Alle Entwürfe'], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['-'], ['pptx-speichern', 'export', 'Als PowerPoint speichern', !seite()?.html], ['app-uebergabe', 'export', 'Alle Boards weitergeben', !seite()?.html], ['-'], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
+        <button type="button" class="klappknopf kr-datei" data-aktion="datei-ansicht">Datei</button>
         <div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
@@ -478,11 +478,10 @@
       <div class="wb-raster">
         <div class="oo-sitzvogel" aria-hidden="true">${figur('ruhend', 84)}</div>
         <aside class="kl-blatt wb-links">
-          <button type="button" class="wb-neu" data-aktion="board-dazu">${sym('plus', 16, 2.4)}<span>Board hinzufügen</span></button>
+          <button type="button" class="wb-neu" data-aktion="board-dazu">${sym('plus', 16, 2.4)}<span>${S.projekt.app?.plan ? "Bildschirm hinzufügen" : "Neue Folie"}</span></button>
           <nav class="seitenleiste sk-mitte" aria-label="Boards und Ebenen"></nav>
-          <button type="button" class="kl-leise wb-bild" data-aktion="modus" data-modus="bild">${sym('bild', 16)} Bild bearbeiten</button>
         </aside>
-        <main class="wb-mitte leinwandspalte"><div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main><aside class="eigenschaften paper" aria-label="Eigenschaften" hidden></aside></div></main>
+        <main class="wb-mitte leinwandspalte"><div class="leinwandrahmen"><nav class="werkzeugleiste schwebend" aria-label="Werkzeuge">${schiene()}</nav><main class="leinwand" aria-label="Leinwand"></main><aside class="eigenschaften paper" aria-label="Eigenschaften" hidden></aside><div class="notizleiste paper" hidden><span class="nl-titel">Notizen <small class="nl-folie"></small></span><textarea id="vt-notiz" rows="1" placeholder="Was willst du dazu sagen? Nur du siehst das – in der Referentenansicht."></textarea></div></div></main>
         <aside class="kl-blatt kranichleiste chatspalte" aria-label="Kranich"></aside>
       </div></section>`;
     const leinwand = app.querySelector('.leinwand');
@@ -580,8 +579,9 @@
       <span class="schienenstrich"></span>
       ${k('app-pruefung', 'haken', 'Prüfen: Kranich misst das Board nach', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
       <span class="schienenstrich"></span>
-      ${klappMenue('Einfügen', 'plus', [['board-dazu', 'plus', 'Neue Folie'], ['albatros-tabelle', 'mischen', 'Tabelle aus Albatros (live)'], ['pptx-oeffnen', 'ordner', 'Folien aus PowerPoint …']], true)}
-      ${klappMenue('Gestalten', 'varianten', [['varianten', 'varianten', 'Drei Varianten falten', !s?.html], ['alle-groessen', 'mischen', 'In alle Größen falten', !s?.html], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', !s?.html]], true)}`;
+      ${klappMenue('Einfügen', 'plus', [['board-dazu', 'plus', 'Neue Folie'], ['baustein-text', 'text', 'Textfeld'], ['baustein-bild', 'bild', 'Bild'], ['albatros-tabelle', 'mischen', 'Tabelle aus Albatros (live)'], ['pptx-oeffnen', 'ordner', 'Folien aus PowerPoint …']], true)}
+      ${klappMenue('Gestalten', 'varianten', [['varianten', 'varianten', 'Drei Varianten falten', !s?.html], ['alle-groessen', 'mischen', 'In alle Größen falten', !s?.html], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', !s?.html], ['-'], ['modus-bild', 'bild', 'Bild bearbeiten']], true)}
+      ${S.projekt?.app?.plan ? '' : `<button type="button" class="klappknopf" data-aktion="vortrag-menue" aria-expanded="false">${sym('senden', 16)}Vortrag<span class="pfeil">▾</span></button>`}`;
   }
 
   function boardZeile(x, aktiv, mehrere, klein) {
@@ -613,22 +613,28 @@
       liste = alle.map((x) => boardZeile(x, x.id === s.id, mehrere)).join('');
     }
     const fertig = alle.filter((x) => x.html).length;
-    nav.innerHTML = `<span class="sk-titel hand">Boards <small>${fertig}/${alle.length}</small></span>
+    nav.innerHTML = `<span class="sk-titel hand">${S.projekt.app?.plan ? 'Bildschirme' : 'Folien'} <small>${fertig}/${alle.length}</small></span>
       <div class="seitenlaschen">${liste}</div>
-      ${S.modus === 'entwurf' && !S.projekt.app?.plan ? `<span class="sk-titel hand">Vortrag <small>Folie ${alle.indexOf(s) + 1}</small></span>
+      <details class="wb-klapp" data-klapp="ebenen"${S.ebenenAuf ? ' open' : ''}><summary>Ebenen <small>${esc(s.name)}</small></summary>
+      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
+      </details>
+      ${S.modus === 'entwurf' ? `<details class="wb-klapp" data-klapp="bausteine"${S.bausteineAuf ? ' open' : ''}><summary>Bausteine <small>zum Reinziehen</small></summary>${Direkt.bausteinLeiste()}</details>` : ''}
+      <button type="button" class="versteckt" data-aktion="board-dazu" tabindex="-1" aria-hidden="true"></button>`;
+    nav.querySelector('.boardzeile[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+    const nl = app.querySelector('.notizleiste');
+    if (nl) { const t = nl.querySelector('#vt-notiz'); nl.hidden = S.modus !== 'entwurf' || Boolean(S.projekt.app?.plan); if (t && document.activeElement !== t) t.value = s.notiz || ''; nl.querySelector('.nl-folie').textContent = `Folie ${alle.indexOf(s) + 1}`; }
+    const vs = app.querySelector('.vortrag-schwebe'); if (vs && !vs.contains(document.activeElement)) vs.innerHTML = vortragInhalt();
+  }
+  function vortragInhalt() {
+    const s = seite(); const alle = S.projekt.seiten;
+    return `<div class="vs-kopf"><b class="h">Vortrag</b><small>Folie ${alle.indexOf(s) + 1}</small></div>
       <div class="vortragsfeld"><label for="vt-uebergang">Übergang zu dieser Folie</label><select id="vt-uebergang">${Praesentation.UEBERGAENGE.map(([k, t]) => `<option value="${k}" ${(s.uebergang || 'keiner') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
-        <label for="vt-notiz">Notizen für dich (nur in der Referentenansicht)</label><textarea id="vt-notiz" placeholder="Was willst du dazu sagen?">${esc(s.notiz || '')}</textarea>
         ${(() => { const el = S.auswahl?.k ? Entwurf.element(S.auswahl.k) : null; if (!el || el.localName === 'body') return '<span class="vt-tipp">Element anklicken, um ihm eine Animation zu geben.</span>'; const n = [...(el.ownerDocument.querySelectorAll('[data-anim]'))].length; return `<label for="vt-anim">Animation für „${esc(Entwurf.nameVon(el))}“</label><select id="vt-anim">${Praesentation.ANIMATIONEN.map(([k, t]) => `<option value="${k}" ${(el.dataset.anim || '') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>${n ? `<span class="vt-tipp">${n} Animation${n === 1 ? '' : 'en'} auf dieser Folie – erscheinen der Reihe nach beim Weiterklicken.</span>` : ''}`; })()}
         <details class="vt-master"${S.masterAuf ? ' open' : ''}><summary>Für alle Folien</summary>
           <label for="vt-fuss">Fußzeile</label><input id="vt-fuss" value="${esc(S.projekt.master?.fuss || '')}" placeholder="z. B. Firma · Thema">
           <label class="vt-haken"><input type="checkbox" id="vt-nummer" ${S.projekt.master?.nummer ? 'checked' : ''}> Foliennummer</label>
           <div class="vt-logo">${S.projekt.master?.logo ? `<img src="${S.projekt.master.logo}" alt="Logo"><button type="button" class="btn btn-s btn-q" data-aktion="master-logo-weg">Logo entfernen</button>` : '<button type="button" class="btn btn-s" data-aktion="master-logo">Logo wählen</button>'}</div>
-          <span class="vt-tipp">Erscheint beim Präsentieren und in der PowerPoint.</span></details></div>` : ''}
-      <span class="sk-titel hand">Ebenen <small>${esc(s.name)}</small></span>
-      <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
-      ${S.modus === 'entwurf' ? Direkt.bausteinLeiste() : ''}
-      <button type="button" class="versteckt" data-aktion="board-dazu" tabindex="-1" aria-hidden="true"></button>`;
-    nav.querySelector('.boardzeile[aria-current="true"]')?.scrollIntoView({ block: 'nearest' });
+          <span class="vt-tipp">Erscheint beim Präsentieren und in der PowerPoint.</span></details></div>`;
   }
 
   // Overlays auf der Entwurfsleinwand: leer, denkt, fertig, Fehler
@@ -1124,7 +1130,87 @@
   }
 
   // ---------- Aktionen ----------
+  // ---------- Datei-Ansicht (gemeinsam mit allen Vögeln) ----------
+  const NEU_IN_VERSION = ['Werkzeugzeile mit Einfügen und Gestalten', 'Datei-Ansicht mit Neu, Öffnen, Info, PowerPoint und Optionen', 'PowerPoint öffnen und als bearbeitbare PowerPoint speichern', 'Präsentieren mit Referentenansicht, Übergängen und Animationen'];
+  const KA = { einstellungen: K.einstellungen, hirnTesten: () => K.hirn.testen() };
+  function dateiAnsicht(start = 'info') {
+    const offen = S.ansicht === 'werkbank' && S.projekt;
+    const nav = offen
+      ? [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'info', 'Info'], '-', ['pptx', 'speichern', 'Als PowerPoint'], ['export', 'export', 'Exportieren'], '-', ['optionen', 'optionen', 'Optionen'], ['zu', 'schliessen', 'Schließen']]
+      : [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], '-', ['optionen', 'optionen', 'Optionen']];
+    const T = OO.teile;
+    const zumStart = async () => { if (S.ansicht !== 'start') await aktionen['zum-start'](); };
+    OO.backstage({
+      nav, start: offen ? start : (start === 'info' ? 'neu' : start), vogel: figur('ruhend', 54),
+      klick: async (k, api) => {
+        if (k === 'pptx') { api.zu(); aktionen['pptx-speichern'](); return true; }
+        if (k === 'export') { api.zu(); aktionen.exportieren(); return true; }
+        if (k === 'zu') { api.zu(); aktionen['zum-start'](); return true; }
+        return false;
+      },
+      zeige: async (k, inhalt, api) => {
+        if (k === 'neu') {
+          const karten = [['entwurf', 'plus', 'Neuer Entwurf', 'Folie, Plakat, Post – Kranich faltet ihn dir'], ['pptx', 'folie', 'PowerPoint öffnen', 'Eine .pptx weiterbearbeiten'], ['app', 'tabelle', 'Ganze App', 'Mehrere Bildschirme mit Abläufen'], ['bild', 'datei', 'Bild bearbeiten', 'Freistellen, zuschneiden, Größe']];
+          inhalt.innerHTML = `${T.titel('Neu')}<div class="oo-bs-kacheln">${karten.map(([a, ic, t, x]) => `<button type="button" class="oo-bs-kachel" data-neu="${a}"><span class="oo-bild">${OO.sym(ic, 34)}</span><b>${t}</b><small>${x}</small></button>`).join('')}</div>`;
+          inhalt.onclick = async (ev) => { const b = ev.target.closest('[data-neu]'); if (!b) return; api.zu(); if (b.dataset.neu === 'pptx') return aktionen['pptx-neu'](); await zumStart(); aktionen.neu({ dataset: { art: b.dataset.neu } }); };
+        } else if (k === 'oeffnen') {
+          const liste = await K.projekte.liste(); const l = Array.isArray(liste) ? liste : [];
+          inhalt.innerHTML = `${T.titel('Öffnen')}${T.gross('data-pptx', 'folie', 'PowerPoint öffnen …', '.pptx vom PC wählen – wird zu Folien in Kranich')}<h2>Zuletzt bearbeitet</h2>${l.slice(0, 14).map((p) => T.zeile(`data-proj="${esc(p.id)}"`, p.art === 'bild' ? 'datei' : 'folie', p.name, p.art === 'bild' ? 'Bild' : p.app ? 'Ganze App' : p.boards > 1 ? `${p.boards} Boards` : [p.formatName, p.mass].filter(Boolean).join(' · ') || 'Entwurf', H.wann(p.geaendert))).join('') || '<p class="oo-leise">Noch nichts gefaltet.</p>'}`;
+          inhalt.onclick = (ev) => { if (ev.target.closest('[data-pptx]')) { api.zu(); aktionen['pptx-neu'](); return; } const pr = ev.target.closest('[data-proj]'); if (pr) { api.zu(); oeffne(pr.dataset.proj); } };
+        } else if (k === 'info') {
+          const p = S.projekt; const boards = p.seiten || []; const sx = seite();
+          inhalt.innerHTML = `${T.titel('Info')}${T.kopf('folie', p.name, 'Liegt in Kranich – speichert sich nebenbei von selbst.')}
+            <div class="oo-bs-knoepfe"><button type="button" class="oo-btn" data-x="pptx">${OO.sym('speichern', 16)} Als PowerPoint speichern</button><button type="button" class="oo-btn weiss" data-x="praes">${OO.sym('folie', 16)} Präsentieren</button><button type="button" class="oo-btn weiss" data-x="umbenennen">Umbenennen</button></div>
+            <div class="oo-bs-spalten"><div><h2>Eigenschaften</h2>${T.info('Folien / Boards', boards.length)}${T.info('Mit Inhalt', boards.filter((x) => x.html).length)}${T.info('Format', esc(sx?.mass || `${sx?.breite} × ${sx?.hoehe}`))}${T.info('Mit Notizen', boards.filter((x) => x.notizen).length)}${T.info('Zuletzt geändert', esc(H.wann(p.geaendert)))}</div>
+            <div><h2>Schutz</h2><p class="oo-leise">Alles speichert sich nebenbei in Kranich. Eine PowerPoint-Datei entsteht mit „Als PowerPoint speichern“ – Texte bleiben darin bearbeitbar.</p></div></div>`;
+          inhalt.onclick = (ev) => { const x = ev.target.closest('[data-x]')?.dataset.x; if (!x) return; api.zu(); if (x === 'pptx') aktionen['pptx-speichern'](); if (x === 'praes') aktionen.praesentieren(); if (x === 'umbenennen') { const el = app.querySelector('[data-aktion="umbenennen"]'); if (el) aktionen.umbenennen(el); } };
+        } else if (k === 'optionen') {
+          const e = await K.einstellungen.lesen();
+          const zeile = (t, x, inp) => `<div class="oo-op-zeile"><span><b>${t}</b><small>${x}</small></span>${inp}</div>`;
+          const haken = (op, t, x, an) => `<label class="oo-op-zeile haken"><input type="checkbox" data-op="${op}" ${an ? 'checked' : ''}><span><b>${t}</b><small>${x}</small></span></label>`;
+          const APPS = [['origami', 'origami'], ['kranich', 'Kranich'], ['albatros', 'Albatros'], ['schreiben', 'Schwalbe']];
+          OO.optionen(inhalt, { A: KA, app: 'Kranich', vogelName: 'Kranich', vogel: figur('ruhend', 64), neu: NEU_IN_VERSION,
+            extra: [
+              ['look', 'Look', () => `${haken('standMitgeben', 'Aktuellen Stand mitschicken', 'Nennst du Kranich, Albatros oder das Startfenster, bekommt Claude Fotos vom aktuellen Stand dazu.', e.standMitgeben !== false)}
+                <div class="oo-op-zeile"><span><b>Eigene Look-Regeln</b><small>Kranich hält sich bei jedem Entwurf daran.</small></span></div><textarea class="oo-feld oo-text" data-op="lookHinweise" rows="5" placeholder="z. B. Hauptknöpfe immer rechts unten">${esc(e.lookHinweise || '')}</textarea>`],
+              ['heim', 'Heim-PC', () => `<p class="oo-leise">Andere Geräte (z. B. dein Arbeits-Notebook) schicken ihre Aufträge an diesen PC. Kranich muss dafür hier offen sein.</p>
+                ${haken('heimFreigabe', 'Diesen PC freigeben', 'Nur mit dem Kopplungscode kommt jemand rein.', e.heimFreigabe)}
+                ${zeile('Port', 'Unter diesem Port ist Kranich erreichbar.', `<input class="oo-feld kurz" data-op="heimPort" data-zahl value="${esc(e.heimPort || 4747)}">`)}
+                ${zeile('Kopplungscode', 'Auf dem anderen Gerät eintragen.', `<span class="oo-reihe" style="margin:0"><input class="oo-feld" id="kr-eigencode" readonly value="${esc(e.heimEigenerCode || 'erscheint nach dem Speichern')}"><button type="button" class="oo-btn weiss" data-kr-kopie>Kopieren</button><button type="button" class="oo-btn weiss" data-kr-neu>Neu</button></span>`)}`],
+              ['pc', 'Modell auf dem PC', () => `${haken('lokalAn', 'Kleine Änderungen lokal', 'Wünsche an ein einzelnes Element gehen zuerst an Ollama. Fällt Claude aus, springt der PC ein.', e.lokalAn)}
+                ${zeile('Modell', 'Name in Ollama', `<input class="oo-feld" data-op="lokalModell" value="${esc(e.lokalModell || '')}">`)}${zeile('Adresse', 'Wo Ollama läuft', `<input class="oo-feld" data-op="lokalAdresse" value="${esc(e.lokalAdresse || '')}">`)}
+                ${zeile('Programm', 'Nur ändern, wenn „claude“ nicht gefunden wird.', `<input class="oo-feld" data-op="claudeProgramm" value="${esc(e.claudeProgramm || 'claude')}">`)}`],
+              ['ordner', 'App-Ordner', () => `<p class="oo-leise">Ziel für „In App-Projekt der Familie“ beim Exportieren.</p>${APPS.map(([key, t]) => zeile(t, '', `<span class="oo-reihe" style="margin:0"><input class="oo-feld" data-app="${key}" value="${esc(e.appOrdner?.[key] || '')}" placeholder="nicht gewählt"><button type="button" class="oo-btn weiss" data-kr-wahl="${key}">Wählen</button></span>`)).join('')}`],
+            ],
+            zurueck: () => api.zeige(offen ? 'info' : 'neu'),
+            fertig: (wie) => { api.zu(); if (wie === 'rundgang') aktionen.rundgang(); else H.meldung('Optionen gespeichert.'); },
+            nachSpeichern: async () => { await K.einstellungen.setzen({ appOrdner: Object.fromEntries([...inhalt.querySelectorAll('[data-app]')].map((i) => [i.dataset.app, i.value.trim()])) }); S.einstellungen = await K.einstellungen.lesen(); } });
+          // Kranich-eigene Knöpfe in den Optionen
+          inhalt.addEventListener('click', async (ev) => {
+            if (ev.target.closest('[data-kr-kopie]')) { await navigator.clipboard.writeText(inhalt.querySelector('#kr-eigencode').value); H.meldung('Code kopiert.'); }
+            if (ev.target.closest('[data-kr-neu]')) { const n = await K.einstellungen.neuerHeimCode(); inhalt.querySelector('#kr-eigencode').value = n.heimEigenerCode; H.meldung('Neuer Code – andere Geräte brauchen ihn jetzt.'); }
+            const w = ev.target.closest('[data-kr-wahl]'); if (w) { const o = await K.datei.ordnerWaehlen(); if (o && !o.fehler) inhalt.querySelector(`[data-app="${w.dataset.krWahl}"]`).value = o; }
+          });
+          inhalt.querySelector('[data-op="heimFreigabe"]')?.addEventListener('change', async (ev2) => { await K.einstellungen.setzen({ heimFreigabe: ev2.target.checked, heimPort: Number(inhalt.querySelector('[data-op="heimPort"]').value) || 4747 }); const n = await K.einstellungen.lesen(); inhalt.querySelector('#kr-eigencode').value = n.heimEigenerCode || ''; H.meldung(n.heimFreigabe ? 'Dieser PC nimmt jetzt Aufträge an.' : 'Freigabe aus.'); });
+        }
+      },
+    });
+  }
+
+  OO.auswahllisten();
+  app.addEventListener('toggle', (ev) => { const k = ev.target.dataset?.klapp; if (k === 'ebenen') S.ebenenAuf = ev.target.open; if (k === 'bausteine') S.bausteineAuf = ev.target.open; }, true);
   const aktionen = {
+    'datei-ansicht': () => dateiAnsicht(),
+    'modus-bild': () => aktionen.modus({ dataset: { modus: 'bild' } }),
+    'baustein-text': () => setzeWerkzeug('text'),
+    'baustein-bild': () => setzeWerkzeug('bild'),
+    'vortrag-menue': (el) => {
+      const offen = app.querySelector('.vortrag-schwebe'); if (offen) { offen.remove(); el.setAttribute('aria-expanded', 'false'); return; }
+      const r = el.getBoundingClientRect(); const v = document.createElement('div'); v.className = 'vortrag-schwebe paper';
+      v.innerHTML = vortragInhalt(); v.style.cssText = `position:fixed;top:${Math.round(r.bottom + 8)}px;left:${Math.round(r.left)}px;z-index:9000`;
+      app.appendChild(v); el.setAttribute('aria-expanded', 'true');
+      setTimeout(() => document.addEventListener('mousedown', function weg(ev) { if (!v.contains(ev.target) && !el.contains(ev.target) && !ev.target.closest('.oo-auswahl')) { v.remove(); el.setAttribute('aria-expanded', 'false'); document.removeEventListener('mousedown', weg); } }), 0);
+    },
     'lasche': (el) => { S.startLasche = el.dataset.lasche; if (S.ansicht !== 'start') return zeigeStart(); renderStart(); },
     'neu': (el) => {
       if (el.dataset.art === 'entwurf') { S.startLasche = 'neu'; renderStart(); return; }
@@ -1183,7 +1269,7 @@
     },
     rundgang: () => window.Rundgang?.start(RUNDGANG(), true),
     'zum-start': async () => { await speichernSpaeter.sofort(); S.startLasche = 'start'; zeigeStart(); },
-    'einstellungen': () => Dialoge.einstellungen(),
+    'einstellungen': () => dateiAnsicht('optionen'),
     'anhang': async (_el, { danach } = {}) => {
       const b = await K.datei.bildWaehlen();
       if (!b || b.fehler) { if (b?.fehler) H.meldung(b.fehler.nachricht, { art: 'fehler' }); return; }
