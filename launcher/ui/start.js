@@ -53,14 +53,14 @@
     const u = S.updates[a.id] || {}; const pct = S.laedt[a.id];
     if (pct != null) return { text: pct >= 100 ? 'Wird installiert …' : `Lädt ${pct} %`, aktion: '', aus: true };
     if (a.status === 'bald') return { text: 'Kommt bald', aktion: '', aus: true };
-    if (u.update) return { text: `Aktualisieren auf ${u.neu}`, aktion: 'update' };
+    if (u.update && a.status !== 'bereit') return { text: `Aktualisieren auf ${u.neu}`, aktion: 'update' };
     if (a.status === 'fehlt' || (a.web && !a.version && u.installierbar)) return u.installierbar ? { text: 'Installieren', aktion: 'update' } : { text: 'Nicht installiert', aktion: '', aus: true };
     if (a.status === 'adresse') return { text: 'Einrichten', aktion: 'einst' };
     return { text: 'Öffnen', aktion: 'oeffnen' };
   }
   function zeile(a) {
     const k = art(a); const an = a.id === S.wahl; const u = S.updates[a.id] || {};
-    const marke = a.status === 'bald' ? '<span class="marke-bald">BALD</span>' : u.update ? '<span class="marke-upd" title="Update da"></span>' : a.status === 'fehlt' ? '<span class="marke-bald">FEHLT</span>' : '';
+    const marke = a.status === 'bald' ? '<span class="marke-bald">BALD</span>' : u.update ? '<span class="marke-neu">NEU</span>' : a.status === 'fehlt' ? '<span class="marke-bald">FEHLT</span>' : '';
     return `<button type="button" class="zeile ${an ? 'an' : ''}" data-wahl="${a.id}" style="--mittel:${k.mittel};--hell:${k.hell}" aria-pressed="${an}">
       <span class="ikon">${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 44)}</span>
       <span class="txt"><b>${esc(k.name)}</b><span>${esc(k.rolle)}</span></span>${marke}</button>`;
@@ -80,7 +80,7 @@
         <div class="kopf">${bild('origami', 'ruhezustand-2', 42)}<div><b>Ori Office</b><span class="hand">${esc(gruss())}</span></div></div>
         <div class="liste-voegel">${S.apps.map(zeile).join('')}</div>
         <div class="platz"></div>
-        ${updates ? `<button type="button" class="status upd" data-alle><i></i>${updates === 1 ? 'Ein Update da' : `${updates} Updates da`} · alle holen</button>` : `<div class="status"><i></i>Alles aktuell</div>`}
+        ${updates ? `<button type="button" class="status upd" data-alle><i></i><span>${updates === 1 ? '1 Update' : `${updates} Updates`}</span><b>Alle holen</b></button>` : `<div class="status"><i></i>Alles aktuell</div>`}
         <div class="unten"><span class="ver">${S.version ? `Startfenster ${esc(S.version)}` : ''}</span><button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></div>
       </nav>
       <main class="buehne" style="--farbe:${k.farbe};--mittel:${k.mittel};--dunkel:${k.dunkel};--hell:${k.hell}">
@@ -93,9 +93,8 @@
             ${k.spruch ? `<p class="spruch">„${esc(k.spruch)}“</p>` : ''}
             <div class="knoepfe">
               <button type="button" class="los" data-los="${kn.aktion}" ${kn.aus ? 'disabled' : ''}>${esc(kn.text)}</button>
-              ${a.status === 'bereit' && u.update ? '<button type="button" class="zweit" data-los="oeffnen">Trotzdem öffnen</button>' : ''}
             </div>
-            <span class="info">${ver && ver !== '0' ? `Version ${esc(ver)}` : a.status === 'bald' ? 'Ist in Arbeit' : ''}${ver && ver !== '0' ? (u.update ? ` · ${esc(u.neu)} ist da` : ' · aktuell') : ''}</span>
+            ${a.status === 'bereit' && u.update ? `<button type="button" class="upd-hinweis" data-los="update" ${S.laedt[a.id] != null ? 'disabled' : ''}><i></i><span>${S.laedt[a.id] != null ? `Lädt ${S.laedt[a.id]} % …` : `Version ${esc(u.neu)} ist da`}</span><b>${S.laedt[a.id] != null ? '' : 'Jetzt holen'}</b></button>` : `<span class="info">${ver && ver !== '0' ? `Version ${esc(ver)} · aktuell` : a.status === 'bald' ? 'Ist in Arbeit' : ''}</span>`}
           </div>
           <div class="held-vogel" data-held>${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 320)}</div>
         </div>
@@ -215,12 +214,18 @@
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); waehle(ids[(i + (e.key === 'ArrowDown' ? 1 : -1) + ids.length) % ids.length]); app.querySelector('.zeile.an')?.focus(); }
     if (e.key === 'Enter' && e.target === document.body) { const g = gewaehlt(); if (knopf(g).aktion === 'oeffnen') starte(g.id); }
   });
-  // Der große Vogel macht zwischendurch etwas Eigenes, beim Drüberfahren winkt er
+  // Die Vögel reagieren nicht auf die Maus, machen aber von selbst immer wieder etwas anderes
   const zuletzt = {};
+  const stapel = {};
   function eigenes(id) {
-    const l = window.VOEGEL_EIGEN?.[id] || ['winkt', 'erledigt'];
-    let x; do { x = l[Math.floor(Math.random() * l.length)]; } while (l.length > 1 && x === zuletzt[id]);
-    zuletzt[id] = x; return x;
+    // Alle Animationen des Vogels einmal gemischt durchspielen, dann neu mischen – nie zweimal hintereinander dieselbe
+    if (!stapel[id]?.length) {
+      const alle = Object.keys(window.VOEGEL?.[id] || {}).filter((n) => n !== RUHE[id] && !/^ruhezustand$/.test(n));
+      const l = alle.length ? alle : ['winkt', 'erledigt'];
+      stapel[id] = l.sort(() => Math.random() - 0.5);
+      if (stapel[id][0] === zuletzt[id] && stapel[id].length > 1) stapel[id].push(stapel[id].shift());
+    }
+    const x = stapel[id].shift(); zuletzt[id] = x; return x;
   }
   function zeigeKurz(anim, dauer) {
     const h = app.querySelector('[data-held]'); const id = S.wahl;
@@ -228,11 +233,7 @@
     h.dataset.macht = '1'; h.innerHTML = bild(id, anim, 320);
     setTimeout(() => { if (!h.isConnected || S.wahl !== id) return; h.innerHTML = bild(id, RUHE[id] || 'ruhezustand-3', 320); delete h.dataset.macht; }, dauer);
   }
-  app.addEventListener('mouseover', (e) => {
-    const h = e.target.closest('[data-held]'); if (!h) return;
-    const n = Number(h.dataset.mal || 0); h.dataset.mal = n + 1;
-    zeigeKurz(n % 2 ? eigenes(S.wahl) : 'winkt', n % 2 ? 3400 : 2300);
-  });
+
 
   async function laden() {
     [S.apps, S.zuletzt, S.version] = await Promise.all([N.apps(), N.zuletzt(), N.version()]);
@@ -246,5 +247,14 @@
   setTimeout(() => { if (!document.querySelector('.schleier')) N.standFoto?.('startfenster'); }, 3000);
   setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
   // Zwischendurch macht der gewählte Vogel von selbst etwas
-  setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 9000);
+  setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 6500);
+  // Auch die kleinen Vögel links machen ab und zu etwas – immer nur einer
+  setInterval(() => {
+    if (document.hidden) return;
+    const ids = S.apps.map((x) => x.id).filter((id) => window.VOEGEL?.[id]);
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    const ik = app.querySelector(`.zeile[data-wahl="${id}"] .ikon`); if (!ik || ik.dataset.macht) return;
+    ik.dataset.macht = '1'; ik.innerHTML = bild(id, eigenes(`klein-${id}`.replace('klein-', '')) , 44);
+    setTimeout(() => { if (ik.isConnected) { ik.innerHTML = bild(id, RUHE[id] || 'ruhezustand-3', 44); delete ik.dataset.macht; } }, 3400);
+  }, 4200);
 })();

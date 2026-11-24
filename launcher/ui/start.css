@@ -140,3 +140,16 @@ header .ver{margin-right:6px}
 .weiter .datei{box-shadow:0 0 0 1px #e8e1d3,0 10px 20px -14px rgba(29,39,66,.4)!important}
 .weiter .leer{color:#7a7f8e}
 .buehne{background:color-mix(in srgb,var(--hell) 45%,#f6f2ea)!important;transition:background-color .4s}
+/* Updates: ruhig, Öffnen bleibt der Hauptknopf */
+.upd-hinweis{display:inline-flex;align-items:center;gap:10px;align-self:flex-start;margin-top:4px;padding:8px 8px 8px 12px;border:0;border-radius:12px;background:#fffdf8;box-shadow:0 0 0 1px #e8e1d3;font:600 13.5px 'Bricolage Grotesque',sans-serif;color:#1d2742;cursor:pointer}
+.upd-hinweis i{width:8px;height:8px;border-radius:50%;background:var(--farbe);box-shadow:0 0 0 4px color-mix(in srgb,var(--farbe) 18%,transparent)}
+.upd-hinweis b{padding:5px 10px;border-radius:8px;background:color-mix(in srgb,var(--hell) 70%,#fff);color:var(--dunkel);font-weight:700}
+.upd-hinweis b:empty{display:none}
+.upd-hinweis:hover:not(:disabled) b{background:var(--farbe);color:#fff}
+.upd-hinweis:disabled{cursor:default;opacity:.85}
+.marke-neu{font:800 10px 'Bricolage Grotesque',sans-serif;letter-spacing:.06em;color:#14472b;background:#7dd3a0;border-radius:6px;padding:3px 6px}
+.status.upd{display:flex;align-items:center;gap:8px;background:rgba(125,211,160,.12);color:#d9f3e3;font-weight:600}
+.status.upd span{flex:1}
+.status.upd b{font:700 12px 'Bricolage Grotesque',sans-serif;background:#7dd3a0;color:#14472b;border-radius:7px;padding:4px 9px}
+.status.upd:hover b{background:#9be3b6}
+.held-vogel,.zeile .ikon svg{pointer-events:none}
