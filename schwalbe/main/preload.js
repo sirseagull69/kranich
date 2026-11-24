@@ -11,5 +11,6 @@ contextBridge.exposeInMainWorld('SCH', {
   albatros: { liste: rufe('albatros:liste'), tabelle: rufe('albatros:tabelle'), oeffnen: rufe('albatros:oeffnen') },
   linkOeffnen: rufe('link:oeffnen'),
   pfadVon: (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } },
+  beimRechtschreiben: (cb) => ipcRenderer.on('rechtschreibung:frage', (_e, w) => cb(w)),
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, o) => cb(o)),
 });

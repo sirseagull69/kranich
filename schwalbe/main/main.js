@@ -12,6 +12,10 @@ const Hirn = require('../kern/hirn');
 const Eingebaut = require('../kern/eingebaut');
 const A = require('../kern/assistent');
 
+// Rechtschreibung: Unter Windows nimmt Chromium sonst die Windows-Prüfung – die kennt Deutsch oft nicht
+// (dann ist „Kündigung“ falsch und es gibt keine Vorschläge). Mit Hunspell lädt sie das deutsche Wörterbuch selbst.
+if (process.platform === 'win32') app.commandLine.appendSwitch('disable-features', 'WinUseBrowserSpellChecker');
+
 let fenster = null;
 let dokumente = null;
 let einstellungen = null;
@@ -119,13 +123,14 @@ function oeffneFenster() {
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: true },
   });
-  try { fenster.webContents.session.setSpellCheckerLanguages?.(['de-DE', 'en-US']); } catch { /* macOS nimmt die Systemsprache */ }
+  try { fenster.webContents.session.setSpellCheckerLanguages?.(['de-DE']); } catch { /* macOS nimmt die Systemsprache */ }
   // Rechtsklick: Rechtschreibvorschläge, Wörterbuch, Ausschneiden/Kopieren/Einfügen
   fenster.webContents.on('context-menu', (_e, p) => {
     const vorlage = [];
     if (p.misspelledWord) {
       for (const v of p.dictionarySuggestions.slice(0, 6)) vorlage.push({ label: v, click: () => fenster.webContents.replaceMisspelling(v) });
-      if (!p.dictionarySuggestions.length) vorlage.push({ label: 'Keine Vorschläge', enabled: false });
+      if (!p.dictionarySuggestions.length) vorlage.push({ label: 'Keine Vorschläge im Wörterbuch', enabled: false });
+      vorlage.push({ label: 'Von der Schwalbe korrigieren lassen', click: () => fenster.webContents.send('rechtschreibung:frage', p.misspelledWord) });
       vorlage.push({ type: 'separator' }, { label: `„${p.misspelledWord}“ ins Wörterbuch`, click: () => fenster.webContents.session.addWordToSpellCheckerDictionary(p.misspelledWord) }, { type: 'separator' });
     }
     if (p.isEditable) vorlage.push({ label: 'Ausschneiden', role: 'cut', enabled: p.editFlags.canCut }, { label: 'Kopieren', role: 'copy', enabled: p.editFlags.canCopy }, { label: 'Einfügen', role: 'paste', enabled: p.editFlags.canPaste }, { type: 'separator' }, { label: 'Alles markieren', role: 'selectAll' });

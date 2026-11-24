@@ -1019,6 +1019,11 @@
     if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id);
   });
   window.addEventListener('focus', () => { if (S.ansicht === 'dokument' && blatt()?.querySelector('table[data-quelle]')) liveAktualisieren(); });
+  A.beimRechtschreiben?.((wort) => {
+    if (S.ansicht !== 'dokument') return;
+    const sel = getSelection(); if (sel.rangeCount && inBlatt(sel.anchorNode)) S.bereich = sel.getRangeAt(0).cloneRange();
+    frageSchwalbe(`Korrigiere die Rechtschreibung des Wortes „${wort}“ im markierten Text (nur dieses Wort, sonst nichts ändern).`, `„${wort}“ korrigieren`);
+  });
   A.beimOeffnen(async (o) => { if (o.id) oeffne(o.id); else if (o.datei) { const r = await A.datei.importieren(o.datei); if (!r?.fehler) oeffne(r.id); } });
   window.SchwalbeTest = { saeubern, bloecke };
 
