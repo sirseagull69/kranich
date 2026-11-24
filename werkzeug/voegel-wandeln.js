@@ -49,9 +49,9 @@ const VOEGEL = {
     // Schwalbe fürs Schreiben: Gabelschwanz, Sichelflügel mit dunkler Spitze, rostrote Kehle, kurzer Schnabel.
     kiel: true,
     basis: { schwanz: '20,62 -4,46 32,59', koerper: '20,62 70,64 50,46', fluegel: '34,54 62,53 12,14', hals: '66,64 79,42 75,62', kopf: '79,42 95,46 80,52', bein: '36,64 52,64 46,79' },
-    extras: [{ nach: 'schwanz', punkte: '20,62 -2,78 30,62', farbe: '#2c5aa0' }, { nach: 'hals', punkte: '68,62 79,44 77,61', farbe: '#c4502a' }, { nach: 'kopf', punkte: '94,45 99,47 94,48', farbe: '#1d2742' }],
+    extras: [{ nach: 'schwanz', punkte: '20,62 -2,78 30,62', farbe: '#2c5aa0' }, { nach: 'kopf', punkte: '93,44.6 99.5,46.8 93,48', farbe: '#1d2742' }, { nach: 'kopf', punkte: '83.5,44 86,44 85,46', farbe: '#ffffff' }],
     farben: { '#c2410c': '#1e3f75', '#ff8a4c': '#2c5aa0', '#ffc9a8': '#b9cdf0', '#2d1a10': '#1d2742', '#e8590c': '#2c5aa0', '#fff0e6': '#eaf0fb', '#7a3a1c': '#173360' },
-    rolleFarbe: { schwanz: '#1e3f75', koerper: '#eef3fb', fluegel: '#2c5aa0', hals: '#1e3f75', kopf: '#1e3f75', bein: '#1e3f75' },
+    rolleFarbe: { schwanz: '#1e3f75', koerper: '#eef3fb', fluegel: '#2c5aa0', hals: '#c4502a', kopf: '#1e3f75', bein: '#1e3f75' },
   },
 
 };
