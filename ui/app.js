@@ -374,6 +374,7 @@
         <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
       </header>
       <div class="wb-raster">
+        <div class="oo-sitzvogel" aria-hidden="true">${figur('ruhend', 84)}</div>
         <aside class="kl-blatt wb-links">
           <button type="button" class="wb-neu" data-aktion="board-dazu">${sym('plus', 16, 2.4)}<span>Board hinzufügen</span></button>
           <nav class="seitenleiste sk-mitte" aria-label="Boards und Ebenen"></nav>
@@ -532,7 +533,7 @@
         <button type="button" class="btn btn-s btn-p" data-aktion="varianten-zeigen">Ansehen</button><button type="button" class="btn btn-s btn-q" data-aktion="fertig-weg">Später</button></div>`;
     } else if (!s.html && S.projekt.seiten.length === 1) {
       html = `<div class="mitte"><div class="paper leerkarte"><div class="leerbild vf">${figur('ruhend', 96)}</div><h2 class="h">Beschreib, was du willst</h2>
-        <span class="leise">Schreib rechts an Kranich oder zieh ein Bild hier rein. Zum Beispiel:</span>
+        <span class="leise">Schreib links an Kranich oder zieh ein Bild hier rein. Zum Beispiel:</span>
         <div class="vorschlaege">${['Login-Seite', 'Einstellungen', 'Startseite für eine App'].map((t) => `<button type="button" class="btn btn-s" data-aktion="vorschlag" data-text="${t}">${t}</button>`).join('')}<button type="button" class="btn btn-s" data-aktion="anhang">${sym('klammer', 14)} Aus einem Screenshot</button></div>
         <span class="hand" style="font-size:20px">ich warte hier ganz ruhig</span>${eselsohr(36, '#ffffff')}</div></div>`;
     }

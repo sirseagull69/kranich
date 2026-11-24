@@ -377,7 +377,8 @@ function registriere() {
 function oeffneFenster() {
   fenster = new BrowserWindow({
     width: 1440, height: 900, minWidth: 1100, minHeight: 700,
-    title: 'Kranich', backgroundColor: '#f6f1e7',
+    title: 'Kranich', backgroundColor: '#6a4fc7',
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#6a4fc7', symbolColor: '#ffffff', height: 46 },
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
