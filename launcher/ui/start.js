@@ -100,7 +100,7 @@
       </nav>
       <main class="buehne" style="--farbe:${k.farbe};--mittel:${k.mittel};--dunkel:${k.dunkel};--hell:${k.hell}">
         ${huegel(k)}
-        <div class="oben"><div class="ori-ecke"><div class="ori-blase"><small>${esc(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}</small><span class="ori-satz">${esc(oriSpruch(a.id))}</span></div><span class="ori-mini">${bild('origami', 'sassy', 56)}</span></div></div>
+        <div class="oben"><div class="ori-ecke"><div class="ori-blase"><small>${esc(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}</small><span class="ori-satz">${esc(S.spruch?.[a.id] || (S.spruch = { ...S.spruch, [a.id]: oriSpruch(a.id) })[a.id])}</span></div><span class="ori-mini">${bild('origami', 'sassy', 56)}</span></div></div>
         <div class="held">
           <div class="held-text">
             <span class="rolle">${esc(k.rolle.toUpperCase())}</span>
@@ -203,10 +203,10 @@
 
   async function aktualisiere(id) {
     if (S.laedt[id] != null) return;
-    S.laedt[id] = 0; render();
+    S.laedt[id] = 0; zeigeFortschritt(id);
     const r = await N.updateLaden(id);
     if (r?.fehler) { delete S.laedt[id]; render(); meldung(r.fehler); return; }
-    S.laedt[id] = 100; render();
+    S.laedt[id] = 100; zeigeFortschritt(id);
     meldung(r.mac ? 'Download fertig – zieh das Programm in den Programme-Ordner.' : id === 'start' ? 'Wird installiert, das Startfenster geht gleich neu auf.' : 'Wird installiert … (falls es offen ist: vorher schließen)');
     if (id !== 'start') { setTimeout(async () => { delete S.laedt[id]; await laden(); }, 10000); setTimeout(() => laden(), 30000); }
   }
@@ -258,20 +258,36 @@
   }
 
 
+  // Nur neu zeichnen, wenn sich wirklich etwas geändert hat – sonst springen Vogel und Spruch
+  let zuletztGezeichnet = '';
+  function renderWennNoetig() {
+    const fp = JSON.stringify([S.wahl, S.apps, S.zuletzt, S.version, S.updates, S.laedt]);
+    if (fp === zuletztGezeichnet) return;
+    zuletztGezeichnet = fp; render();
+  }
   async function laden() {
     [S.apps, S.zuletzt, S.version] = await Promise.all([N.apps(), N.zuletzt(), N.version()]);
-    render();
+    renderWennNoetig();
     const u = await N.updates();
-    if (u && !u.fehler) { S.updates = u; render(); }
+    if (u && !u.fehler) { S.updates = u; renderWennNoetig(); }
   }
-  N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; const b = app.querySelector('.los'); if (id === S.wahl && b) b.textContent = pct >= 100 ? 'Wird installiert …' : `Lädt ${pct} %`; else if (id === 'start') render(); });
+  function zeigeFortschritt(id) {
+    const pct = S.laedt[id]; const text = pct == null ? null : pct >= 100 ? 'Wird installiert …' : `Lädt ${pct} %`;
+    if (id === S.wahl && text) {
+      const h = app.querySelector('.upd-hinweis'); if (h) { h.disabled = true; h.querySelector('span').textContent = text; const b = h.querySelector('b'); if (b) b.textContent = ''; }
+      const l = app.querySelector('.los'); if (l && l.dataset.los === 'update') { l.disabled = true; l.textContent = text; }
+    }
+    const st = app.querySelector('.status.upd span'); if (st && text) st.textContent = id === 'start' ? `Startfenster: ${text}` : text;
+    const z = app.querySelector(`.zeile[data-wahl="${id}"] .marke-neu`); if (z && text) z.textContent = pct >= 100 ? '…' : `${pct}%`;
+  }
+  N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; zeigeFortschritt(id); });
   laden();
   setTimeout(() => document.body.classList.add('ruhig'), 2000);
   setTimeout(() => { if (!document.querySelector('.schleier')) N.standFoto?.('startfenster'); }, 3000);
-  setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
+  setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) renderWennNoetig(); } }, 5 * 60 * 1000);
   // Zwischendurch macht der gewählte Vogel von selbst etwas
   setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 6500);
-  setInterval(() => { const sz = app.querySelector('.ori-satz'); if (sz && !document.hidden) { sz.classList.add('weg'); setTimeout(() => { sz.textContent = oriSpruch(S.wahl); sz.classList.remove('weg'); }, 300); } }, 15000);
+  setInterval(() => { const sz = app.querySelector('.ori-satz'); if (sz && !document.hidden) { sz.classList.add('weg'); setTimeout(() => { S.spruch = { ...S.spruch, [S.wahl]: oriSpruch(S.wahl) }; sz.textContent = S.spruch[S.wahl]; sz.classList.remove('weg'); }, 300); } }, 15000);
   // Auch die kleinen Vögel links machen ab und zu etwas – immer nur einer
   setInterval(() => {
     if (document.hidden) return;
