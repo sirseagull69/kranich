@@ -382,6 +382,9 @@ function registriere() {
     const erg = await require('../kern/pptx').pptxLesen(fs.readFileSync(r.filePaths[0]));
     return { name: path.basename(r.filePaths[0]).replace(/\.pptx$/i, ''), ...erg };
   });
+  const alba = new (require('../kern/albatros').Albatros)(app.getPath('appData'));
+  handle('albatros:liste', () => alba.liste());
+  handle('albatros:tabelle', ({ id, blatt }) => alba.blatt(id, Number(blatt) || 0));
   handle('fenster:vollbild', (an) => { fenster?.setFullScreen(Boolean(an)); return true; });
 
   handle('export:bild', async ({ dataUrl, format, ziel, app: appName, ordner, name, breite, hoehe }) => {

@@ -6,6 +6,7 @@ const rufe = (kanal) => (...args) => ipcRenderer.invoke(kanal, ...args);
 contextBridge.exposeInMainWorld('kranich', {
   standFoto: rufe('stand:foto'),
   vollbild: rufe('fenster:vollbild'),
+  albatros: { liste: rufe('albatros:liste'), tabelle: rufe('albatros:tabelle') },
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, id) => cb(id)),
   projekte: {
     liste: rufe('projekte:liste'),

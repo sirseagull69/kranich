@@ -99,8 +99,8 @@
           const ml = parseInt(k.style?.marginLeft, 10); if (ml > 0) st.push(`margin-left:${Math.min(ml, 400)}px`);
           if (st.length) attr = ` style="${st.join(';')}"`;
         }
-        if (neu === 'td' || neu === 'th') { const cs = parseInt(k.getAttribute('colspan'), 10); if (cs > 1) attr += ` colspan="${Math.min(cs, 20)}"`; }
-        if (neu === 'table') { s += `<table>${raus(k)}</table>`; return; }
+        if (neu === 'td' || neu === 'th') { const cs = parseInt(k.getAttribute('colspan'), 10); if (cs > 1) attr += ` colspan="${Math.min(cs, 20)}"`; if (/^(right|center)$/.test(k.style?.textAlign || '')) attr += ` style="text-align:${k.style.textAlign}"`; }
+        if (neu === 'table') { const q = k.dataset.quelle || ''; s += /^albatros:[a-z0-9-]{6,40}:\d{1,3}$/.test(q) ? `<table data-quelle="${q}" data-quelle-name="${esc((k.dataset.quelleName || '').slice(0, 120))}" contenteditable="false">${raus(k)}</table>` : `<table>${raus(k)}</table>`; return; }
         const inhalt = raus(k);
         s += `<${neu}${attr}>${neu === 'td' || neu === 'th' ? (inhalt || '<br>') : inhalt}</${neu}>`;
       });
@@ -256,7 +256,7 @@
   function wz2(akt, inhalt, titel, aus) { return `<button type="button" class="wz" data-aktion="${akt}" title="${esc(titel)}" aria-label="${esc(titel)}"${aus ? ' disabled' : ''}>${inhalt}</button>`; }
   function leiste() {
     const r = S.reiter || 'start';
-    if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 17)} Tabelle`, 'Tabelle einfügen')}${wa('bild', `${sym('bild', 17)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 17)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 17)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 17)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 17)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 17)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
+    if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 17)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 17)} Aus Albatros`, 'Tabelle aus Albatros einfügen – bleibt live und rechnet mit')}${wa('bild', `${sym('bild', 17)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 17)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 17)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 17)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 17)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 17)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
     if (r === 'pruefen') {
       const n = blatt() ? Pruefen.alle(blatt()).length : 0;
       return `${wa('kommentar', `${sym('kommentar', 17)} Kommentar`, 'Kommentar zur Markierung (Strg+Alt+M)')}${TZ}
@@ -347,6 +347,7 @@
       else if (ev.dataTransfer?.files?.length) ev.preventDefault();
     });
     s.addEventListener('click', (ev) => {
+      S.live = ev.target.closest('table[data-quelle]') || null; if (S.live) zeigeSchwebe();
       const img = ev.target.closest('img');
       app.querySelectorAll('.seite img.gewaehlt').forEach((x) => x !== img && x.classList.remove('gewaehlt'));
       if (img) { img.classList.add('gewaehlt'); S.bild = img; zeigeSchwebe(); }
@@ -373,6 +374,7 @@
     app.querySelector('.schreibtisch').addEventListener('scroll', zeigeSchwebe, { passive: true });
     document.addEventListener('selectionchange', auswahlGeaendert);
     zeichneHelfer(); zaehle(); gliederung(); kopfFussZeigen(); inhaltAktualisieren(); auswahlGeaendert(); zeichneKommentare();
+    if (s.querySelector('table[data-quelle]')) liveAktualisieren();
     // Neues, leeres Dokument: Schreibmarke in den ersten Absatz nach der Überschrift (nicht die Überschrift markieren)
     if (!s.textContent.trim() || s.textContent.trim() === 'Neues Dokument') {
       let ziel = s.querySelector('h1 + p') || s.querySelector('p');
@@ -442,9 +444,12 @@
   function zeigeSchwebe() {
     const sl = app.querySelector('.schwebeleiste'); if (!sl) return;
     const z = aktZelle(); const img = S.bild && S.bild.isConnected && S.bild.classList.contains('gewaehlt') ? S.bild : null;
-    const ziel = img || z?.closest('table');
+    const live = !img && S.live?.isConnected ? S.live : null;
+    const ziel = img || live || z?.closest('table');
     if (!ziel) { sl.hidden = true; return; }
-    sl.innerHTML = img
+    sl.innerHTML = live
+      ? `<span class="sl-titel">Live aus Albatros</span><span class="sl-live">${esc(live.dataset.quelleName || '')}</span><button type="button" data-aktion="live-neu">Aktualisieren</button><button type="button" data-aktion="live-oeffnen">In Albatros öffnen</button><button type="button" data-aktion="live-loesen">Verknüpfung lösen</button><button type="button" data-aktion="live-weg" class="rot">Löschen</button>`
+      : img
       ? `<span class="sl-titel">Bild</span><button type="button" data-aktion="bild-groesse" data-d="-0.15">${sym('minus', 15)} Kleiner</button><button type="button" data-aktion="bild-groesse" data-d="0.15">${sym('plus', 15)} Größer</button><span class="tz"></span><button type="button" data-aktion="bild-aus" data-a="left">${sym('links2', 15)}</button><button type="button" data-aktion="bild-aus" data-a="center">${sym('mitte', 15)}</button><button type="button" data-aktion="bild-aus" data-a="right">${sym('rechts', 15)}</button><span class="tz"></span><button type="button" data-aktion="bild-weg" class="rot">${sym('muell', 15)} Löschen</button>`
       : `<span class="sl-titel">Tabelle</span><button type="button" data-aktion="tab" data-w="zeile-oben">Zeile ↑</button><button type="button" data-aktion="tab" data-w="zeile-unten">Zeile ↓</button><button type="button" data-aktion="tab" data-w="spalte-links">Spalte ←</button><button type="button" data-aktion="tab" data-w="spalte-rechts">Spalte →</button><span class="tz"></span><button type="button" data-aktion="tab" data-w="kopf">Kopfzeile</button><span class="tz"></span><button type="button" data-aktion="tab" data-w="weg-zeile" class="rot">− Zeile</button><button type="button" data-aktion="tab" data-w="weg-spalte" class="rot">− Spalte</button><button type="button" data-aktion="tab" data-w="weg" class="rot">${sym('muell', 15)}</button>`;
     const karte = app.querySelector('.oo-karte').getBoundingClientRect(); const r = ziel.getBoundingClientRect();
@@ -745,6 +750,46 @@
   ] });
 
   // ---------- Aktionen ----------
+  // ---------- Live-Tabellen aus Albatros ----------
+  async function liveAktualisieren(nurDiese) {
+    const s = blatt(); if (!s) return 0;
+    let n = 0;
+    for (const t of nurDiese ? [nurDiese] : s.querySelectorAll('table[data-quelle]')) {
+      const [, id, nr] = t.dataset.quelle.split(':');
+      const r = await A.albatros.tabelle({ id, blatt: Number(nr) });
+      if (r?.fehler) { t.classList.add('live-fehlt'); t.title = r.fehler.nachricht; continue; }
+      t.classList.remove('live-fehlt'); t.title = `Live aus Albatros: ${r.name} · ${r.blatt}`;
+      const name = `${r.name} · ${r.blatt}`;
+      if (t.innerHTML.replace(/\s+/g, '') !== r.html.replace(/\s+/g, '')) { t.innerHTML = r.html; n++; }
+      t.dataset.quelleName = name;
+    }
+    if (n) geaendert();
+    return n;
+  }
+  async function albatrosWaehlen() {
+    const liste = await A.albatros.liste();
+    if (liste?.fehler || !liste?.length) { meldung('Keine Albatros-Tabellen gefunden. Erst in Albatros eine Tabelle anlegen.'); return; }
+    bereichZurueck(); const merkBereich = S.bereich;
+    const w = document.createElement('div'); w.className = 'schleier';
+    w.innerHTML = `<div class="fenster" role="dialog" aria-modal="true" aria-label="Tabelle aus Albatros" style="width:min(560px,94vw)"><div class="reihe"><h2 class="h" style="flex:1">Tabelle aus Albatros</h2><button type="button" class="rund" data-zu aria-label="Schließen">✕</button></div>
+      <p class="leise" style="margin:4px 0 12px">Die Tabelle bleibt mit Albatros verbunden: Änderst du dort Zahlen, stehen sie beim nächsten Öffnen auch hier.</p>
+      <div class="alb-liste">${liste.map((t, i) => `<label class="alb-t"><input type="radio" name="alb" value="${esc(t.id)}" ${i ? '' : 'checked'}><span><b>${esc(t.name)}</b><small>${esc(wann(t.geaendert))}</small></span>${t.blaetter.length > 1 ? `<select data-blatt="${esc(t.id)}">${t.blaetter.map((b, k) => `<option value="${k}">${esc(b)}</option>`).join('')}</select>` : ''}</label>`).join('')}</div>
+      <div class="reihe" style="justify-content:flex-end;margin-top:14px"><button type="button" class="btn weiss" data-zu>Abbrechen</button><button type="button" class="btn" data-ja>Einfügen</button></div></div>`;
+    document.body.appendChild(w);
+    w.addEventListener('click', async (ev) => {
+      if (ev.target === w || ev.target.closest('[data-zu]')) { w.remove(); return; }
+      if (!ev.target.closest('[data-ja]')) return;
+      const id = w.querySelector('input[name=alb]:checked')?.value; if (!id) return;
+      const nr = Number(w.querySelector(`select[data-blatt="${CSS.escape(id)}"]`)?.value || 0);
+      const r = await A.albatros.tabelle({ id, blatt: nr });
+      if (r?.fehler) { meldung(r.fehler.nachricht); return; }
+      w.remove();
+      S.bereich = merkBereich; bereichZurueck();
+      Pruefen.htmlEinfuegen(blatt(), `<table data-quelle="albatros:${id}:${nr}" data-quelle-name="${esc(`${r.name} · ${r.blatt}`)}" contenteditable="false">${r.html}</table><p><br></p>`);
+      geaendert(); meldung('Live-Tabelle eingefügt.');
+    });
+  }
+
   // ---------- Kommentare ----------
   const komAnker = (id) => [...(blatt()?.querySelectorAll(`span.kom[data-kom="${CSS.escape(id)}"]`) || [])];
   function zeichneKommentare() {
@@ -836,6 +881,11 @@
       frageSchwalbe(`Schreib mir dazu einen vollständigen ersten Entwurf als ganzes Dokument: ${w}`, w);
     },
     importieren: async () => { const r = await A.datei.importieren(); if (r?.abgebrochen) return; if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id); },
+    albatros: () => albatrosWaehlen(),
+    'live-neu': async () => { const n = await liveAktualisieren(S.live); meldung(n ? 'Tabelle aktualisiert.' : 'Schon aktuell.'); zeigeSchwebe(); },
+    'live-oeffnen': () => { const [, id] = (S.live?.dataset.quelle || '').split(':'); if (id) A.albatros.oeffnen(id); },
+    'live-loesen': () => { if (!S.live) return; S.live.removeAttribute('data-quelle'); S.live.removeAttribute('data-quelle-name'); S.live.removeAttribute('contenteditable'); S.live.classList.remove('live-fehlt'); S.live = null; geaendert(); zeigeSchwebe(); meldung('Verknüpfung gelöst – die Tabelle kannst du jetzt frei bearbeiten.'); },
+    'live-weg': () => { if (!S.live) return; S.live.remove(); S.live = null; geaendert(); zeigeSchwebe(); },
     kommentar: () => {
       bereichZurueck();
       const sel = getSelection(); if (!sel.rangeCount || !inBlatt(sel.anchorNode)) { meldung('Erst Text markieren, dann Kommentar.'); return; }
@@ -910,6 +960,7 @@
     const p = A.pfadVon(f); if (!/\.(docx|txt|md)$/i.test(p)) return meldung('Nur .docx oder .txt.');
     const r = await A.datei.importieren(p); if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id);
   });
+  window.addEventListener('focus', () => { if (S.ansicht === 'dokument' && blatt()?.querySelector('table[data-quelle]')) liveAktualisieren(); });
   A.beimOeffnen(async (o) => { if (o.id) oeffne(o.id); else if (o.datei) { const r = await A.datei.importieren(o.datei); if (!r?.fehler) oeffne(r.id); } });
   window.SchwalbeTest = { saeubern, bloecke };
 

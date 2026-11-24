@@ -5,6 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const fs = require('node:fs');
 const { Dokumente } = require('../kern/dokumente');
+const { Albatros } = require('../kern/albatros');
 const { docxSchreiben, docxLesen } = require('../kern/docx');
 const { Einstellungen } = require('../kern/einstellungen');
 const Hirn = require('../kern/hirn');
@@ -42,6 +43,14 @@ async function druckFenster(html) {
 
 function registriere() {
   handle('dok:liste', () => dokumente.liste());
+  const alba = new Albatros(app.getPath('appData'));
+  handle('albatros:liste', () => alba.liste());
+  handle('albatros:tabelle', ({ id, blatt }) => alba.html(id, Number(blatt) || 0));
+  handle('albatros:oeffnen', (id) => {
+    const exe = process.platform === 'win32' ? path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Albatros', 'Albatros.exe') : '';
+    if (exe && fs.existsSync(exe)) { require('node:child_process').spawn(exe, [`--oeffne=${id}`], { detached: true, stdio: 'ignore' }).unref(); return true; }
+    throw new Error('Albatros ist auf diesem PC nicht installiert.');
+  });
   handle('system:name', () => { try { const n = os.userInfo().username || ''; return n.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); } catch { return ''; } });
   handle('dok:neu', (name, html) => dokumente.neu(name, html));
   handle('dok:lesen', (id) => dokumente.lesen(id));

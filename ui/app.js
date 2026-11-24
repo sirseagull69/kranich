@@ -309,6 +309,7 @@
     await Bild.lade(p, (datei) => K.projekte.dateiLesen(p.id, datei));
     S.ansicht = 'werkbank';
     renderWerkbank();
+    if (p.seiten?.some((x) => /data-quelle="albatros:/.test(x.html || ''))) liveAktualisieren();
   }
 
   async function neuesProjekt(art, { wunsch, anhang, format, app: appName } = {}) {
@@ -349,7 +350,8 @@
       <div class="mehrmenue paper" hidden>${eintraege.map(([a, ic, t, aus]) => `<button type="button" data-aktion="${a}" ${aus ? 'disabled' : ''}>${sym(ic, 16)} ${t}</button>`).join('')}</div></div>`;
   }
 
-  function praesentieren(ab) {
+  async function praesentieren(ab) {
+    await liveAktualisieren();
     const alle = S.projekt.seiten.filter((x) => x.html);
     if (!alle.length) { H.meldung('Noch keine Folie mit Inhalt.'); return; }
     const start = ab === 'aktuell' ? Math.max(0, alle.indexOf(seite())) : 0;
@@ -386,12 +388,63 @@
     H.meldung(`${r.folien.length} Folien aus „${r.name}“ übernommen.`);
   }
 
+  // ---------- Live-Tabellen aus Albatros ----------
+  function albatrosTabelle(r, breite) {
+    const gr = Math.max(12, Math.round(breite / 70));
+    const kopf = r.zeilen[0]?.every((c) => !c.text || c.fett) && r.zeilen.length > 1;
+    const zelle = (c, i) => `<td style="padding:${Math.round(gr * 0.45)}px ${Math.round(gr * 0.8)}px;border-bottom:1px solid #e3dccd;${c.rechts ? 'text-align:right;font-variant-numeric:tabular-nums;' : ''}${c.fett || (kopf && i === 0) ? 'font-weight:700;' : ''}${kopf && i === 0 ? 'background:#dcf0e3;color:#1d5e3a;' : c.farbe ? `background:${c.farbe};` : ''}">${esc(c.text)}</td>`;
+    return `<table style="border-collapse:collapse;width:100%;font:${gr}px/1.35 'Segoe UI',Arial,sans-serif;color:#1d2742;background:#fff">${r.zeilen.map((z, i) => `<tr>${z.map((c) => zelle(c, i)).join('')}</tr>`).join('')}</table>`;
+  }
+  async function liveAktualisieren() {
+    let n = 0;
+    for (const sx of S.projekt?.seiten || []) {
+      if (!/data-quelle="albatros:/.test(sx.html || '')) continue;
+      const doc = new DOMParser().parseFromString(sx.html, 'text/html');
+      let geaendertJa = false;
+      for (const el of doc.querySelectorAll('[data-quelle^="albatros:"]')) {
+        const [, id, nr] = el.dataset.quelle.split(':');
+        const r = await K.albatros.tabelle({ id, blatt: Number(nr) }); if (r?.fehler) continue;
+        const neu = albatrosTabelle(r, sx.breite);
+        if (el.innerHTML !== neu) { el.innerHTML = neu; geaendertJa = true; }
+      }
+      if (geaendertJa) { sx.html = `<!doctype html>\n${doc.documentElement.outerHTML}`; n++; }
+    }
+    if (n) { geaendert(); if (S.modus === 'entwurf') zeigeBoards(); }
+    return n;
+  }
+  async function albatrosEinfuegen() {
+    const liste = await K.albatros.liste();
+    if (liste?.fehler || !liste?.length) { H.meldung('Keine Albatros-Tabellen gefunden.'); return; }
+    const w = document.createElement('div'); w.className = 'schleier';
+    w.innerHTML = `<div class="dialog paper" role="dialog" aria-modal="true" style="width:min(520px,94vw);padding:20px;display:flex;flex-direction:column;gap:10px"><h2 class="h">Tabelle aus Albatros</h2><span class="leise" style="font-size:13.5px">Bleibt verbunden: neue Zahlen in Albatros stehen beim nächsten Öffnen und beim Präsentieren auch hier.</span>
+      ${liste.map((t, i) => `<label class="wg-board"><input type="radio" name="alb" value="${esc(t.id)}" ${i ? '' : 'checked'}><span>${esc(t.name)}</span>${t.blaetter.length > 1 ? `<select class="feld" data-blatt="${esc(t.id)}" style="width:auto">${t.blaetter.map((b, k) => `<option value="${k}">${esc(b)}</option>`).join('')}</select>` : ''}</label>`).join('')}
+      <div class="reihe" style="justify-content:flex-end;gap:8px"><button type="button" class="btn btn-q" data-zu>Abbrechen</button><button type="button" class="btn btn-p" data-ja>Einfügen</button></div></div>`;
+    document.body.appendChild(w);
+    w.addEventListener('click', async (ev) => {
+      if (ev.target === w || ev.target.closest('[data-zu]')) { w.remove(); return; }
+      if (!ev.target.closest('[data-ja]')) return;
+      const id = w.querySelector('input[name=alb]:checked')?.value; if (!id) return;
+      const nr = Number(w.querySelector(`select[data-blatt="${CSS.escape(id)}"]`)?.value || 0);
+      const r = await K.albatros.tabelle({ id, blatt: nr }); if (r?.fehler) { H.meldung(r.fehler.nachricht, { art: 'fehler' }); return; }
+      w.remove();
+      const sx = seite(); const breite = Math.round(sx.breite * 0.6);
+      const block = `<div data-name="Albatros: ${esc(r.name)}" data-quelle="albatros:${id}:${nr}" style="position:absolute;left:${Math.round((sx.breite - breite) / 2)}px;top:${Math.round(sx.hoehe * 0.3)}px;width:${breite}px;border-radius:12px;overflow:hidden;box-shadow:0 2px 14px rgba(29,39,66,.14)">${albatrosTabelle(r, sx.breite)}</div>`;
+      const doc = new DOMParser().parseFromString(sx.html || '<!doctype html><html><head><meta charset="utf-8"></head><body></body></html>', 'text/html');
+      if (getComputedStyle && doc.body && !/position\s*:\s*relative/.test(doc.body.getAttribute('style') || '')) doc.body.style.position = doc.body.style.position || 'relative';
+      doc.body.insertAdjacentHTML('beforeend', block);
+      sx.html = `<!doctype html>\n${doc.documentElement.outerHTML}`;
+      sx.verlauf = [...(sx.verlauf || []), { html: sx.html, wunsch: 'Tabelle aus Albatros' }]; sx.stand = sx.verlauf.length - 1;
+      geaendert(); zeigeBoards(); renderKopfKnoepfe();
+      H.meldung('Live-Tabelle eingefügt – mit der Maus verschieben wie jedes Element.');
+    });
+  }
+
   function kopfKnoepfe() {
     const kannZurueck = S.modus === 'bild' ? Bild.z.stand > 0 : (seite()?.stand || 0) > 0;
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     const leer = !seite()?.html;
     return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
-      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['pptx-speichern', 'export', 'Als PowerPoint speichern', leer], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
+      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['pptx-speichern', 'export', 'Als PowerPoint speichern', leer], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['albatros-tabelle', 'mischen', 'Tabelle aus Albatros (live)', leer && S.projekt?.seiten?.length < 1], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
       ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="praesentieren" ${S.projekt?.seiten?.some((x) => x.html) ? '' : 'disabled'} title="Präsentieren ab Folie 1 (F5) · ab dieser Folie: Umschalt+F5">${sym('senden', 16)} Präsentieren</button>`}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
@@ -1298,6 +1351,7 @@
     'master-logo': async () => { const b = await K.datei.bildWaehlen(); if (!b || b.fehler) return; (S.projekt.master ||= {}).logo = b.dataUrl; S.masterAuf = true; geaendert({ vorschau: false }); renderSeitenleiste(); },
     'master-logo-weg': () => { if (S.projekt.master) delete S.projekt.master.logo; S.masterAuf = true; geaendert({ vorschau: false }); renderSeitenleiste(); },
     'pptx-neu': () => pptxEinlesen(true),
+    'albatros-tabelle': () => albatrosEinfuegen(),
     'exportieren': () => Dialoge.exportieren({ projekt: S.projekt, modus: S.modus, seite: seite() }),
     // Bild
     'werkzeug': async (el) => {
