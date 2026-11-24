@@ -128,7 +128,7 @@
         ['bild', 'bild', 'Bild bearbeiten', 'Freistellen, zuschneiden & Co.', '#f3eefe'],
         ['ausbild', 'webseite', 'Aus Bild', 'Screenshot rein, Entwurf raus', '#e9e3fb'],
         ['entwurf', 'folien', 'Leeres Blatt', 'Format wählen und loslegen', '#f5f1fd'],
-        ['pptx', 'applaus', 'PowerPoint öffnen', 'Folien rein, bearbeiten, vortragen', '#efe9fd'],
+        ['pptx', 'applaus', 'PowerPoint öffnen', 'Klicken oder .pptx einfach aufs Fenster ziehen', '#efe9fd'],
       ];
       const IDEEN = [['Login-Seite für eine App', 'App-Bildschirm'], ['Post für die Bäckerei', 'Instagram-Post'], ['Einladung zum 40.', 'Karte A6'], ['Startseite für eine Fahrrad-App', 'Webseite']];
       const zuletzt = S.liste.slice(0, 6);
