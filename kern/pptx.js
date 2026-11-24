@@ -24,6 +24,18 @@ async function pptxSchreiben(folien, { titel = 'Präsentation' } = {}) {
     const z = Math.min(breiteZoll / f.breite, hoeheZoll / f.hoehe);
     const w = f.breite * z; const h = f.hoehe * z;
     s.addImage({ data: `image/png;base64,${f.png.toString('base64')}`, x: (breiteZoll - w) / 2, y: (hoeheZoll - h) / 2, w, h });
+    // Texte als echte Textfelder darüber
+    const zoll = w / f.breite; const pt = zoll * 72;
+    for (const t of f.texte || []) {
+      const teile = [];
+      for (const l of t.laeufe || []) {
+        if (l.umbruch) { if (teile.length) teile[teile.length - 1].options.breakLine = true; continue; }
+        if (!l.text) continue;
+        teile.push({ text: String(l.text), options: { fontSize: Math.max(4, Math.round(Number(l.groesse) * pt * 10) / 10), fontFace: String(l.schrift || 'Calibri').slice(0, 60), color: /^[0-9A-F]{6}$/i.test(l.farbe) ? l.farbe : '1D2742', bold: Boolean(l.fett), italic: Boolean(l.kursiv), underline: l.unter ? { style: 'sng' } : undefined } });
+      }
+      if (!teile.length) continue;
+      s.addText(teile, { x: (breiteZoll - w) / 2 + t.x * zoll, y: (hoeheZoll - h) / 2 + t.y * zoll, w: Math.max(0.1, t.w * zoll), h: Math.max(0.1, t.h * zoll), margin: 0, valign: 'top', align: t.ausr === 'justify' ? 'justify' : t.ausr, fit: 'none', wrap: !t.einzeilig, lineSpacingMultiple: Math.min(3, Math.max(0.7, Number(t.zeile) || 1.2)), paraSpaceBefore: 0, paraSpaceAfter: 0 });
+    }
     if (f.notiz) s.addNotes(String(f.notiz));
   }
   return p.write({ outputType: 'nodebuffer' });

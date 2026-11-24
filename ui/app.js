@@ -353,7 +353,7 @@
     const alle = S.projekt.seiten.filter((x) => x.html);
     if (!alle.length) { H.meldung('Noch keine Folie mit Inhalt.'); return; }
     const start = ab === 'aktuell' ? Math.max(0, alle.indexOf(seite())) : 0;
-    Praesentation.starten(alle, start, { titel: S.projekt.name });
+    Praesentation.starten(alle, start, { titel: S.projekt.name, master: S.projekt.master });
   }
 
   async function pptxEinlesen(neuAnlegen = false) {
@@ -553,7 +553,13 @@
       <div class="seitenlaschen">${liste}</div>
       ${S.modus === 'entwurf' && !S.projekt.app?.plan ? `<span class="sk-titel hand">Vortrag <small>Folie ${alle.indexOf(s) + 1}</small></span>
       <div class="vortragsfeld"><label for="vt-uebergang">Übergang zu dieser Folie</label><select id="vt-uebergang">${Praesentation.UEBERGAENGE.map(([k, t]) => `<option value="${k}" ${(s.uebergang || 'keiner') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>
-        <label for="vt-notiz">Notizen für dich (nur in der Referentenansicht)</label><textarea id="vt-notiz" placeholder="Was willst du dazu sagen?">${esc(s.notiz || '')}</textarea></div>` : ''}
+        <label for="vt-notiz">Notizen für dich (nur in der Referentenansicht)</label><textarea id="vt-notiz" placeholder="Was willst du dazu sagen?">${esc(s.notiz || '')}</textarea>
+        ${(() => { const el = S.auswahl?.k ? Entwurf.element(S.auswahl.k) : null; if (!el || el.localName === 'body') return '<span class="vt-tipp">Element anklicken, um ihm eine Animation zu geben.</span>'; const n = [...(el.ownerDocument.querySelectorAll('[data-anim]'))].length; return `<label for="vt-anim">Animation für „${esc(Entwurf.nameVon(el))}“</label><select id="vt-anim">${Praesentation.ANIMATIONEN.map(([k, t]) => `<option value="${k}" ${(el.dataset.anim || '') === k ? 'selected' : ''}>${t}</option>`).join('')}</select>${n ? `<span class="vt-tipp">${n} Animation${n === 1 ? '' : 'en'} auf dieser Folie – erscheinen der Reihe nach beim Weiterklicken.</span>` : ''}`; })()}
+        <details class="vt-master"${S.masterAuf ? ' open' : ''}><summary>Für alle Folien</summary>
+          <label for="vt-fuss">Fußzeile</label><input id="vt-fuss" value="${esc(S.projekt.master?.fuss || '')}" placeholder="z. B. Firma · Thema">
+          <label class="vt-haken"><input type="checkbox" id="vt-nummer" ${S.projekt.master?.nummer ? 'checked' : ''}> Foliennummer</label>
+          <div class="vt-logo">${S.projekt.master?.logo ? `<img src="${S.projekt.master.logo}" alt="Logo"><button type="button" class="btn btn-s btn-q" data-aktion="master-logo-weg">Logo entfernen</button>` : '<button type="button" class="btn btn-s" data-aktion="master-logo">Logo wählen</button>'}</div>
+          <span class="vt-tipp">Erscheint beim Präsentieren und in der PowerPoint.</span></details></div>` : ''}
       <span class="sk-titel hand">Ebenen <small>${esc(s.name)}</small></span>
       <div class="ebenen">${S.ebenen.length ? S.ebenen.map((e) => `<button type="button" aria-current="${S.auswahl?.k === e.k}" data-aktion="ebene" data-k="${e.k}" style="padding-left:${8 + e.tiefe * 14}px"><span>${esc(e.name)}</span><span class="loesch" role="button" tabindex="-1" title="Löschen (Entf)" aria-label="Ebene löschen" data-aktion="ebene-weg" data-k="${e.k}">${sym('muell', 13)}</span></button>`).join('') : '<span class="leise" style="font-size:13.5px;padding:2px 8px">Noch leer.</span>'}</div>
       ${S.modus === 'entwurf' ? Direkt.bausteinLeiste() : ''}
@@ -1283,11 +1289,14 @@
       const boards = S.projekt.seiten.filter((b) => b.html).map((b) => ({ name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, notiz: b.notiz || '' }));
       if (!boards.length) return;
       H.meldung('Kranich faltet die PowerPoint …', { dauer: 2500 });
-      const r = await K.export.pptx({ name: S.projekt.name, boards, ziel: 'speichern' });
+      const folien = await PptxExport.folien(boards.map((b, i) => ({ ...b, html: Praesentation.mitMaster(b.html, b, i + 1, boards.length, S.projekt.master) })));
+      const r = await K.export.pptx({ name: S.projekt.name, boards: folien, ziel: 'speichern' });
       if (r?.fehler) { H.meldung(r.fehler.nachricht, { art: 'fehler' }); return; }
       H.meldung(`Gespeichert: ${r.datei}`, { knopf: 'Im Ordner zeigen', aktion: () => K.datei.zeigen(r.datei), dauer: 9000 });
     },
     'pptx-oeffnen': () => pptxEinlesen(),
+    'master-logo': async () => { const b = await K.datei.bildWaehlen(); if (!b || b.fehler) return; (S.projekt.master ||= {}).logo = b.dataUrl; S.masterAuf = true; geaendert({ vorschau: false }); renderSeitenleiste(); },
+    'master-logo-weg': () => { if (S.projekt.master) delete S.projekt.master.logo; S.masterAuf = true; geaendert({ vorschau: false }); renderSeitenleiste(); },
     'pptx-neu': () => pptxEinlesen(true),
     'exportieren': () => Dialoge.exportieren({ projekt: S.projekt, modus: S.modus, seite: seite() }),
     // Bild
@@ -1330,8 +1339,16 @@
   // Vortrag: Notizen und Übergang je Folie
   app.addEventListener('input', (e) => {
     if (e.target.id === 'vt-notiz' && seite()) { seite().notiz = e.target.value; geaendert({ vorschau: false }); }
+    if (e.target.id === 'vt-fuss') { (S.projekt.master ||= {}).fuss = e.target.value.slice(0, 120); geaendert({ vorschau: false }); }
   });
   app.addEventListener('change', (e) => {
+    if (e.target.id === 'vt-anim') {
+      const a = Entwurf.aktiv(); const el = S.auswahl?.k ? Entwurf.element(S.auswahl.k) : null; if (!a || !el) return;
+      if (e.target.value) { if (!el.dataset.anim) el.dataset.animNr = String(Math.max(0, ...[...a.doc.querySelectorAll('[data-anim]')].map((x) => Number(x.dataset.animNr) || 0)) + 1); el.dataset.anim = e.target.value; }
+      else { delete el.dataset.anim; delete el.dataset.animNr; }
+      Entwurf.speichereDirekt(a.b, 'animation'); renderSeitenleiste(); return;
+    }
+    if (e.target.id === 'vt-nummer') { (S.projekt.master ||= {}).nummer = e.target.checked; geaendert({ vorschau: false }); return; }
     if (e.target.id === 'vt-uebergang' && seite()) { seite().uebergang = e.target.value === 'keiner' ? undefined : e.target.value; geaendert({ vorschau: false }); }
   });
   // Folien-Reihenfolge per Ziehen in der Board-Liste

@@ -568,7 +568,7 @@
         const boards = alle.filter((b) => w.gewaehlt.has(b.id)).map((b) => ({ id: b.id, name: b.name, html: b.html, breite: b.breite, hoehe: b.hoehe, zustand: b.zustand, notiz: b.notiz || '' }));
         const st = s.querySelector('.status'); st.textContent = 'Kranich faltet zusammen …';
         s.querySelector('[data-los]').disabled = true;
-        const r = w.art === 'pptx' ? await K.export.pptx({ name, boards, ziel: w.ziel, app: w.app, ordner: w.ordner }) : w.art === 'paket'
+        const r = w.art === 'pptx' ? await K.export.pptx({ name, boards: await PptxExport.folien(boards.map((b, i) => ({ ...b, html: Praesentation.mitMaster(b.html, b, i + 1, boards.length, p.master) }))), ziel: w.ziel, app: w.app, ordner: w.ordner }) : w.art === 'paket'
           ? await K.export.paket({ name, boards, css: p.app?.css || '', plan: p.app?.plan || null, ziel: w.ziel, app: w.app, ordner: w.ordner })
           : await K.export.sammlung({ name, boards, art: w.art, faktor: w.faktor, ziel: w.ziel, app: w.app, ordner: w.ordner });
         if (r?.fehler) { st.textContent = r.fehler.nachricht; s.querySelector('[data-los]').disabled = false; return; }

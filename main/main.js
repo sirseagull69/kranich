@@ -369,8 +369,9 @@ function registriere() {
     const basis = zielOrdner(ziel, appName, ordner);
     const folien = [];
     for (const b of boards.slice(0, 200)) {
-      const bild = await fotografiere(htmlFuerApp(b.html, { namenBehalten: true }), b.breite, b.hoehe, Math.min(2, 2400 / b.breite));
-      folien.push({ breite: b.breite, hoehe: b.hoehe, png: bild.toPNG(), notiz: b.notiz || '' });
+      const quelle = b.hintergrund && Array.isArray(b.texte) ? b.hintergrund : b.html;
+      const bild = await fotografiere(htmlFuerApp(quelle, { namenBehalten: true }), b.breite, b.hoehe, Math.min(2, 2400 / b.breite));
+      folien.push({ breite: b.breite, hoehe: b.hoehe, png: bild.toPNG(), notiz: b.notiz || '', texte: Array.isArray(b.texte) ? b.texte.slice(0, 400) : null });
     }
     const puffer = await require('../kern/pptx').pptxSchreiben(folien, { titel: name });
     return { datei: schreibeExport(basis, name, 'pptx', puffer) };
