@@ -348,6 +348,11 @@
   }
 
   // „Mehr“: selten gebrauchte Knöpfe in einem kleinen Menü
+  // Beschriftetes Aufklappmenü (wie Schwalbe/Albatros: Wichtiges direkt, der Rest klappt auf)
+  function klappMenue(titel, ic, eintraege, links = false) {
+    return `<div class="mehr klappwrap"><button type="button" class="klappknopf" data-aktion="mehr" ${links ? 'data-links' : ''} aria-expanded="false">${ic ? sym(ic, 16) : ''}${titel}<span class="pfeil">▾</span></button>
+      <div class="mehrmenue paper" hidden>${eintraege.map(([a, i, t, aus]) => (a === '-' ? '<span class="mm-strich"></span>' : `<button type="button" data-aktion="${a}" ${aus ? 'disabled' : ''}>${sym(i, 16)} ${t}</button>`)).join('')}</div></div>`;
+  }
   function mehrMenue(eintraege) {
     return `<div class="mehr"><button type="button" class="btn btn-q rundknopf" data-aktion="mehr" title="Mehr" aria-label="Mehr" aria-expanded="false"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></button>
       <div class="mehrmenue paper" hidden>${eintraege.map(([a, ic, t, aus]) => `<button type="button" data-aktion="${a}" ${aus ? 'disabled' : ''}>${sym(ic, 16)} ${t}</button>`).join('')}</div></div>`;
@@ -447,8 +452,7 @@
     if (S.projekt?.app?.plan && S.modus !== 'bild') return AppBau.kopfKnoepfe(kannZurueck);
     const leer = !seite()?.html;
     return `<button type="button" class="btn btn-q rundknopf" data-aktion="rueckgaengig" ${kannZurueck ? '' : 'disabled'} title="Rückgängig (Strg+Z)" aria-label="Rückgängig">${sym('zurueck', 17)}</button>
-      ${S.modus === 'bild' ? '' : mehrMenue([['varianten', 'varianten', 'Drei Varianten falten', leer], ['alle-groessen', 'mischen', 'In alle Größen falten', leer], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', leer], ['app-uebergabe', 'export', 'Alle Boards weitergeben', leer], ['pptx-speichern', 'export', 'Als PowerPoint speichern', leer], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['albatros-tabelle', 'mischen', 'Tabelle aus Albatros (live)', leer && S.projekt?.seiten?.length < 1], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
-      ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="praesentieren" ${S.projekt?.seiten?.some((x) => x.html) ? '' : 'disabled'} title="Präsentieren ab Folie 1 (F5) · ab dieser Folie: Umschalt+F5">${sym('senden', 16)} Präsentieren</button>`}
+            ${S.modus === 'bild' ? '' : `<button type="button" class="btn" data-aktion="praesentieren" ${S.projekt?.seiten?.some((x) => x.html) ? '' : 'disabled'} title="Präsentieren ab Folie 1 (F5) · ab dieser Folie: Umschalt+F5">${sym('senden', 16)} Präsentieren</button>`}
       <button type="button" class="btn btn-p" data-aktion="exportieren">${sym('export', 16)} Exportieren</button>`;
   }
 
@@ -466,6 +470,7 @@
         <button type="button" class="kl-marke" data-aktion="zum-start" title="Alle Entwürfe">${sym('links', 18)}${figur('ruhend', 30)}<b class="h">Kranich</b></button>
         <span class="wb-trenner"></span>
         <div class="sk-projekt wb-projekt"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(p.name)}</b><small><span class="boardtitel">${esc(seite()?.name || '')}</span> · <span class="boardmass">${esc(seite()?.mass || `${seite()?.breite} × ${seite()?.hoehe}`)}</span> · <span class="speicherchip">gespeichert</span></small></div>
+        ${S.modus === 'bild' ? '' : klappMenue('Datei', '', [['zum-start', 'links', 'Alle Entwürfe'], ['pptx-oeffnen', 'ordner', 'PowerPoint öffnen …'], ['-'], ['pptx-speichern', 'export', 'Als PowerPoint speichern', !seite()?.html], ['app-uebergabe', 'export', 'Alle Boards weitergeben', !seite()?.html], ['-'], ['projekt-loeschen', 'muell', 'Projekt löschen']])}
         <div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
@@ -573,7 +578,10 @@
       ${kw('bild', 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15 9h.01', 'Bild (B): ins Board klicken, dann Bild wählen')}
       ${kw('notiz', 'M5 4h14v11l-5 5H5zM14 20v-5h5', 'Notiz (N): auf die Leinwand klicken')}
       <span class="schienenstrich"></span>
-      ${k('app-pruefung', 'haken', 'Prüfen: Kranich misst das Board nach', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}`;
+      ${k('app-pruefung', 'haken', 'Prüfen: Kranich misst das Board nach', s?.html ? '' : 'disabled')}${offen ? `<span class="schienenzahl">${offen}</span>` : ''}
+      <span class="schienenstrich"></span>
+      ${klappMenue('Einfügen', 'plus', [['board-dazu', 'plus', 'Neue Folie'], ['albatros-tabelle', 'mischen', 'Tabelle aus Albatros (live)'], ['pptx-oeffnen', 'ordner', 'Folien aus PowerPoint …']], true)}
+      ${klappMenue('Gestalten', 'varianten', [['varianten', 'varianten', 'Drei Varianten falten', !s?.html], ['alle-groessen', 'mischen', 'In alle Größen falten', !s?.html], ['app-abspielen', 'senden', 'Vorschau (durchklicken)', !s?.html]], true)}`;
   }
 
   function boardZeile(x, aktiv, mehrere, klein) {
@@ -668,7 +676,7 @@
     const [haltung, chip, chipArt, hand] = KOPF[S.kranich.zustand] || KOPF.bereit;
     const verlaufAn = S.leisteLasche === 'verlauf';
     const tun = S.kranich.zustand === 'denkt' ? (S.modus === 'bild' ? 'malt' : S.kranich.anpassen ? (S.projekt.app ? 'baut' : 'groessen') : 'faltet') : S.kranich.zustand === 'fertig' ? 'fertig' : haltung;
-    aside.innerHTML = `<header class="blattkopf"><span class="chatfigur">${figur(tun, 30)}</span><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><div class="platz"></div><span class="pille ${S.kranich.zustand === 'denkt' ? 'arbeitet' : ''}"><i></i> ${esc(chip)}</span>
+    aside.innerHTML = `<header class="blattkopf"><span class="chatfigur">${figur(tun, 30)}</span><span class="oo-wer"><b class="h">${verlaufAn ? 'Verlauf' : 'Kranich'}</b><small class="${chipArt === 'chip-rot' ? 'rot' : ''}">${verlaufAn ? 'Frühere Fassungen' : S.kranich.zustand === 'bereit' ? 'Gestalter, faltet schnell' : esc(chip)}</small></span>
         <button type="button" class="btn btn-q rundknopf" data-aktion="leiste" data-lasche="${verlaufAn ? 'kranich' : 'verlauf'}" aria-pressed="${verlaufAn}" title="${verlaufAn ? 'Zurück zum Gespräch' : 'Frühere Fassungen'}" aria-label="Verlauf">${sym(verlaufAn ? 'schliessen' : 'uhr', 17)}</button></header>
       <div class="leistenblatt">
         <div class="verlauf" aria-live="polite"></div>
@@ -692,7 +700,9 @@
     }
     const chat = S.projekt.chat.filter((c) => (c.modus || 'entwurf') === S.modus).slice(-30);
     if (!chat.length && S.kranich.zustand !== 'denkt') {
-      el.innerHTML = `<div class="leer-verlauf"><span class="figurrund">${figur('ruhend', 56)}</span><b class="h">Noch nichts gefaltet</b><span>Dein erster Wunsch landet hier.${S.modus === 'bild' ? ' Zum Beispiel: „Hintergrund weg und auf 1080 × 1080“.' : ''}</span></div>`;
+      el.innerHTML = S.modus === 'bild'
+        ? `<div class="schnell">${[['Hintergrund weg', 'Entferne den Hintergrund.'], ['1080 × 1080', 'Bring das Bild auf 1080 × 1080.'], ['Heller', 'Mach das Bild etwas heller und freundlicher.'], ['Schärfer', 'Mach das Bild schärfer.']].map(([t, w]) => `<button type="button" data-aktion="kr-frage" data-text="${esc(w)}">${sym('stern', 15)} ${t}</button>`).join('')}</div><div class="kr-hallo">${figur('ruhend', 34)}<span>Sag mir, was mit dem Bild passieren soll – ich mal es dir zurecht.</span></div>`
+        : `<div class="schnell">${[['Aufräumen', 'Räum die Folie auf: gleiche Abstände, klare Hierarchie, nichts zu eng.'], ['Mehr Wirkung', 'Gib der Folie mehr Wirkung: größerer Titel, mehr Luft, eine Akzentfarbe.'], ['Bild dazu', 'Schlag ein passendes Bild oder eine Grafik für diese Folie vor und setz sie ein.'], ['Kürzer', 'Kürz die Texte auf der Folie auf das Wichtigste.']].map(([t, w]) => `<button type="button" data-aktion="kr-frage" data-text="${esc(w)}">${sym('stern', 15)} ${t}</button>`).join('')}</div><div class="kr-hallo">${figur('ruhend', 34)}<span>Sag mir in normalen Worten, was du brauchst – ich falte Folien, ordne, kürze und gestalte. Klickst du vorher ein Element an, kümmere ich mich nur darum.</span></div>`;
       return;
     }
     const fortschritt = S.kranich.zustand === 'denkt' && S.kranich.anpassen
@@ -712,6 +722,7 @@
     el.scrollTop = el.scrollHeight;
   }
 
+  const ORI_KR = ['Hübsch. Fast so hübsch wie ich.', 'Er faltet schnell. Ich falte schöner.', 'Weniger Text. Glaub mir.', 'Bunt ist kein Konzept, sag ich nur.', 'Ich hätte es ja anders gefaltet.'];
   function renderWunschfeld() {
     const el = app.querySelector('.kranichleiste .wunschfeld');
     if (!el || !S.projekt) return;
@@ -722,6 +733,7 @@
     const denkt = S.kranich.zustand === 'denkt';
     el.innerHTML = `${auswahlChip}
       ${S.anhang && S.modus === 'entwurf' ? `<span class="anhang"><img src="${S.anhang.dataUrl}" alt=""><span class="leise" style="font-size:12.5px">${esc(S.anhang.name)} – wird zum Entwurf</span><button type="button" class="btn btn-s btn-q" data-aktion="anhang-weg">Entfernen</button></span>` : ''}
+      <div class="oo-ori-karte">${(window.ORI?.['ruhezustand-2'] || '').replace(/__G__/g, 46).replace(/<ellipse[\s\S]*?<\/ellipse>/, '').replace(' aria-hidden="true"', ' aria-hidden="true" class="ori-bild"')}<b>${esc(ORI_KR[Math.floor(Math.random() * ORI_KR.length)])}</b></div>
       <div class="eingabekarte klein"><textarea id="wunsch" rows="1" aria-label="Dein Wunsch an Kranich" placeholder="${S.modus === 'bild' ? 'z. B. „Hintergrund weg, 1080 × 1080“' : S.auswahl ? `Was soll mit „${esc(S.auswahl.name)}“ passieren?` : 'Nachricht an Kranich …'}"></textarea>
         <div class="ek-leiste"><button type="button" class="btn btn-q btn-s" data-aktion="${S.modus === 'bild' ? 'bild-einfuegen' : 'anhang'}" title="Bild anhängen">${sym('klammer', 15)} Bild</button><div class="platz"></div>
         <button type="button" class="btn btn-dunkel sendeknopf" data-aktion="senden" title="Senden (Enter)" ${denkt ? 'disabled' : ''}>Senden ${sym('senden', 15, 2.4)}</button></div></div>`;
@@ -1192,11 +1204,12 @@
     'modus': (el) => { if (S.modus === el.dataset.modus && S.ansicht === 'werkbank') return; S.modus = el.dataset.modus; S.kranich.zustand = 'bereit'; renderWerkbank(); },
     'panel': () => { S.panelAuf = !S.panelAuf; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = !S.panelAuf; renderSeitenleiste(); },
     // ⋯-Menü schwebt fest über allem (sonst verdeckt es die Leinwand)
+    'kr-frage': (el) => { const t = app.querySelector('#wunsch'); if (!t) return; t.value = el.dataset.text; aktionen.senden(); },
     'mehr': (el) => {
       const offen = app.querySelector('.mehr-schwebe'); if (offen) { offen.remove(); el.setAttribute('aria-expanded', 'false'); return; }
       const m = el.nextElementSibling; const r = el.getBoundingClientRect();
       const s2 = document.createElement('div'); s2.className = 'mehrmenue mehr-schwebe paper'; s2.innerHTML = m.innerHTML;
-      s2.style.cssText = `position:fixed;top:${Math.round(r.bottom + 6)}px;right:${Math.round(innerWidth - r.right)}px;z-index:9000`;
+      s2.style.cssText = `position:fixed;top:${Math.round(r.bottom + 6)}px;${el.hasAttribute('data-links') ? `left:${Math.round(r.left)}px` : `right:${Math.round(innerWidth - r.right)}px`};z-index:9000`;
       app.appendChild(s2); el.setAttribute('aria-expanded', 'true');
       setTimeout(() => document.addEventListener('click', () => { s2.remove(); el.setAttribute('aria-expanded', 'false'); }, { once: true }), 0);
     },

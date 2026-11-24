@@ -198,7 +198,7 @@
   const oriVogel = (g, anim = 'ruhezustand-2') => { const v = window.ORI?.[anim] || window.ORI?.['ruhezustand-2'] || ''; return v.replace(/__G__/g, g).replace(/<ellipse[\s\S]*?<\/ellipse>/, '').replace(' aria-hidden="true"', ' aria-hidden="true" class="ori-bild"'); };
   const ORI_SPRUECHE = ['Er hat meistens recht. Leider.', 'Frag ihn ruhig, er rechnet gern nach.', 'Zahlen sind seins. Small Talk eher nicht.', 'Wenn er „bis auf den Cent“ sagt, meint er das.', 'Ich halt mich raus. Fast.'];
   const wzk = (aktion, inhalt, titel, extra = '') => `<button type="button" class="wz" data-aktion="${aktion}" title="${titel}" ${extra}>${inhalt}</button>`;
-  function leiste() {
+  function leisteReiter() {
     const r = S.reiter || 'start'; const tz = '<span class="tz"></span>';
     if (r === 'datei') return `${wzk('start', `${sym('links', 15)} Alle Tabellen`, 'Zurück zur Übersicht')}${wzk('neu', `${sym('plus', 15, 2.4)} Neu`, 'Neue Tabelle')}${tz}<span style="position:relative">${wzk('exportmenue', `${sym('export', 15)} Exportieren`, 'Als Excel, CSV oder PDF')}</span>${wzk('drucken', `${sym('drucker', 15)} Drucken / PDF`, 'Strg+P')}${tz}${wzk('umbenennen', 'Umbenennen', 'Tabelle umbenennen')}${wzk('einstellungen', `${sym('zahnrad', 15)} Einstellungen`, 'Einstellungen')}`;
     if (r === 'einfuegen') return `${wzk('zeile-dazu', `${sym('zeile', 15)} Zeile`, 'Zeile darunter einfügen')}${wzk('spalte-dazu', `${sym('spalte', 15)} Spalte`, 'Spalte rechts einfügen')}${wzk('zeile-weg', `${sym('muell', 15)} Zeile`, 'Markierte Zeilen löschen')}${wzk('spalte-weg', `${sym('muell', 15)} Spalte`, 'Markierte Spalten löschen')}${wzk('blatt-dazu', `${sym('plus', 15, 2.4)} Blatt`, 'Neues Blatt')}${tz}${wzk('notiz', `${sym('notiz', 15)} Notiz`, 'Notiz an die Zelle (Umschalt+F2)')}${tz}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Übersicht (Pivot): Summen je Kategorie, Monat …')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}`;
@@ -206,7 +206,28 @@
     if (r === 'daten') return `${wzk('sortieren', `${sym('sortieren', 15)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 15)} Filter`, 'Filter an/aus (Strg+Umschalt+L)')}${wzk('hervorheben', `${sym('hervor', 15)} Hervorheben`, 'Automatisch färben')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}${tz}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Pivot')}${blatt().pivot ? wzk('pivot-neu', 'Neu aufbauen', 'Übersicht neu aufbauen') : ''}${wzk('suchen', `${sym('lupe', 15)} Suchen`, 'Suchen & Ersetzen (Strg+F)')}`;
     if (r === 'makros') return `${wzk('makros', `${sym('makro', 15)} Makros verwalten`, 'Aufnehmen, schreiben, ausführen')}${S.aufnahme ? '' : wzk('aufnahme-start', '<span style="color:#c0392b">●</span> Aufnehmen', 'Makro aufnehmen')}${S.t.makros.filter((m) => m.knopf).length ? tz : ''}${S.t.makros.filter((m) => m.knopf).map((m) => `<button type="button" class="wz makroknopf" data-aktion="makro-los" data-id="${esc(m.id)}" title="Makro ausführen">${sym('makro', 13)} ${esc(m.name)}</button>`).join('')}${S.t.vba?.length ? `${tz}${wzk('makros', `Excel-Makros (${S.t.vba.length})`, 'Aus der Datei')}` : ''}`;
     if (r === 'ansicht') return `${wzk('fixieren', `${sym('fixieren', 15)} Fixieren`, 'Zeilen/Spalten festhalten')}${wzk('helfer-klappen', S.helferZu ? 'Albatros zeigen' : 'Albatros ausblenden', 'Seitenleiste')}`;
-    return `${wzk('rueckgaengig', sym('zurueck', 15), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 15), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}${wzk('kursiv', '<i style="font:italic 600 15px Georgia,serif">K</i>', 'Kursiv (Strg+I)')}${wzk('unterstrichen', '<u style="font-weight:700">U</u>', 'Unterstrichen (Strg+U)')}<button type="button" class="wz" data-aktion="groessemenue" data-schwebe-auf title="Schriftgröße">${esc(String(stilAnker().gr || 11))} ▾</button><button type="button" class="wz schriftfarbe" data-aktion="schriftfarbe" data-schwebe-auf title="Schriftfarbe"><span class="A">A</span><i style="background:${esc(stilAnker().fa || '#1d2742')}"></i></button><span class="farbwahl">${wzk('farbmenue', sym('farbe', 15), 'Füllfarbe')}</span>${tz}<button type="button" class="wz" data-aktion="ausrichtungmenue" data-schwebe-auf title="Ausrichtung und Zeilenumbruch">${sym(stilAnker().aus === 'center' ? 'mitte' : stilAnker().aus === 'right' ? 'rechtsb' : 'linksb', 15)} ▾</button><button type="button" class="wz" data-aktion="randmenue" data-schwebe-auf title="Rahmen">${sym('rahmen', 15)} ▾</button>${wzk('verbinden', sym('verbinden', 15), 'Zellen verbinden / lösen')}${tz}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}${wzk('pinsel', sym('pinsel', 15), 'Format übertragen: erst Quelle, dann Ziel markieren', S.pinsel ? 'aria-pressed="true"' : '')}${tz}${wzk('summe-unten', `${sym('summe', 15)} Summe`, 'Summe unter die Markierung')}${wzk('sortieren', sym('sortieren', 15), 'Nach der markierten Spalte sortieren')}${wzk('filter', sym('filter', 15), 'Filter an/aus')}${wzk('diagramm', sym('diagramm', 15), 'Diagramm aus der Markierung')}${wzk('suchen', sym('lupe', 15), 'Suchen & Ersetzen (Strg+F)')}`;
+    return `${wzk('rueckgaengig', sym('zurueck', 15), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 15), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}${wzk('kursiv', '<i style="font:italic 600 15px Georgia,serif">K</i>', 'Kursiv (Strg+I)')}${wzk('unterstrichen', '<u style="font-weight:700">U</u>', 'Unterstrichen (Strg+U)')}<button type="button" class="wz" data-aktion="groessemenue" data-schwebe-auf title="Schriftgröße">${esc(String(stilAnker().gr || 11))} ▾</button><button type="button" class="wz schriftfarbe" data-aktion="schriftfarbe" data-schwebe-auf title="Schriftfarbe"><span class="A">A</span><i style="background:${esc(stilAnker().fa || '#1d2742')}"></i></button><span class="farbwahl">${wzk('farbmenue', sym('farbe', 15), 'Füllfarbe')}</span>${tz}<button type="button" class="wz" data-aktion="ausrichtungmenue" data-schwebe-auf title="Ausrichtung und Zeilenumbruch">${sym(stilAnker().aus === 'center' ? 'mitte' : stilAnker().aus === 'right' ? 'rechtsb' : 'linksb', 15)} ▾</button><button type="button" class="wz" data-aktion="randmenue" data-schwebe-auf title="Rahmen">${sym('rahmen', 15)} ▾</button>${wzk('verbinden', sym('verbinden', 15), 'Zellen verbinden / lösen')}${tz}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}${wzk('pinsel', sym('pinsel', 15), 'Format übertragen: erst Quelle, dann Ziel markieren', S.pinsel ? 'aria-pressed="true"' : '')}${tz}${wzk('summe-unten', `${sym('summe', 15)} Summe`, 'Summe unter die Markierung')}${wzk('diagramm', sym('diagramm', 15), 'Diagramm aus der Markierung')}`;
+  }
+  // ---------- Eine Zeile (wie die Schwalbe): Wichtiges direkt, der Rest klappt auf ----------
+  const KLAPP = '<span class="pfeil">▾</span>';
+  const klappKnopf = (m, inhalt, titel) => `<button type="button" class="wz klapp" data-aktion="klapp" data-m="${m}" title="${titel}" aria-haspopup="true">${inhalt}${KLAPP}</button>`;
+  function klappInhalt(m) {
+    const alt = S.reiter; S.reiter = m === 'mehr' ? 'makros' : m; let h = leisteReiter();
+    if (m === 'mehr') { S.reiter = 'ansicht'; h += '<span class="tz"></span>' + leisteReiter(); }
+    if (m === 'datei') h = `${wzk('start', `${sym('links', 15)} Alle Tabellen`, 'Zurück zur Übersicht')}${wzk('neu', `${sym('plus', 15, 2.4)} Neue Tabelle`, 'Neue Tabelle')}${wzk('oeffnen', `${sym('oeffnen', 15)} Öffnen …`, 'Datei öffnen (Strg+O)')}<span class="tz"></span>${wzk('export-teilen', `${sym('export', 15)} Exportieren`, 'Als Excel, CSV oder PDF')}${wzk('drucken', `${sym('drucker', 15)} Drucken / PDF`, 'Strg+P')}<span class="tz"></span>${wzk('umbenennen', 'Umbenennen', 'Tabelle umbenennen')}${wzk('einstellungen', `${sym('zahnrad', 15)} Einstellungen`, 'Einstellungen')}`;
+    S.reiter = alt; return h;
+  }
+  function klappMenue(el, m) {
+    const alt = document.querySelector('.klappmenue'); const war = alt?.dataset.m; alt?.remove(); if (war === m) return;
+    const box = document.createElement('div'); box.className = `klappmenue km-${m}`; box.dataset.m = m;
+    box.innerHTML = klappInhalt(m); app.appendChild(box);
+    const r = el.getBoundingClientRect(); box.style.top = `${r.bottom + 6}px`;
+    box.style.left = `${Math.max(8, Math.min(r.left, innerWidth - box.offsetWidth - 12))}px`;
+    setTimeout(() => document.addEventListener('mousedown', function weg(ev) { if (!box.contains(ev.target) && !el.contains(ev.target)) { box.remove(); document.removeEventListener('mousedown', weg); } }), 0);
+  }
+  function leiste() {
+    S.reiter = 'start'; const tz = '<span class="tz"></span>';
+    return `${leisteReiter()}${tz}${klappKnopf('einfuegen', `${sym('plus', 15, 2.4)} Einfügen`, 'Zeilen, Spalten, Blatt, Diagramm, Notiz')}${klappKnopf('formeln', `${sym('fx', 15)} Formeln`, 'Summe, Mittelwert, Formel erklären')}${klappKnopf('daten', `${sym('filter', 15)} Daten`, 'Sortieren, Filter, Hervorheben, Übersicht')}${klappKnopf('mehr', `${sym('makro', 15)} Mehr`, 'Makros und Ansicht')}`;
   }
   function zeigeLeiste() { const l = app.querySelector('.oo-leiste'); if (l) l.innerHTML = leiste(); app.querySelectorAll('.oo-menue .m').forEach((m) => m.classList.toggle('an', m.dataset.reiter === (S.reiter || 'start'))); }
 
@@ -216,7 +237,7 @@
     app.innerHTML = `<header class="oo-kopf">
         <button type="button" class="oo-ikon" data-aktion="start" title="Alle Tabellen" aria-label="Alle Tabellen">${vogel('ruhezustand-3', 30)}</button><b class="oo-app">Albatros</b>
         <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
-        <nav class="oo-menue" aria-label="Menü">${REITER.map(([k, t]) => `<button type="button" class="m${(S.reiter || 'start') === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}</nav>
+        <nav class="oo-menue" aria-label="Menü"><button type="button" class="m m-datei" data-aktion="klapp" data-m="datei">Datei</button></nav>
         <div class="platz"></div>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <div style="position:relative"><button type="button" class="oo-teilen" data-aktion="exportmenue">Teilen</button></div>
@@ -263,7 +284,7 @@
   }
   const RUNDGANG = () => ({ app: 'albatros', farbe: '#2f7a4d', vogel: vogel('winkt', 52), schritte: [
     { ziel: '.oo-karte', titel: 'Deine Tabelle', text: 'Hier trägst du alles ein – wie in Excel. Formeln beginnen mit =, z. B. =SUMME(B2:B9). Gespeichert wird von selbst, auf den Cent genau.' },
-    { ziel: '.oo-leiste', titel: 'Werkzeuge', text: 'Fett, Zahlenformat, Euro, Summe, Sortieren, Filter, Diagramm. Oben im Menü wechselst du die Werkzeuge: Einfügen, Formeln, Daten, Makros.' },
+    { ziel: '.oo-leiste', titel: 'Werkzeuge', text: 'Alles Wichtige in einer Zeile: Fett, Farbe, Euro, Summe. Einfügen, Formeln, Daten und Mehr klappen auf.' },
     { ziel: '.formelzeile', titel: 'Formelzeile', text: 'Zeigt, was wirklich in der Zelle steht. Ich erkläre dir jede Formel, wenn du willst.' },
     { ziel: '.oo-seite', titel: 'Hier sitze ich', text: 'Sag mir in normalen Worten, was du willst: „Summe unten“, „alles über 200 € rot“, „mach ein Diagramm“. Ich rechne nach. Zweimal. Mit ‹ klappst du mich weg.' },
     { ziel: '.oo-hilfe', titel: 'Nochmal?', text: 'Dieses ? startet den Rundgang jederzeit neu. Teilen speichert als Excel, CSV oder PDF.' },
@@ -1026,6 +1047,8 @@
     },
     frage: (el) => frageAlbatros(el.dataset.text),
     senden: () => { const f = document.getElementById('frage'); const t = f.value; f.value = ''; frageAlbatros(t); },
+    klapp: (el) => klappMenue(el, el.dataset.m),
+    'export-teilen': () => app.querySelector('.oo-teilen')?.click(),
     exportmenue: (el) => {
       const w = el.parentElement; const da = w.querySelector('.menue'); if (da) { da.remove(); return; }
       const m = document.createElement('div'); m.className = 'menue';
@@ -1610,6 +1633,7 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     }
   });
   app.addEventListener('click', (ev) => {
+    const km = ev.target.closest('.klappmenue'); if (km && ev.target.closest('button')) setTimeout(() => km.remove(), 0);
     const rt = ev.target.closest('[data-reiter]'); if (rt) { S.reiter = rt.dataset.reiter; zeigeLeiste(); return; }
     if (!ev.target.closest('.menue, [data-aktion="exportmenue"]')) document.querySelector('.menue')?.remove();
     if (!ev.target.closest('.farbwahl, .farben')) document.querySelector('.farben')?.remove();

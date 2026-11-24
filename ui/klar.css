@@ -321,3 +321,31 @@ body.zieht-datei .kl-ablage{background:#ece6fd;border-color:#7c5cd6;transform:sc
 .mehrmenue button{color:#1d2742!important}
 .mehrmenue[hidden]{display:none!important}
 .mehr-schwebe{display:flex!important;flex-direction:column}
+
+/* Beschriftete Aufklappmenüs (Datei im Kopf, Einfügen/Gestalten in der Werkzeugleiste) */
+.klappknopf{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border:0;border-radius:10px;font:700 13.5px 'Bricolage Grotesque',sans-serif;cursor:pointer;white-space:nowrap}
+.klappknopf svg{flex:none}
+.klappknopf .pfeil{font-size:10px;opacity:.6}
+.wb-kopf .klappknopf{background:rgba(255,255,255,.16);color:#fff}
+.wb-kopf .klappknopf:hover{background:rgba(255,255,255,.26)}
+.klappwrap .klappknopf:not(.wb-kopf *){background:none;color:#1d2742}
+.klappwrap .klappknopf:not(.wb-kopf *):hover{background:#efeaf8}
+.mehrmenue .mm-strich{display:block;height:1px;margin:4px 8px;background:#ebe4d4}
+.wb-kopf>.klappwrap{margin-left:14px}
+.mehr-schwebe{width:max-content;min-width:220px;left:auto}
+
+/* Helfer wie bei Albatros/Schwalbe: Name + Untertitel, Schnellknöpfe, kurzer Hinweis, Ori */
+.kranichleiste .blattkopf .chatfigur{display:none}
+.kranichleiste .oo-wer{flex:1;display:flex;flex-direction:column;line-height:1.25}
+.kranichleiste .oo-wer b{font-size:16.5px;color:#1d2742}
+.kranichleiste .oo-wer small{font:400 13px 'Source Serif 4',serif;color:#9a91ad}
+.kranichleiste .oo-wer small.rot{color:#c0392b}
+.kranichleiste .schnell{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0 12px}
+.kranichleiste .schnell button{display:flex;align-items:center;gap:7px;min-height:38px;padding:0 10px;border:0;border-radius:999px;background:#efeaf8;color:#4b3a8f;font:700 13px 'Bricolage Grotesque',sans-serif;text-align:left;cursor:pointer}
+.kranichleiste .schnell button:hover{background:#e3dcf4}
+.kranichleiste .kr-hallo{display:flex;gap:10px;align-items:flex-start;font:400 14.5px/1.45 'Source Serif 4',serif;color:#8a8399}
+.kranichleiste .kr-hallo svg{flex:none;margin-top:2px}
+.kranichleiste .verlauf{justify-content:flex-start!important}
+.kranichleiste .oo-ori-karte{display:flex;align-items:center;gap:6px;margin:8px 0 6px;color:#a8431a}
+.kranichleiste .oo-ori-karte b{font:600 18px 'Caveat',cursive;color:#a8431a;line-height:1.15}
+.kranichleiste .oo-ori-karte .ori-bild{width:46px;height:46px;margin:-8px -2px -8px -6px;flex:none}

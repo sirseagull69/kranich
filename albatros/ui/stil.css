@@ -424,3 +424,19 @@ body.zieht .ablage{transform:scale(1.02);box-shadow:0 0 0 6px rgba(47,138,85,.15
 .menue button svg{color:#2f8a55;flex:none}
 .menue button:hover{background:#dcf0e3}
 .menue small{color:#6b6f80!important}
+
+/* Eine Zeile mit Aufklappmenüs (wie Schwalbe, in Albatros-Grün) */
+.oo-leiste{flex-wrap:nowrap!important}
+.wz svg{flex:none}
+.wz .pfeil{font-size:10px;opacity:.55;margin-left:-2px}
+.oo-menue .m-datei{border-radius:8px;background:rgba(255,255,255,.14);color:#fff;font-weight:600}
+.oo-menue .m-datei:hover{background:rgba(255,255,255,.24)}
+.klappmenue{position:fixed;z-index:1400;display:flex;flex-direction:column;gap:2px;min-width:230px;padding:6px;background:var(--oo-papier);border-radius:12px;box-shadow:0 0 0 1px var(--oo-linie),0 22px 36px -16px rgba(20,40,25,.45)}
+.klappmenue .wz{justify-content:flex-start;height:36px;width:100%;color:var(--tinte)}
+.klappmenue .wz:hover:not(:disabled){background:var(--oo-hell)}
+.klappmenue .tz{display:block;height:1px;width:auto;margin:4px 6px;background:var(--oo-linie)}
+.oo-leiste{padding:4px 6px!important;gap:0}
+.oo-leiste .wz{padding:0 7px;white-space:nowrap}
+.oo-leiste .tz{margin:0 3px}
+.oo-leiste .klapp{gap:5px}
+@media (max-width:1450px){.oo-leiste .wz{padding:0 5px}.oo-leiste .klapp svg{display:none}}
