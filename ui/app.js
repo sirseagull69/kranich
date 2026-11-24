@@ -1598,6 +1598,28 @@
 
   window.addEventListener('beforeunload', () => { speichernSpaeter.sofort(); });
 
+  // ---------- Ori Office: was Kranich auf Fragen von Ori/anderen Apps antwortet ----------
+  const nurText = (html) => { if (!html) return ''; const d = new DOMParser().parseFromString(html, 'text/html'); d.querySelectorAll('script,style').forEach((x) => x.remove()); return (d.body?.innerText || d.body?.textContent || '').replace(/\s+\n/g, '\n').trim(); };
+  window.OriBruecke = {
+    lesen: async () => {
+      if (S.ansicht !== 'werkbank' || !S.projekt) { const l = await K.projekte.liste(); return { app: 'kranich', offen: false, liste: (Array.isArray(l) ? l : []).slice(0, 12).map((p) => ({ id: p.id, name: p.name })) }; }
+      return { app: 'kranich', offen: true, art: 'folien', name: S.projekt.name, folien: (S.projekt.seiten || []).map((x, i) => ({ nr: i + 1, name: x.name, text: nurText(x.html).slice(0, 4000), notiz: x.notiz || '' })) };
+    },
+    // Kranich faltet selbst: Ori gibt den Wunsch (und Text) mit, Kranichs eigene KI gestaltet
+    einsetzen: async (inhalt = {}) => {
+      const wunsch = String(inhalt.wunsch || inhalt.text || '').slice(0, 20000);
+      if (!wunsch) return { fehler: 'Kranich braucht einen Wunsch oder Text.' };
+      if (S.kranich.zustand === 'denkt') return { fehler: 'Kranich faltet gerade schon etwas.' };
+      if (inhalt.neu || S.ansicht !== 'werkbank' || !S.projekt) {
+        const f = S.formate.find((x) => x.id === (inhalt.format || 'folie')) || S.formate.find((x) => x.id === 'web');
+        neuesProjekt('entwurf', { wunsch, format: f });
+        return { ok: true, neu: true, laeuft: true };
+      }
+      sendeEntwurf(wunsch, {});
+      return { ok: true, laeuft: true, name: S.projekt.name };
+    },
+  };
+
   window.App = {
     zeigeStart, oeffne, neuesProjekt, aktionen, S, renderWerkbank, sendeEntwurf, sendeBild,
     renderStart, kopfHtml, seite, chat, setzeKranich, renderVerlauf, renderMitte, renderSeitenleiste, renderKopfKnoepfe,

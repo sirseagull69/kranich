@@ -156,6 +156,19 @@ function start() {
   oeffneFenster();
 }
 
+
+// ---------- Ori Office: Drehscheibe (verbindet alle offenen Vögel, Grundlage für Ori als Copilot) ----------
+const Drehscheibe = require('../kern/drehscheibe');
+let scheibe = null;
+function drehscheibeStarten() {
+  try {
+    scheibe = Drehscheibe.starte({ name: 'albatros', titel: 'Albatros', ordner: path.join(app.getPath('appData'), 'Ori Office'), beiAnfrage: Drehscheibe.anOberflaeche(() => fenster) });
+    ipcMain.handle('ori:frage', (_e, an, typ, extra) => scheibe.frage(String(an), String(typ), extra && typeof extra === 'object' ? extra : {}));
+    ipcMain.handle('ori:apps', () => scheibe.apps());
+    app.on('before-quit', () => { scheibe?.stopp(); });
+  } catch (f) { console.error('Drehscheibe:', f); }
+}
+
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', (_e, argv) => {
@@ -164,7 +177,7 @@ else {
     fenster.focus();
     const o = oeffneArg(argv); if (o) fenster.webContents.send('start:oeffne', o);
   });
-  app.whenReady().then(start);
+  app.whenReady().then(() => { start(); drehscheibeStarten(); });
   app.on('window-all-closed', () => app.quit());
 }
 module.exports = { oeffneArg };

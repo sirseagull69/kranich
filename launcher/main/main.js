@@ -255,9 +255,25 @@ function fenster() {
   w.webContents.on('will-navigate', (e) => e.preventDefault());
 }
 
+
+// ---------- Ori Office: Drehscheibe – das Startfenster macht mit und kann Apps starten ----------
+const Drehscheibe = require('./drehscheibe');
+let scheibe = null;
+function drehscheibeStarten() {
+  try {
+    scheibe = Drehscheibe.starte({ name: 'startfenster', titel: 'Startfenster', ordner: path.join(app.getPath('appData'), 'Ori Office'),
+      beiAnfrage: async (typ, m) => {
+        if (typ === 'starten') { const id = String(m.inhalt?.app || ''); if (!APPS.some((a) => a.id === id)) return { fehler: 'Unbekannte App.' }; const r = starte(id, []); return r?.fehler ? r : { ok: true }; }
+        if (typ === 'apps') return { apps: APPS.map((a) => ({ id: a.id, name: a.name, status: status(a) })) };
+        return { fehler: 'Kann das Startfenster nicht.' };
+      } });
+    app.on('before-quit', () => { scheibe?.stopp(); });
+  } catch (f) { console.error('Drehscheibe:', f); }
+}
+
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { const w = BrowserWindow.getAllWindows()[0]; if (w) { if (w.isMinimized()) w.restore(); w.focus(); } });
-  app.whenReady().then(() => { registriere(); fenster(); });
+  app.whenReady().then(() => { registriere(); fenster(); drehscheibeStarten(); });
   app.on('window-all-closed', () => app.quit());
 }

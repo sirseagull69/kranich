@@ -458,7 +458,20 @@ module.exports = { start, fotografiere, pruefe };
 
 if (!process.env.KRANICH_RAUCH) {
   // Nur ein Kranich gleichzeitig; ein zweiter Start (z. B. aus dem Launcher) holt das Fenster nach vorn
-  if (!app.requestSingleInstanceLock()) app.quit();
+  
+// ---------- Ori Office: Drehscheibe (verbindet alle offenen Vögel, Grundlage für Ori als Copilot) ----------
+const Drehscheibe = require('../kern/drehscheibe');
+let scheibe = null;
+function drehscheibeStarten() {
+  try {
+    scheibe = Drehscheibe.starte({ name: 'kranich', titel: 'Kranich', ordner: path.join(app.getPath('appData'), 'Ori Office'), beiAnfrage: Drehscheibe.anOberflaeche(() => fenster) });
+    ipcMain.handle('ori:frage', (_e, an, typ, extra) => scheibe.frage(String(an), String(typ), extra && typeof extra === 'object' ? extra : {}));
+    ipcMain.handle('ori:apps', () => scheibe.apps());
+    app.on('before-quit', () => { scheibe?.stopp(); });
+  } catch (f) { console.error('Drehscheibe:', f); }
+}
+
+if (!app.requestSingleInstanceLock()) app.quit();
   else {
     app.on('second-instance', (_e, argv) => {
       if (!fenster) return;
@@ -467,7 +480,7 @@ if (!process.env.KRANICH_RAUCH) {
       const id = oeffneArg(argv);
       if (id) fenster.webContents.send('start:oeffne', id);
     });
-    app.whenReady().then(start);
+    app.whenReady().then(() => { start(); drehscheibeStarten(); });
     app.on('window-all-closed', () => app.quit());
     app.on('before-quit', werkfensterZu);
   }

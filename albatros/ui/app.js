@@ -1839,6 +1839,29 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     alt.replaceWith(neu); setTimeout(() => { if (neu.isConnected) neu.replaceWith(alt); }, 3600);
   }, 14000);
 
+  // ---------- Ori Office: was Albatros auf Fragen von Ori/anderen Apps antwortet ----------
+  window.OriBruecke = {
+    lesen: async () => {
+      if (S.ansicht !== 'tabelle' || !S.t) { const l = (await A.tabellen.liste()) || []; return { app: 'albatros', offen: false, liste: (l.fehler ? [] : l).slice(0, 12).map((t) => ({ id: t.id, name: t.name })) }; }
+      const b = blatt(); let maxSp = 0; let maxZe = 0;
+      for (const ad of Object.keys(b.zellen)) { const z = Fo.zerlege(ad); if (z) { maxSp = Math.max(maxSp, z.sp); maxZe = Math.max(maxZe, z.ze); } }
+      const zeilen = [];
+      for (let ze = 0; ze <= Math.min(maxZe, 400); ze++) { const r = []; for (let sp = 0; sp <= Math.min(maxSp, 40); sp++) r.push(zeigeZelle(b, Fo.adresse(sp, ze))); zeilen.push(r.join('\t')); }
+      return { app: 'albatros', offen: true, art: 'tabelle', name: S.t.name, blatt: b.name, blaetter: S.t.blaetter.map((x) => x.name), text: zeilen.join('\n') };
+    },
+    einsetzen: async (inhalt = {}) => {
+      const tab = Array.isArray(inhalt.tabelle) ? inhalt.tabelle.slice(0, 500).map((r) => (Array.isArray(r) ? r.slice(0, 50) : [r])) : null;
+      if (!tab) return { fehler: 'Albatros braucht eine Tabelle (Zeilen mit Zellen).' };
+      if (inhalt.neu || S.ansicht !== 'tabelle' || !S.t) { const t = await A.tabellen.neu(String(inhalt.name || 'Von Ori').slice(0, 80)); await oeffne(t.id); }
+      const b = blatt(); const start = inhalt.neu ? { sp: 0, ze: 0 } : { sp: S.anker.sp, ze: S.anker.ze };
+      const ads = []; tab.forEach((r, i) => r.forEach((_, j) => ads.push(Fo.adresse(start.sp + j, start.ze + i)))); merke(ads);
+      tab.forEach((r, i) => r.forEach((v, j) => { const ad = Fo.adresse(start.sp + j, start.ze + i); if (v === '' || v == null) delete b.zellen[ad]; else b.zellen[ad] = typeof v === 'number' ? v : String(v); }));
+      if (inhalt.kopf !== false) tab[0]?.forEach((_, j) => { b.fett[Fo.adresse(start.sp + j, start.ze)] = true; });
+      geaendert(); zeichneTabelle();
+      return { ok: true, name: S.t.name, zellen: ads.length };
+    },
+  };
+
   window.App = { S, zeichneTabelle, aktionen, oeffne, zeigeStart, frageAlbatros, zeigeDiagramm, druckHtml };
 
   (async () => {

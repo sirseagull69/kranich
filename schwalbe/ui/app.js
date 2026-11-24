@@ -517,6 +517,22 @@
     leser.readAsDataURL(datei);
   }
 
+  // ---------- Ori Office: was die Schwalbe auf Fragen von Ori/anderen Apps antwortet ----------
+  window.OriBruecke = {
+    lesen: async () => {
+      if (S.ansicht !== 'dokument' || !S.d) { const l = (await A.dokumente.liste()) || []; return { app: 'schwalbe', offen: false, liste: l.slice(0, 12).map((d) => ({ id: d.id, name: d.name })) }; }
+      const s = blatt();
+      return { app: 'schwalbe', offen: true, art: 'dokument', name: dateiName(), text: (s?.innerText || '').slice(0, 60000), auswahl: getSelection().toString().slice(0, 4000) };
+    },
+    einsetzen: async (inhalt = {}) => {
+      const html = inhalt.html ? saeubern(String(inhalt.html)).replace(/(font-family|line-height):[^;"]*;?/g, '') : String(inhalt.text || '').split(/\n{2,}/).map((a) => `<p>${esc(a).replace(/\n/g, '<br>')}</p>`).join('');
+      if (!html) return { fehler: 'Kein Text zum Einsetzen.' };
+      if (inhalt.neu || S.ansicht !== 'dokument' || !S.d) { const d = await A.dokumente.neu(String(inhalt.name || 'Von Ori').slice(0, 80), html); await oeffne(d.id); return { ok: true, neu: true, name: d.name }; }
+      merkeStand(); bereichZurueck(); kiEinsetzen(html, !S.bereich); geaendert();
+      return { ok: true, name: dateiName() };
+    },
+  };
+
   // KI-Text selbst einsetzen (execCommand würde Schrift/Abstand der Umgebung „mitnehmen“)
   function kiEinsetzen(html, amEnde) {
     const s = blatt(); const sel = getSelection();

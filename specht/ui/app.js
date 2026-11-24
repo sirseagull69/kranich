@@ -616,6 +616,23 @@
     { ziel: '.oo-hilfe', titel: 'Nochmal?', text: 'Das ? startet diesen Rundgang neu. Mehr sag ich nicht.' },
   ] });
   setTimeout(function rgVersuch() { if (document.querySelector('.oo-karte') && !document.querySelector('.schleier')) window.Rundgang?.start(RUNDGANG()); else setTimeout(rgVersuch, 1500); }, 1500);
+  // ---------- Ori Office: was Specht auf Fragen von Ori/anderen Apps antwortet ----------
+  window.OriBruecke = {
+    lesen: async () => {
+      const w = S.d.wissen; const st = eintraege('stoerung');
+      return { app: 'specht', offen: true, art: 'it',
+        server: keinWissen() ? [] : w.SERVER.map((x) => ({ name: x.name, rolle: x.rolle || '', zustand: zustandVon(x.id) })),
+        tagebuch: st.slice().sort((a, b) => String(b.datum).localeCompare(String(a.datum))).slice(0, 30).map((x) => ({ datum: x.datum, was: x.was, status: x.status, loesung: x.loesung || '' })),
+        letzterKlopf: S.d.letzterKlopf || null };
+    },
+    einsetzen: async (inhalt = {}) => {
+      const was = String(inhalt.was || inhalt.text || '').trim().slice(0, 300);
+      if (!was) return { fehler: 'Specht braucht einen Tagebuch-Eintrag (was).' };
+      const r = await setze('stoerung', null, { datum: new Date().toISOString().slice(0, 10), was, ursache: String(inhalt.ursache || ''), loesung: String(inhalt.loesung || ''), status: inhalt.geloest ? 'erledigt' : 'offen', server: [] });
+      zeichne(false); return { ok: true, id: r?.id };
+    },
+  };
+
   // ---------- Datei-Ansicht (gemeinsam mit allen Vögeln) ----------
   const NEU_IN_VERSION = ['Datei-Ansicht mit Wissen, Konto & Sync und Optionen wie in den anderen Vögeln', 'Schnellknöpfe im Helfer', 'Screenshots und Logdateien an Fragen anhängen'];
   const SA = { einstellungen: { lesen: async () => ({ ...S.d.einstellungen, version: S.d.version }), setzen: async (w) => { if (!w.lizenzSchluessel) delete w.lizenzSchluessel; const r = await SP.einstellungen(w); if (!r?.fehler) S.d.einstellungen = r; return r; } }, hirnTesten: () => SP.hirnTesten() };

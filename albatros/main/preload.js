@@ -2,6 +2,7 @@
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 const rufe = (k) => (...a) => ipcRenderer.invoke(k, ...a);
 contextBridge.exposeInMainWorld('ALB', {
+  ori: { frage: (an, typ, extra) => ipcRenderer.invoke('ori:frage', an, typ, extra), apps: () => ipcRenderer.invoke('ori:apps') },
   tabellen: { liste: rufe('tabellen:liste'), neu: rufe('tabellen:neu'), lesen: rufe('tabellen:lesen'), speichern: rufe('tabellen:speichern'), loeschen: rufe('tabellen:loeschen') },
   datei: { importieren: rufe('datei:importieren'), exportieren: rufe('datei:exportieren'), bild: rufe('datei:bild'), zeigen: rufe('datei:zeigen') },
   assistent: rufe('assistent'),

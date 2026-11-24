@@ -301,9 +301,22 @@ function start() {
   syncUhr = setInterval(syncJetzt, 60000);
 }
 
+
+// ---------- Ori Office: Drehscheibe (verbindet alle offenen Vögel, Grundlage für Ori als Copilot) ----------
+const Drehscheibe = require('../kern/drehscheibe');
+let scheibe = null;
+function drehscheibeStarten() {
+  try {
+    scheibe = Drehscheibe.starte({ name: 'specht', titel: 'Specht', ordner: path.join(app.getPath('appData'), 'Ori Office'), beiAnfrage: Drehscheibe.anOberflaeche(() => fenster) });
+    ipcMain.handle('ori:frage', (_e, an, typ, extra) => scheibe.frage(String(an), String(typ), extra && typeof extra === 'object' ? extra : {}));
+    ipcMain.handle('ori:apps', () => scheibe.apps());
+    app.on('before-quit', () => { scheibe?.stopp(); });
+  } catch (f) { console.error('Drehscheibe:', f); }
+}
+
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => { if (!fenster) return; if (fenster.isMinimized()) fenster.restore(); fenster.focus(); });
-  app.whenReady().then(start);
+  app.whenReady().then(() => { start(); drehscheibeStarten(); });
   app.on('window-all-closed', () => { clearInterval(klopfUhr); clearInterval(syncUhr); app.quit(); });
 }
