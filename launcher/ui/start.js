@@ -69,6 +69,21 @@
     return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><path d="M0 600 C 200 560 420 630 620 590 S 800 570 850 585 V686 H0Z" fill="${k.hell}"/><path d="M0 640 C 260 615 520 670 850 640 V686 H0Z" fill="${k.mittel}" opacity=".55"/></svg>`;
   }
 
+  // Ori kommentiert oben rechts – passend zum Vogel und zur Tageszeit
+  const ORI_SAGT = {
+    origami: ['Ich bin die Chefin hier. Nur so nebenbei.', 'Frag mich was. Ich langweile mich.', 'Die anderen Vögel? Hab ich alle gefaltet.'],
+    kranich: ['Er macht alles lila. Ich hab aufgegeben.', 'Wenn’s hübsch sein soll: der da.', 'Folien mit Gefühl. Seine Worte, nicht meine.'],
+    albatros: ['Er rechnet sogar im Schlaf.', 'Zahlen? Er liebt sie mehr als mich.', 'Auf den Cent. Er meint das ernst.'],
+    specht: ['Er grummelt. Heißt: alles läuft.', 'Wenn er klopft, hat’s einen Grund.', 'Admin aus Leidenschaft. Und schlechter Laune.'],
+    schreiben: ['Sie schreibt schneller, als du denkst.', 'Kommas sind ihr heilig.', 'Brief? Gib ihr einen Satz, sie macht den Rest.'],
+  };
+  const TAGESZEIT = () => { const h = new Date().getHours(); return h < 9 ? 'Früh dran heute.' : h >= 18 ? 'Feierabend wär auch eine Option.' : (new Date().getDay() === 5 ? 'Freitag. Fast geschafft.' : null); };
+  const oriNr = {};
+  function oriSpruch(id) {
+    const t = TAGESZEIT(); const l = ORI_SAGT[id] || ORI_SAGT.origami;
+    oriNr[id] = ((oriNr[id] ?? Math.floor(Math.random() * l.length)) + 1) % (l.length + (t ? 1 : 0));
+    return oriNr[id] === l.length ? t : l[oriNr[id]];
+  }
   function render() {
     const a = gewaehlt(); if (!a) return;
     const k = art(a); const kn = knopf(a); const u = S.updates[a.id] || {};
@@ -85,7 +100,7 @@
       </nav>
       <main class="buehne" style="--farbe:${k.farbe};--mittel:${k.mittel};--dunkel:${k.dunkel};--hell:${k.hell}">
         ${huegel(k)}
-        <div class="oben"><div class="datum"><b>${esc(new Date().toLocaleDateString('de-DE', { weekday: 'long' }))}</b><span>${esc(new Date().toLocaleDateString('de-DE', { day: 'numeric', month: 'long' }))} · <span class="uhr">${esc(new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }))}</span></span></div></div>
+        <div class="oben"><div class="ori-ecke"><div class="ori-blase"><small>${esc(new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }))}</small><span class="ori-satz">${esc(oriSpruch(a.id))}</span></div><span class="ori-mini">${bild('origami', 'sassy', 56)}</span></div></div>
         <div class="held">
           <div class="held-text">
             <span class="rolle">${esc(k.rolle.toUpperCase())}</span>
@@ -247,7 +262,7 @@
   setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
   // Zwischendurch macht der gewählte Vogel von selbst etwas
   setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 6500);
-  setInterval(() => { const u = app.querySelector('.uhr'); if (u) u.textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }); }, 20000);
+  setInterval(() => { const sz = app.querySelector('.ori-satz'); if (sz && !document.hidden) { sz.classList.add('weg'); setTimeout(() => { sz.textContent = oriSpruch(S.wahl); sz.classList.remove('weg'); }, 300); } }, 15000);
   // Auch die kleinen Vögel links machen ab und zu etwas – immer nur einer
   setInterval(() => {
     if (document.hidden) return;
