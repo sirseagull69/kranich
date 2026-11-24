@@ -351,3 +351,30 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .op-ueber{display:flex;gap:16px;align-items:center;margin:8px 0}.op-ueber b{display:block;font:800 18px 'Bricolage Grotesque',sans-serif}.op-ueber small{color:var(--leise)}
 .op-fuss{grid-column:2;display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--linie);background:var(--papier)}
 .oo-teilen svg{vertical-align:-2px;margin-right:4px}
+
+/* =====================================================================
+   KLAR – ruhiger, flacher Arbeitsplatz wie in Office (eine Ebene statt Karten in Karten)
+   ===================================================================== */
+.oo-flaeche{padding:0;background:#ebe6dc}
+.oo-flaeche .oo-berge{display:none}
+.oo-inhalt{gap:0;grid-template-columns:300px minmax(0,1fr)}
+.oo-inhalt.zu{grid-template-columns:48px minmax(0,1fr)}
+/* Helfer: festes Seitenteil links */
+.oo-links{padding:0;border-right:1px solid #ddd5c6;background:#faf7f0}
+.oo-sitzvogel{display:none}
+.oo-seite{border-radius:0;border-top:0;box-shadow:none;background:transparent;padding:12px 14px}
+.oo-inhalt.zu .oo-schiene{border-radius:0;box-shadow:none;background:transparent;padding-top:12px}
+/* Werkzeuge: durchgehendes Band oben, wie das Menüband */
+.oo-rechts{gap:0}
+.oo-leiste{align-self:stretch;max-width:none;border-radius:0;box-shadow:none;border-bottom:1px solid #ddd5c6;background:#fffdf8;padding:5px 12px;min-height:46px}
+.oo-leiste select{max-width:none}
+/* Kein Blatt hinter dem Blatt */
+.oo-karte{background:transparent;border-radius:0;box-shadow:none;clip-path:none}
+.oo-karte::after,.oo-karte::before{display:none}
+.schreibtisch{padding:28px 24px 40px}
+/* Das Blatt selbst: sauber, mit feiner Kante oben statt Lochrand */
+.perforation{height:4px;border-radius:0;background:var(--farbe)}
+.perforation::after{display:none}
+.seite{box-shadow:0 1px 3px rgba(30,30,40,.12),0 12px 28px -14px rgba(30,30,40,.25);border-left:0}
+.statuszeile{background:#faf7f0}
+.oo-leiste .abstand{width:96px}.oo-leiste .groesse{width:76px}.oo-leiste .schrift{width:120px}
