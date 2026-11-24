@@ -1,7 +1,7 @@
 {
   "name": "albatros",
   "productName": "Albatros",
-  "version": "0.11.4",
+  "version": "0.11.5",
   "description": "Albatros – Tabellen, einfach. Der Excel-Ersatz der Familie Selbst gfaltet, mit Claude als Helfer.",
   "author": "Nils Pohler",
   "main": "main/main.js",

@@ -291,7 +291,18 @@ async function xlsxSchreiben(tabelle, datei) {
       if (st.rand) { const bd = {}; for (const [k, seite] of [['o', 'top'], ['u', 'bottom'], ['l', 'left'], ['r', 'right']]) if (st.rand[k]) bd[seite] = { style: st.rand[k] === 2 ? (seite === 'bottom' ? 'double' : 'medium') : 'thin', color: { argb: 'FF1D2742' } }; cell.border = bd; }
       if (b.notizen?.[a]) cell.note = String(b.notizen[a]);
     }
-    for (const [sp, px] of Object.entries(b.breiten || {})) ws.getColumn(F.spalteZuNr(sp) + 1).width = Math.max(6, Math.round(px / 7.5));
+    // Spaltenbreiten: wie in Albatros (Standard 110 px) und mindestens so breit, dass Zahlen nicht zu ##### werden
+    const laenge = {};
+    for (const a2 of Object.keys(b.zellen)) {
+      const z = F.zerlege(a2); if (!z) continue; const w = werte[a2];
+      const fmt = Object.entries(b.formate || {}).find(([k]) => k === a2 || (k.includes(':') && (() => { const r = F.bereich(k); return r && z.sp >= r.sp1 && z.sp <= r.sp2 && z.ze >= r.ze1 && z.ze <= r.ze2; })()))?.[1];
+      const t = w instanceof F.Fehler || Array.isArray(w) ? '' : String(F.zeige(w, fmt) ?? '');
+      laenge[z.sp] = Math.max(laenge[z.sp] || 0, t.length * (b.fett?.[a2] ? 1.15 : 1));
+    }
+    for (const sp of Object.keys(laenge)) {
+      const px = b.breiten?.[F.nrZuSpalte(Number(sp))] || 110;
+      ws.getColumn(Number(sp) + 1).width = Math.min(80, Math.max(6, Math.round(px / 7.5), Math.ceil(laenge[sp] * 1.1 + 2)));
+    }
     for (const v of b.verbunden || []) { try { ws.mergeCells(v); } catch { /* überlappt */ } }
     if (b.fixiert && (b.fixiert.ze || b.fixiert.sp)) ws.views = [{ state: 'frozen', xSplit: b.fixiert.sp || 0, ySplit: b.fixiert.ze || 0 }];
     for (const rg of b.regeln || []) { const r = regelNachExcel(rg); if (r) ws.addConditionalFormatting({ ref: rg.bereich, rules: [r] }); }
