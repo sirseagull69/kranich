@@ -285,7 +285,7 @@
       ${wz('removeFormat', sym('radier', 17), 'Formatierung entfernen')}`;
   }
   // ---------- Drei Leisten-Entwürfe: a = ruhig + Blase, b = eine Zeile, c = Werkzeugkasten rechts ----------
-  const lv = () => (S.einst?.leistenArt || 'a');
+  const lv = () => (S.einst?.leistenArt || 'b');
   const KLAPP = '<span class="pfeil">▾</span>';
   function teilEinfuegen() { return `${wa('tabelle', `${sym('tabelle', 16)} Tabelle`, 'Tabelle einfügen')}${wa('albatros', `${sym('tabelle', 16)} Aus Albatros (live)`, 'Tabelle aus Albatros – bleibt live')}${wa('bild', `${sym('bild', 16)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 16)} Link`, 'Link einfügen (Strg+K)')}${wa('umbruch', `${sym('umbruch', 16)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 16)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis')}${wa('linie', `${sym('strich', 16)} Trennlinie`, 'Trennlinie')}${wa('datum', `${sym('kalender', 16)} Heutiges Datum`, 'Heutiges Datum')}`; }
   function teilPruefen() {
@@ -959,7 +959,7 @@
         <section data-ops="allgemein"><h3>Allgemein</h3><p class="leise">Name und Kürzel gelten für alle Vögel von Ori Office – bei Kommentaren und Änderungen steht dann dein Name.</p>
           ${feld('Dein Name', 'Erscheint bei Kommentaren und Änderungen', `<input class="feld" data-op="autorName" value="${esc(e.autorName || '')}" placeholder="${esc(Pruefen.autor())}">`)}
           ${feld('Kürzel', 'Zwei, drei Buchstaben', `<input class="feld kurz" data-op="initialen" maxlength="4" value="${esc(e.initialen || '')}" placeholder="NP">`)}
-          ${feld('Werkzeugleiste', 'Wie die Werkzeuge aussehen', `<select class="feld" data-op="leistenArt"><option value="a" ${(e.leistenArt || 'a') === 'a' ? 'selected' : ''}>A · Ruhig: Werkzeuge erscheinen beim Markieren</option><option value="b" ${e.leistenArt === 'b' ? 'selected' : ''}>B · Eine schlanke Zeile</option><option value="c" ${e.leistenArt === 'c' ? 'selected' : ''}>C · Werkzeugkasten rechts</option></select>`)}
+          ${feld('Werkzeugleiste', 'Wie die Werkzeuge aussehen', `<select class="feld" data-op="leistenArt"><option value="a" ${e.leistenArt === 'a' ? 'selected' : ''}>A · Ruhig: Werkzeuge erscheinen beim Markieren</option><option value="b" ${(e.leistenArt || 'b') === 'b' ? 'selected' : ''}>B · Eine schlanke Zeile</option><option value="c" ${e.leistenArt === 'c' ? 'selected' : ''}>C · Werkzeugkasten rechts</option></select>`)}
           ${feld('Beim Start', 'Was die Schwalbe zuerst zeigt', `<select class="feld" data-op="startAnsicht"><option value="start" ${e.startAnsicht !== 'zuletzt' ? 'selected' : ''}>Startseite</option><option value="zuletzt" ${e.startAnsicht === 'zuletzt' ? 'selected' : ''}>Zuletzt bearbeitetes Dokument</option></select>`)}</section>
         <section data-ops="speichern" hidden><h3>Speichern</h3>
           ${feld('Standardordner', 'Hier schlägt „Speichern unter“ vor', `<div class="op-ordner"><input class="feld" data-op="standardOrdner" value="${esc(e.standardOrdner || '')}" placeholder="Dokumente"><button type="button" class="btn weiss" data-op-ordner>Wählen …</button></div>`)}

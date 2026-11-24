@@ -353,37 +353,9 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .oo-teilen svg{vertical-align:-2px;margin-right:4px}
 
 /* =====================================================================
-   KLAR – ruhiger, flacher Arbeitsplatz wie in Office (eine Ebene statt Karten in Karten)
-   ===================================================================== */
-.oo-flaeche{padding:0}
-.oo-inhalt{gap:0;grid-template-columns:300px minmax(0,1fr)}
-.oo-inhalt.zu{grid-template-columns:48px minmax(0,1fr)}
-/* Helfer: festes Seitenteil links */
-.oo-links{padding:0;border-right:1px solid #ddd5c6;background:#faf7f0}
-.oo-sitzvogel{display:none}
-.oo-seite{border-radius:0;border-top:0;box-shadow:none;background:transparent;padding:12px 14px}
-.oo-inhalt.zu .oo-schiene{border-radius:0;box-shadow:none;background:transparent;padding-top:12px}
-/* Werkzeuge: durchgehendes Band oben, wie das Menüband */
-.oo-rechts{gap:0}
-.oo-leiste{align-self:stretch;max-width:none;border-radius:0;box-shadow:none;border-bottom:1px solid #ddd5c6;background:#fffdf8;padding:5px 12px;min-height:46px}
-.oo-leiste select{max-width:none}
-/* Kein Blatt hinter dem Blatt */
-.oo-karte{background:transparent;border-radius:0;box-shadow:none;clip-path:none}
-.oo-karte::after,.oo-karte::before{display:none}
-.schreibtisch{padding:28px 24px 40px}
-/* Das Blatt selbst: sauber, mit feiner Kante oben statt Lochrand */
-.perforation{height:4px;border-radius:0;background:var(--farbe)}
-.perforation::after{display:none}
-.seite{box-shadow:0 1px 3px rgba(30,30,40,.12),0 12px 28px -14px rgba(30,30,40,.25);border-left:0}
-.statuszeile{background:#faf7f0}
-.oo-leiste .abstand{width:96px}.oo-leiste .groesse{width:76px}.oo-leiste .schrift{width:120px}
-
-/* =====================================================================
    LEISTEN – drei Entwürfe (Optionen › Werkzeugleiste). Farbakzente bleiben.
    ===================================================================== */
 .oo-menue [data-reiter]{display:none}
-.oo-links{background:rgba(255,253,248,.9)}
-.statuszeile{background:rgba(250,247,240,.92)}
 .oo-leiste .platz{flex:1}
 .oo-leiste .klapp,.klappmenue .klapp{gap:6px;font-weight:700}
 .wz .pfeil{font-size:10px;opacity:.55;margin-left:1px}
@@ -415,7 +387,8 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .textblase .farbwahl .wz{position:relative}
 
 /* ---------- B: eine schlanke Zeile ---------- */
-.lv-b .oo-leiste{min-height:44px;padding:4px 14px;gap:2px;justify-content:center}
+.lv-b .oo-leiste{min-height:44px;padding:4px 10px;gap:2px;flex-wrap:nowrap}
+.lv-b .oo-leiste select{max-width:none}.lv-b .oo-leiste .absatz{width:118px}.lv-b .oo-leiste .schrift{width:120px}.lv-b .oo-leiste .groesse{width:72px}
 
 /* ---------- C: Werkzeugkasten rechts ---------- */
 .lv-c .oo-rechts{display:grid;grid-template-columns:minmax(0,1fr) 248px;grid-template-rows:minmax(0,1fr)}
@@ -431,3 +404,5 @@ body.zieht-datei .ablage{border-color:var(--farbe);background:var(--hell);transf
 .lv-c .wk-liste .wz-feld input{font:500 13px 'Bricolage Grotesque',sans-serif;border:1px solid var(--linie);border-radius:8px;padding:6px 8px}
 .lv-c .wk-liste .wz-haken{display:flex;gap:8px;align-items:center;font:600 13px 'Bricolage Grotesque',sans-serif;padding:4px 2px}
 .lv-c .schreibtisch{grid-template-columns:minmax(120px,.6fr) minmax(0,794px) minmax(0,.4fr)}
+.wz svg{flex:none}.lv-b .oo-leiste .klapp{padding:0 9px}
+.lv-b .oo-leiste .absatz{width:106px}.lv-b .oo-leiste .schrift{width:104px}.lv-b .oo-leiste .groesse{width:68px}.lv-b .oo-leiste .klapp{margin-left:2px}

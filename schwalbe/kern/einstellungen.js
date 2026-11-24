@@ -30,7 +30,7 @@ const STANDARD = {
   rechtschreibung: true,
   autokorrektur: true,
   startAnsicht: 'start', // 'start' | 'zuletzt'
-  leistenArt: 'a', // 'a' ruhig | 'b' eine Zeile | 'c' Werkzeugkasten rechts
+  leistenArt: 'b', // 'a' ruhig | 'b' eine Zeile | 'c' Werkzeugkasten rechts
 };
 // Diese Werte teilen sich alle Apps von Ori Office
 const GEMEINSAM = ['autorName', 'initialen'];
