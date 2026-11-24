@@ -329,7 +329,14 @@
     const s = blatt();
     if (S.zoom && S.zoom !== 100) app.querySelector('.blattrahmen').style.zoom = S.zoom / 100;
     s.addEventListener('input', geaendert);
-    s.addEventListener('beforeinput', (ev) => { if (S.d.verfolgen && Pruefen.vorEingabe(ev)) geaendert(); });
+    s.addEventListener('beforeinput', (ev) => {
+      if (ev.inputType === 'historyUndo' && hist.zurueck.length) { ev.preventDefault(); rueckgaengig(); return; }
+      if (ev.inputType === 'historyRedo' && hist.vor.length) { ev.preventDefault(); wiederholen(); return; }
+      if (!S.d.verfolgen) return;
+      const t = ev.inputType || '';
+      merkeStand(t.startsWith('insertText') ? 'tippen' : t.startsWith('delete') ? 'loeschen' : t);
+      if (Pruefen.vorEingabe(ev)) geaendert();
+    });
     s.addEventListener('click', (ev) => { const k = ev.target.closest?.('span.kom'); if (k) komAktiv(k.dataset.kom); });
     s.addEventListener('paste', (ev) => {
       const bild = [...(ev.clipboardData.items || [])].find((i) => i.type.startsWith('image/'));
@@ -358,6 +365,8 @@
     s.addEventListener('keydown', (ev) => {
       const k = ev.key.toLowerCase();
       if (ev.ctrlKey && !ev.shiftKey && k === 's') { ev.preventDefault(); aktionen.docx(); }
+      if (ev.ctrlKey && !ev.shiftKey && k === 'z' && hist.zurueck.length) { ev.preventDefault(); rueckgaengig(); return; }
+      if (ev.ctrlKey && (k === 'y' || (ev.shiftKey && k === 'z')) && hist.vor.length) { ev.preventDefault(); wiederholen(); return; }
       if (ev.ctrlKey && k === 'p') { ev.preventDefault(); aktionen.drucken(); }
       if (ev.ctrlKey && (k === 'f' || k === 'h')) { ev.preventDefault(); aktionen.suchen(); }
       if (ev.ctrlKey && k === 'k') { ev.preventDefault(); aktionen.link(); }
@@ -659,6 +668,7 @@
     let bildNr = 0;
     const html = r.html ? saeubern(String(r.html).replace(/\[Bild\]/g, () => bilderVorher[bildNr++] || '')) : '';
     if (html && r.aktion !== 'keine') {
+      if (S.d.verfolgen) merkeStand();
       if (S.d.verfolgen && r.aktion === 'dokument') { const s = blatt(); s.innerHTML = saeubern(Pruefen.alsAenderungen(saeubern(s.innerHTML), html)); geaendertJa = true; }
       else if (S.d.verfolgen && r.aktion === 'auswahl' && auswahl) { bereichZurueck(); const rg = getSelection().getRangeAt(0); Pruefen.vorEingabe({ inputType: 'deleteContentForward', preventDefault() {} }); const neuHtml = Pruefen.alsEinfuegung(html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i))); Pruefen.htmlEinfuegen(blatt(), neuHtml); geaendertJa = Boolean(rg); }
       else if (S.d.verfolgen && r.aktion === 'einfuegen') { bereichZurueck(); Pruefen.htmlEinfuegen(blatt(), Pruefen.alsEinfuegung(html)); geaendertJa = true; }
@@ -750,6 +760,35 @@
   ] });
 
   // ---------- Aktionen ----------
+  // ---------- Eigener Verlauf (Rückgängig) für Änderungen, die nicht über den Browser laufen ----------
+  // (Verfolgen, Annehmen/Ablehnen, Kommentare) – Strg+Z kennt die sonst nicht.
+  const hist = { zurueck: [], vor: [], zuletzt: 0, art: '' };
+  function marke() {
+    const s = blatt(); const sel = getSelection(); if (!s) return 0;
+    if (!sel.rangeCount || !s.contains(sel.anchorNode)) return 0;
+    const r = document.createRange(); r.selectNodeContents(s); r.setEnd(sel.anchorNode, sel.anchorOffset); return r.toString().length;
+  }
+  function setzeMarke(n) {
+    const s = blatt(); const w = document.createTreeWalker(s, NodeFilter.SHOW_TEXT); let rest = n;
+    while (w.nextNode()) { const t = w.currentNode; if (rest <= t.length) { const r = document.createRange(); r.setStart(t, rest); r.collapse(true); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); return; } rest -= t.length; }
+  }
+  function merkeStand(art = '') {
+    const s = blatt(); if (!s) return;
+    const jetzt = Date.now();
+    if (art && art === hist.art && jetzt - hist.zuletzt < 900) { hist.zuletzt = jetzt; return; } // Tippen zusammenfassen
+    hist.zurueck.push({ html: s.innerHTML, kom: JSON.stringify(S.d.kommentare || []), marke: marke() }); if (hist.zurueck.length > 200) hist.zurueck.shift();
+    hist.vor = []; hist.zuletzt = jetzt; hist.art = art;
+  }
+  function verlaufSchritt(richtung) {
+    const von = richtung < 0 ? hist.zurueck : hist.vor; const nach = richtung < 0 ? hist.vor : hist.zurueck;
+    if (!von.length) return false;
+    const s = blatt(); nach.push({ html: s.innerHTML, kom: JSON.stringify(S.d.kommentare || []), marke: marke() });
+    const z = von.pop(); s.innerHTML = z.html; S.d.kommentare = JSON.parse(z.kom); setzeMarke(z.marke); hist.art = '';
+    s.focus({ preventScroll: true }); geaendert(); zeichneKommentare(); return true;
+  }
+  const rueckgaengig = () => { if (!verlaufSchritt(-1)) document.execCommand('undo'); geaendert(); };
+  const wiederholen = () => { if (!verlaufSchritt(1)) document.execCommand('redo'); geaendert(); };
+
   // ---------- Live-Tabellen aus Albatros ----------
   async function liveAktualisieren(nurDiese) {
     const s = blatt(); if (!s) return 0;
@@ -884,13 +923,14 @@
     albatros: () => albatrosWaehlen(),
     'live-neu': async () => { const n = await liveAktualisieren(S.live); meldung(n ? 'Tabelle aktualisiert.' : 'Schon aktuell.'); zeigeSchwebe(); },
     'live-oeffnen': () => { const [, id] = (S.live?.dataset.quelle || '').split(':'); if (id) A.albatros.oeffnen(id); },
-    'live-loesen': () => { if (!S.live) return; S.live.removeAttribute('data-quelle'); S.live.removeAttribute('data-quelle-name'); S.live.removeAttribute('contenteditable'); S.live.classList.remove('live-fehlt'); S.live = null; geaendert(); zeigeSchwebe(); meldung('Verknüpfung gelöst – die Tabelle kannst du jetzt frei bearbeiten.'); },
-    'live-weg': () => { if (!S.live) return; S.live.remove(); S.live = null; geaendert(); zeigeSchwebe(); },
+    'live-loesen': () => { merkeStand(); if (!S.live) return; S.live.removeAttribute('data-quelle'); S.live.removeAttribute('data-quelle-name'); S.live.removeAttribute('contenteditable'); S.live.classList.remove('live-fehlt'); S.live = null; geaendert(); zeigeSchwebe(); meldung('Verknüpfung gelöst – die Tabelle kannst du jetzt frei bearbeiten.'); },
+    'live-weg': () => { merkeStand(); if (!S.live) return; S.live.remove(); S.live = null; geaendert(); zeigeSchwebe(); },
     kommentar: () => {
       bereichZurueck();
       const sel = getSelection(); if (!sel.rangeCount || !inBlatt(sel.anchorNode)) { meldung('Erst Text markieren, dann Kommentar.'); return; }
       if (sel.isCollapsed) { sel.modify('move', 'backward', 'word'); sel.modify('extend', 'forward', 'word'); }
       if (sel.isCollapsed) { meldung('Erst Text markieren, dann Kommentar.'); return; }
+      merkeStand();
       const id = `k${Date.now().toString(36)}`;
       const teile = Pruefen.wickle(sel.getRangeAt(0), () => { const e = document.createElement('span'); e.className = 'kom'; e.dataset.kom = id; return e; });
       if (!teile.length) return;
@@ -898,7 +938,7 @@
       S.komAktiv = id; S.komFokus = true; sel.collapseToEnd(); geaendert(); zeichneKommentare();
     },
     'kom-erledigt': (el) => { const k = S.d.kommentare.find((x) => x.id === el.closest('.kom-karte').dataset.kom); if (!k) return; k.erledigt = !k.erledigt; if (k.erledigt && S.komAktiv === k.id) S.komAktiv = null; geaendert(); zeichneKommentare(); },
-    'kom-loeschen': (el) => { const id = el.closest('.kom-karte').dataset.kom; komAnker(id).forEach((a) => Pruefen.entpacken(a)); S.d.kommentare = S.d.kommentare.filter((x) => x.id !== id); geaendert(); zeichneKommentare(); },
+    'kom-loeschen': (el) => { merkeStand(); const id = el.closest('.kom-karte').dataset.kom; komAnker(id).forEach((a) => Pruefen.entpacken(a)); S.d.kommentare = S.d.kommentare.filter((x) => x.id !== id); geaendert(); zeichneKommentare(); },
     'kom-bearbeiten': (el) => { S.komBearbeiten = el.closest('.kom-karte').dataset.kom; S.komAktiv = S.komBearbeiten; S.komFokus = true; zeichneKommentare(); },
     'kom-erledigte': () => { S.zeigeErledigte = !S.zeigeErledigte; zeichneKommentare(); },
     verfolgen: () => { S.d.verfolgen = !S.d.verfolgen; meldung(S.d.verfolgen ? 'Änderungen werden jetzt verfolgt.' : 'Änderungen werden nicht mehr verfolgt.'); geaendert(); zeigeLeiste(); zaehle(); },
@@ -906,10 +946,10 @@
     rechtschreibung: () => { S.rechtschreibung = S.rechtschreibung === false; const b = blatt(); if (b) { b.spellcheck = S.rechtschreibung; b.blur(); b.focus(); } zeigeLeiste(); },
     'aend-vor': () => { if (!Pruefen.springe(blatt(), 1)) meldung('Keine Änderungen im Dokument.'); },
     'aend-zurueck': () => { if (!Pruefen.springe(blatt(), -1)) meldung('Keine Änderungen im Dokument.'); },
-    'aend-an': () => { bereichZurueck(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.annehmen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
-    'aend-ab': () => { bereichZurueck(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.ablehnen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
-    'aend-alle-an': () => { const l = Pruefen.alle(blatt()); l.forEach(Pruefen.annehmen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen angenommen.`); },
-    'aend-alle-ab': () => { const l = Pruefen.alle(blatt()); l.forEach(Pruefen.ablehnen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen abgelehnt.`); },
+    'aend-an': () => { bereichZurueck(); merkeStand(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.annehmen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
+    'aend-ab': () => { bereichZurueck(); merkeStand(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.ablehnen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
+    'aend-alle-an': () => { merkeStand(); const l = Pruefen.alle(blatt()); l.forEach(Pruefen.annehmen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen angenommen.`); },
+    'aend-alle-ab': () => { merkeStand(); const l = Pruefen.alle(blatt()); l.forEach(Pruefen.ablehnen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen abgelehnt.`); },
     docx: async () => { const r = await A.datei.docx({ bloecke: bloecke(blatt()), name: S.d.name, opt: { kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [] } }); if (r?.ok) meldung('Als Word gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); else if (r?.fehler) meldung(`Ging nicht: ${r.fehler.nachricht}`); },
     pdf: async () => { const r = await A.datei.pdf({ html: druckHtml(), name: S.d.name, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen) }); if (r?.ok) meldung('PDF gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); else if (r?.fehler) meldung(`Ging nicht: ${r.fehler.nachricht}`); },
     drucken: async () => { const r = await A.datei.drucken({ html: druckHtml() }); if (r?.fehler) meldung(`Drucken ging nicht: ${r.fehler.nachricht}`); },
@@ -931,7 +971,7 @@
   app.addEventListener('click', (ev) => {
     const rt = ev.target.closest('[data-reiter]'); if (rt) { S.reiter = rt.dataset.reiter; zeigeLeiste(); return; }
     const c = ev.target.closest('[data-cmd]');
-    if (c) { bereichZurueck(); document.execCommand(c.dataset.cmd); geaendert(); auswahlGeaendert(); return; }
+    if (c) { if (c.dataset.cmd === 'undo') { rueckgaengig(); return; } if (c.dataset.cmd === 'redo') { wiederholen(); return; } bereichZurueck(); document.execCommand(c.dataset.cmd); geaendert(); auswahlGeaendert(); return; }
     const a = ev.target.closest('[data-aktion]');
     if (a && aktionen[a.dataset.aktion]) { aktionen[a.dataset.aktion](a, ev); return; }
     const karte = ev.target.closest('.kom-karte');

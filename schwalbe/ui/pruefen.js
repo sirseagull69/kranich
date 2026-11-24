@@ -46,7 +46,7 @@ window.Pruefen = (() => {
     for (const n of textknoten(r)) {
       if (n === anker || inDel(n)) continue;
       const mi = meinIns(n);
-      if (mi) { n.remove(); if (!mi.textContent) mi.remove(); continue; }
+      if (mi) { n.remove(); if (!mi.textContent) { if (mi.contains(anker)) mi.parentNode.insertBefore(anker, mi); mi.remove(); } continue; }
       const vor = nachbar(n, -1);
       let d;
       if (meinDel(vor)) { vor.appendChild(n); d = vor; } else { d = neu('del'); n.parentNode.insertBefore(d, n); d.appendChild(n); }
@@ -55,9 +55,20 @@ window.Pruefen = (() => {
     // Nachbarn zusammenführen
     const nach = letzte && nachbar(letzte, 1);
     if (meinDel(nach) && nach !== letzte) { while (nach.firstChild) letzte.appendChild(nach.firstChild); nach.remove(); }
-    if (richtung === 'zurueck') { if (erste) { const r2 = document.createRange(); r2.setStartBefore(erste); r2.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r2); } else if (anker.parentNode) caret(anker, 0); }
-    else if (letzte) { const r2 = document.createRange(); r2.setStartAfter(letzte); r2.collapse(true); const s = getSelection(); s.removeAllRanges(); s.addRange(r2); } else if (anker.parentNode) caret(anker, 0);
-    if (anker.parentNode && (erste || letzte)) anker.remove();
+    const r2 = document.createRange();
+    if (richtung === 'zurueck' && erste) r2.setStartBefore(erste);
+    else if (richtung !== 'zurueck' && letzte) r2.setStartAfter(letzte);
+    else if (anker.parentNode) {
+      // Schreibmarke an echten Text setzen (leere Hilfsknoten mag Chromium nicht als Ort)
+      const vor = nachbar(anker, -1); const nach = nachbar(anker, 1);
+      if (vor?.nodeType === 3) r2.setStart(vor, vor.length);
+      else if (vor?.nodeType === 1 && vor.lastChild?.nodeType === 3 && vor.matches('ins.aend')) r2.setStart(vor.lastChild, vor.lastChild.length);
+      else if (nach?.nodeType === 3) r2.setStart(nach, 0);
+      else r2.setStartBefore(anker);
+    }
+    r2.collapse(true);
+    if (anker.parentNode) anker.remove();
+    const s = getSelection(); s.removeAllRanges(); s.addRange(r2);
   }
 
   function textEinfuegen(text) {
@@ -77,6 +88,17 @@ window.Pruefen = (() => {
     const e = neu('ins'); const t = document.createTextNode(text); e.appendChild(t); r.insertNode(e); caret(t, t.length);
   }
 
+  const blockVon = (n) => { let e = el(n); while (e && !/^(P|H[1-6]|LI|BLOCKQUOTE|TD|TH|DIV|ARTICLE)$/.test(e.tagName)) e = e.parentElement; return e; };
+  // Steht die Schreibmarke am Anfang (zurück) bzw. Ende (vor) ihres Absatzes? Dann Absätze normal verbinden.
+  function amAbsatzrand(zurueck) {
+    const sel = getSelection(); if (!sel.rangeCount || !sel.isCollapsed) return false;
+    const r = sel.getRangeAt(0); const b = blockVon(r.startContainer); if (!b) return false;
+    const t = document.createRange(); t.selectNodeContents(b);
+    if (zurueck) t.setEnd(r.startContainer, r.startOffset); else t.setStart(r.startContainer, r.startOffset);
+    // gelöschter (durchgestrichener) Text zählt nicht als Inhalt
+    const frag = t.cloneContents(); frag.querySelectorAll?.('del.aend').forEach((d) => d.remove());
+    return !frag.textContent.length;
+  }
   function loeschen(art) {
     const sel = getSelection(); if (!sel.rangeCount) return;
     const zurueck = /Backward/.test(art);
@@ -100,7 +122,10 @@ window.Pruefen = (() => {
     const t = e.inputType || '';
     if (t === 'insertText' || t === 'insertReplacementText') { const tx = e.data ?? e.dataTransfer?.getData('text/plain'); if (tx == null) return; e.preventDefault(); textEinfuegen(tx); return true; }
     if (t === 'insertFromPaste' || t === 'insertFromDrop') { const tx = e.dataTransfer?.getData('text/plain'); if (!tx) return; e.preventDefault(); textEinfuegen(tx); return true; }
-    if (t.startsWith('delete') && t !== 'deleteByDrag') { e.preventDefault(); loeschen(t); return true; }
+    if (t.startsWith('delete') && t !== 'deleteByDrag') {
+      if (/Content(Backward|Forward)$/.test(t) && amAbsatzrand(/Backward/.test(t))) return false; // Absätze verbinden darf der Browser
+      e.preventDefault(); loeschen(t); return true;
+    }
     return false;
   }
 
