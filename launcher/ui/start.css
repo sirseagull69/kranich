@@ -164,3 +164,9 @@ header .ver{margin-right:6px}
 .ori-satz{display:block;font:600 21px/1.15 'Caveat',cursive;color:#1d2742;transition:opacity .3s}
 .ori-satz.weg{opacity:0}
 .ori-mini{flex:none;margin-top:-4px}
+/* Weiche Wechsel zwischen Animationen */
+.held-vogel{position:relative;width:320px;height:320px}
+.zeile .ikon{position:relative}
+.lage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .55s ease}
+.lage.an{opacity:1}
+@media (max-width:980px){.held-vogel{width:220px;height:220px}}

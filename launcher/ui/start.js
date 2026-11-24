@@ -62,7 +62,7 @@
     const k = art(a); const an = a.id === S.wahl; const u = S.updates[a.id] || {};
     const marke = a.status === 'bald' ? '<span class="marke-bald">BALD</span>' : u.update ? '<span class="marke-neu">NEU</span>' : a.status === 'fehlt' ? '<span class="marke-bald">FEHLT</span>' : '';
     return `<button type="button" class="zeile ${an ? 'an' : ''}" data-wahl="${a.id}" style="--mittel:${k.mittel};--hell:${k.hell}" aria-pressed="${an}">
-      <span class="ikon">${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 44)}</span>
+      <span class="ikon"><div class="lage an">${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 44)}</div></span>
       <span class="txt"><b>${esc(k.name)}</b><span>${esc(k.rolle)}</span></span>${marke}</button>`;
   }
   function huegel(k) {
@@ -111,7 +111,7 @@
             </div>
             ${a.status === 'bereit' && u.update ? `<button type="button" class="upd-hinweis" data-los="update" ${S.laedt[a.id] != null ? 'disabled' : ''}><i></i><span>${S.laedt[a.id] != null ? `Lädt ${S.laedt[a.id]} % …` : `Version ${esc(u.neu)} ist da`}</span><b>${S.laedt[a.id] != null ? '' : 'Jetzt holen'}</b></button>` : `<span class="info">${ver && ver !== '0' ? `Version ${esc(ver)} · aktuell` : a.status === 'bald' ? 'Ist in Arbeit' : ''}</span>`}
           </div>
-          <div class="held-vogel" data-held>${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 320)}</div>
+          <div class="held-vogel" data-held><div class="lage an">${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 320)}</div></div>
         </div>
         <div class="weiter">
           <span class="weiter-titel">${dateien.length ? `Weitermachen mit ${esc(k.name)}` : 'Zuletzt bearbeitet'}</span>
@@ -231,21 +231,30 @@
   // Die Vögel reagieren nicht auf die Maus, machen aber von selbst immer wieder etwas anderes
   const zuletzt = {};
   const stapel = {};
-  function eigenes(id) {
+  function eigenes(id, key = id) {
     // Alle Animationen des Vogels einmal gemischt durchspielen, dann neu mischen – nie zweimal hintereinander dieselbe
-    if (!stapel[id]?.length) {
+    if (!stapel[key]?.length) {
       const alle = Object.keys(window.VOEGEL?.[id] || {}).filter((n) => n !== RUHE[id] && !/^ruhezustand$/.test(n));
       const l = alle.length ? alle : ['winkt', 'erledigt'];
-      stapel[id] = l.sort(() => Math.random() - 0.5);
-      if (stapel[id][0] === zuletzt[id] && stapel[id].length > 1) stapel[id].push(stapel[id].shift());
+      stapel[key] = l.sort(() => Math.random() - 0.5);
+      if (stapel[key][0] === zuletzt[key] && stapel[key].length > 1) stapel[key].push(stapel[key].shift());
     }
-    const x = stapel[id].shift(); zuletzt[id] = x; return x;
+    const x = stapel[key].shift(); zuletzt[key] = x; return x;
+  }
+  // Weich überblenden statt hart austauschen: neue Ebene einblenden, alte ausblenden
+  function wechsle(el, html) {
+    if (!el) return;
+    const alt = [...el.querySelectorAll(':scope > .lage')];
+    if (!alt.length) { el.innerHTML = `<div class="lage an">${html}</div>`; return; }
+    const neu = document.createElement('div'); neu.className = 'lage'; neu.innerHTML = html; el.appendChild(neu);
+    requestAnimationFrame(() => requestAnimationFrame(() => { neu.classList.add('an'); alt.forEach((x) => x.classList.remove('an')); }));
+    setTimeout(() => alt.forEach((x) => x.remove()), 650);
   }
   function zeigeKurz(anim, dauer) {
     const h = app.querySelector('[data-held]'); const id = S.wahl;
     if (!h || h.dataset.macht || !window.VOEGEL?.[id]) return;
-    h.dataset.macht = '1'; h.innerHTML = bild(id, anim, 320);
-    setTimeout(() => { if (!h.isConnected || S.wahl !== id) return; h.innerHTML = bild(id, RUHE[id] || 'ruhezustand-3', 320); delete h.dataset.macht; }, dauer);
+    h.dataset.macht = '1'; wechsle(h, bild(id, anim, 320));
+    setTimeout(() => { if (!h.isConnected || S.wahl !== id) return; wechsle(h, bild(id, RUHE[id] || 'ruhezustand-3', 320)); setTimeout(() => delete h.dataset.macht, 700); }, dauer);
   }
 
 
@@ -269,7 +278,7 @@
     const ids = S.apps.map((x) => x.id).filter((id) => window.VOEGEL?.[id]);
     const id = ids[Math.floor(Math.random() * ids.length)];
     const ik = app.querySelector(`.zeile[data-wahl="${id}"] .ikon`); if (!ik || ik.dataset.macht) return;
-    ik.dataset.macht = '1'; ik.innerHTML = bild(id, eigenes(`klein-${id}`.replace('klein-', '')) , 44);
-    setTimeout(() => { if (ik.isConnected) { ik.innerHTML = bild(id, RUHE[id] || 'ruhezustand-3', 44); delete ik.dataset.macht; } }, 3400);
+    ik.dataset.macht = '1'; wechsle(ik, bild(id, eigenes(id, `klein-${id}`), 44));
+    setTimeout(() => { if (ik.isConnected) { wechsle(ik, bild(id, RUHE[id] || 'ruhezustand-3', 44)); setTimeout(() => delete ik.dataset.macht, 700); } }, 3400);
   }, 4200);
 })();
