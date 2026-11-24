@@ -77,3 +77,12 @@
 select:not([multiple]):not([data-native]){appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%236b7286' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")!important;background-repeat:no-repeat!important;background-position:right 9px center!important;padding-right:26px!important}
 /* Symbole bei Windows-Skalierung scharf */
 button svg{shape-rendering:geometricPrecision}
+/* Schutz gegen App-eigene Stile */
+.oo-op-zeile.haken{display:flex!important;flex-direction:row!important;align-items:center!important;gap:14px!important;position:static!important;width:auto!important}
+.oo-op-zeile.haken>span{flex:1;display:flex;flex-direction:column}
+.oo-op-zeile.haken input[type="checkbox"]{position:static!important;opacity:1!important;appearance:auto!important;-webkit-appearance:checkbox!important;display:inline-block!important;margin:0!important;width:18px!important;height:18px!important;pointer-events:auto!important}
+.oo-reihe{flex-wrap:nowrap}.oo-reihe>.oo-btn{flex:none;width:auto}
+.oo-op-zeile>.oo-reihe{margin:0}
+.oo-bs-nav button span{white-space:nowrap}
+.oo-op-zeile>span.oo-reihe{flex-direction:row;align-items:center;gap:8px}
+.oo-op-zeile.haken{border:0!important;border-bottom:1px solid var(--oo-l)!important;background:none!important;height:auto!important;min-height:0!important;padding:12px 0!important;border-radius:0!important;box-shadow:none!important;margin:0!important}
