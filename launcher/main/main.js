@@ -226,7 +226,7 @@ function registriere() {
 function fenster() {
   const w = new BrowserWindow({
     width: 1180, height: 780, minWidth: 900, minHeight: 620,
-    title: 'Selbst gfaltet', backgroundColor: '#f4f0e8', autoHideMenuBar: true,
+    title: 'Ori Office', backgroundColor: '#141b31', autoHideMenuBar: true,
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });

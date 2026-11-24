@@ -33,49 +33,92 @@
     document.body.appendChild(m); setTimeout(() => m.remove(), 3200);
   }
 
-  const STATUS = { bereit: ['Bereit', ''], adresse: ['Adresse fehlt', 'grau'], bald: ['Kommt bald', 'grau'], fehlt: ['Nicht installiert', 'grau'] };
-  const LOS = { bereit: 'Öffnen →', adresse: 'Einrichten', bald: '', fehlt: 'Installieren' };
+  // ---------- Ori Office: jeder Vogel mit Farbe, Rolle und Spruch ----------
+  const ART = {
+    origami: { name: 'Ori', rolle: 'Fragen & Erledigen', spruch: 'Sag einfach, was du brauchst.', hell: '#ffe3d1', mittel: '#ffb48a', farbe: '#d2541b', dunkel: '#7a2c0e' },
+    albatros: { name: 'Albatros', rolle: 'Tabellen', spruch: 'Jede Zahl an ihrem Platz.', hell: '#d8eedf', mittel: '#a9dcbb', farbe: '#2f7a4d', dunkel: '#173f28' },
+    kranich: { name: 'Kranich', rolle: 'Folien & Gestalten', spruch: 'Langweilig? Nicht mit mir.', hell: '#e8e0fb', mittel: '#c9b9f6', farbe: '#6a4fc7', dunkel: '#33246f' },
+    schreiben: { name: 'Eule', rolle: 'Schreiben', spruch: 'Ein gutes Wort zur rechten Zeit.', hell: '#f5e7c8', mittel: '#ead09a', farbe: '#9a6a12', dunkel: '#4d3507' },
+    specht: { name: 'Specht', rolle: 'IT-Helfer', spruch: 'Ich klopf erst, wenn du willst.', hell: '#f8e0d9', mittel: '#f0b5a7', farbe: '#b23a28', dunkel: '#5c1910' },
+  };
+  const art = (a) => ART[a.id] || { name: a.name, rolle: a.aufgabe, spruch: '', hell: a.hell, mittel: a.hell, farbe: a.farbe, dunkel: '#1d2742' };
+  const EULE = (g) => `<svg viewBox="0 0 100 100" width="${g}" height="${g}" aria-hidden="true"><polygon points="30,40 50,30 70,40 66,78 34,78" fill="#e0b25a"/><polygon points="30,40 50,30 50,78 34,78" fill="#c8922f"/><polygon points="30,40 36,24 44,35" fill="#9a6a12"/><polygon points="70,40 64,24 56,35" fill="#9a6a12"/><circle cx="42" cy="46" r="7" fill="#fff8ea"/><circle cx="58" cy="46" r="7" fill="#fff8ea"/><circle cx="42" cy="46" r="3" fill="#1d2742"/><circle cx="58" cy="46" r="3" fill="#1d2742"/><polygon points="47,53 53,53 50,59" fill="#e8590c"/><polygon points="40,78 44,84 48,78" fill="#9a6a12"/><polygon points="52,78 56,84 60,78" fill="#9a6a12"/></svg>`;
+  const bild = (id, anim, g) => (window.VOEGEL?.[id] ? vogel(id, anim, g).replace(/<ellipse[^>]*>(<animate[^>]*><\/animate>)*<\/ellipse>/, '') : EULE(g));
+  const RUHE = { origami: 'ruhezustand-2', kranich: 'ruhezustand-3', albatros: 'ruhezustand-4', specht: 'ruhezustand-2' };
+  try { S.wahl = localStorage.getItem('wahl') || 'albatros'; } catch { S.wahl = 'albatros'; }
+  const gewaehlt = () => S.apps.find((a) => a.id === S.wahl) || S.apps[0];
 
-  const SPECHT = '<svg class="specht-bild" width="120" height="120" viewBox="0 0 64 64" aria-hidden="true"><rect x="47" y="6" width="5" height="54" rx="1.5" fill="#e3ddcf"/><polygon points="20,50 28,26 38,22 44,40 34,52" fill="#1d2742"/><polygon points="28,26 38,22 34,34" fill="#2c3a5e"/><polygon points="34,34 38,22 44,40" fill="#3a4a72"/><polygon points="36,36 44,40 40,46" fill="#fffdf9"/><polygon points="20,50 14,58 24,54" fill="#1d2742"/><g class="specht-kopf"><polygon points="30,18 40,14 42,24 34,26" fill="#fffdf9"/><polygon points="30,18 36,11 42,15 40,14" fill="#b23a28"/><polygon points="36,11 44,12 42,17" fill="#8f2a1c"/><polygon points="42,19 50,21 42,23" fill="#e8b04a"/><circle cx="38" cy="19" r="1.6" fill="#1d2742"/></g></svg>';
-  function karte(a) {
-    let [st, art] = STATUS[a.status] || STATUS.fehlt;
-    const u = S.updates[a.id] || {};
-    const pct = S.laedt[a.id];
-    let los = LOS[a.status] || '';
-    if (pct != null) { st = pct >= 100 ? 'Installiert …' : `Lädt ${pct} %`; art = ''; los = ''; }
-    else if (u.update) { st = `Update ${u.neu}`; art = 'update'; los = '<span class="updknopf" data-update="' + a.id + '">Aktualisieren</span>'; }
-    else if ((a.status === 'fehlt' || (a.web && !a.version)) && u.installierbar) los = '<span class="updknopf" data-update="' + a.id + '">Installieren</span>';
-    else if (a.status === 'fehlt') los = '';
-    const bild = window.VOEGEL?.[a.id] ? vogel(a.id, { origami: 'ruhezustand-2', kranich: 'ruhezustand-3', albatros: 'ruhezustand-4', specht: 'ruhezustand-2' }[a.id] || 'ruhezustand-3', 140) : a.id === 'specht' ? SPECHT : '<span class="papier"></span>';
-    return `<button type="button" class="vogel ${a.status === 'bald' ? 'bald' : ''}" style="--farbe:${a.farbe};--hell:${a.hell}" data-app="${a.id}" ${a.status === 'bald' ? 'aria-disabled="true"' : ''}>
-      <span class="bild">${bild}</span><b class="h">${esc(a.name)}</b><span class="aufgabe">${esc(a.aufgabe)}${(a.version || u.installiert) && (a.version || u.installiert) !== '0' ? ` · <span class="ver">Version ${esc(a.version || u.installiert)}</span>` : ''}</span>
-      <span class="fuss"><span class="chip ${art}"><i></i>${st}</span><span class="los">${los}</span></span></button>`;
+  // Was der große Knopf gerade tun soll
+  function knopf(a) {
+    const u = S.updates[a.id] || {}; const pct = S.laedt[a.id];
+    if (pct != null) return { text: pct >= 100 ? 'Wird installiert …' : `Lädt ${pct} %`, aktion: '', aus: true };
+    if (a.status === 'bald') return { text: 'Kommt bald', aktion: '', aus: true };
+    if (u.update) return { text: `Aktualisieren auf ${u.neu}`, aktion: 'update' };
+    if (a.status === 'fehlt' || (a.web && !a.version && u.installierbar)) return u.installierbar ? { text: 'Installieren', aktion: 'update' } : { text: 'Nicht installiert', aktion: '', aus: true };
+    if (a.status === 'adresse') return { text: 'Einrichten', aktion: 'einst' };
+    return { text: 'Öffnen', aktion: 'oeffnen' };
+  }
+  function zeile(a) {
+    const k = art(a); const an = a.id === S.wahl; const u = S.updates[a.id] || {};
+    const marke = a.status === 'bald' ? '<span class="marke-bald">BALD</span>' : u.update ? '<span class="marke-upd" title="Update da"></span>' : a.status === 'fehlt' ? '<span class="marke-bald">FEHLT</span>' : '';
+    return `<button type="button" class="zeile ${an ? 'an' : ''}" data-wahl="${a.id}" style="--mittel:${k.mittel};--hell:${k.hell}" aria-pressed="${an}">
+      <span class="ikon">${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 44)}</span>
+      <span class="txt"><b>${esc(k.name)}</b><span>${esc(k.rolle)}</span></span>${marke}</button>`;
+  }
+  function huegel(k) {
+    return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,686 0,430 240,330 520,420 850,300 850,686" fill="${k.farbe}" opacity=".5"/><polygon points="0,686 0,540 300,470 600,560 850,480 850,686" fill="${k.farbe}"/><polygon points="520,0 850,0 850,260" fill="#fff" opacity=".05"/></svg>`;
   }
 
   function render() {
-    const origami = S.apps.find((a) => a.id === 'origami');
-    app.innerHTML = `<header><div class="marke"><img src="marke.svg" width="32" height="32" alt="" class="markenbild"><b class="h">Selbst gfaltet</b></div><div class="platz"></div>
-        ${S.version ? `<span class="ver" title="Version vom Startfenster">Startfenster ${esc(S.version)}</span>` : ''}<button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></header>
-      <main>${(() => { const n = Object.entries(S.updates).filter(([id, u]) => u.update && id !== 'start').length + (S.updates.start?.update ? 1 : 0); return n >= 2 ? `<div class="band"><b class="h">${n} Updates da</b><span class="leise">Alles mit einem Klick, nacheinander.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-alle>Alles aktualisieren</button></div>` : ''; })()}${S.updates.start?.update && Object.values(S.updates).filter((u) => u.update).length < 2 ? `<div class="band"><b class="h">Neue Version vom Startfenster (${esc(S.updates.start.neu)})</b><span class="leise">Dauert nur ein paar Sekunden.</span><span class="platz"></span><button type="button" class="btn" style="background:#1d2742" data-update="start">${S.laedt.start != null ? `Lädt ${S.laedt.start} %` : 'Jetzt aktualisieren'}</button></div>` : ''}
-        <div class="gruss"><span class="hand">${esc(gruss())} – welcher Vogel darf heute?</span><h1>Was machen wir heute?</h1></div>
-        <div class="voegel">${S.apps.map(karte).join('')}</div>
-        <div class="zeile2">
-          <section class="karte frag" style="--hell:${origami?.hell}"><h2>${vogel('origami', 'denkt-nach', 30)}origami fragen</h2>
-            <textarea id="frage" placeholder="Frag origami etwas, z. B. „Was steht heute an?“" aria-label="Frage an origami"></textarea>
-            <div class="reihe"><span class="leise" style="font-size:13px;flex:1">${origami?.status === 'bereit' ? 'Öffnet origami mit deiner Frage.' : S.updates.origami?.installierbar ? 'Installier zuerst origami (Karte oben).' : 'Trag zuerst die Adresse von origami ein (Zahnrad oben rechts).'}</span><button type="button" class="btn" data-aktion="fragen" ${origami?.status === 'bereit' ? '' : 'disabled'}>Fragen</button></div></section>
-          <section class="karte"><h2>Zuletzt bearbeitet</h2>
-            <div class="liste">${S.zuletzt.length ? S.zuletzt.map((d) => { const a = S.apps.find((x) => x.id === d.app) || {}; return `<button type="button" class="datei" style="--hell:${a.hell}" data-datei="${esc(d.id)}" data-app="${esc(d.app)}"><span class="vor" ${d.vorschau ? `style="background-image:url('${d.vorschau}')"` : ''}></span><span class="txt"><b>${esc(d.name)}</b><span>${esc(a.name || '')} · ${esc(d.info)}</span></span><span class="wann">${esc(wann(d.geaendert))}</span></button>`; }).join('') : '<div class="leer">Noch nichts bearbeitet. Öffne oben einen Vogel und leg los.</div>'}</div></section>
+    const a = gewaehlt(); if (!a) return;
+    const k = art(a); const kn = knopf(a); const u = S.updates[a.id] || {};
+    const ver = a.version || u.installiert;
+    const updates = Object.entries(S.updates).filter(([, x]) => x.update).length;
+    const dateien = S.zuletzt.filter((d) => d.app === a.id).slice(0, 3);
+    const weiter = (dateien.length ? dateien : S.zuletzt.slice(0, 3));
+    app.innerHTML = `<nav class="seite" aria-label="Vögel">
+        <div class="kopf">${bild('origami', 'ruhezustand-2', 42)}<div><b>Ori Office</b><span class="hand">${esc(gruss())}</span></div></div>
+        <div class="liste-voegel">${S.apps.map(zeile).join('')}</div>
+        <div class="platz"></div>
+        ${updates ? `<button type="button" class="status upd" data-alle><i></i>${updates === 1 ? 'Ein Update da' : `${updates} Updates da`} · alle holen</button>` : `<div class="status"><i></i>Alles aktuell</div>`}
+        <div class="unten"><span class="ver">${S.version ? `Startfenster ${esc(S.version)}` : ''}</span><button type="button" class="rund" data-aktion="einst" title="Einstellungen" aria-label="Einstellungen">${ICON.zahnrad}</button></div>
+      </nav>
+      <main class="buehne" style="--farbe:${k.farbe};--mittel:${k.mittel};--dunkel:${k.dunkel};--hell:${k.hell}">
+        ${huegel(k)}
+        <div class="oben"><label class="ori-feld">${bild('origami', 'denkt-nach', 24)}<span class="nur-sr">Ori fragen</span><input id="frage" placeholder="Ori fragen …" autocomplete="off"></label></div>
+        <div class="held">
+          <div class="held-text">
+            <span class="rolle">${esc(k.rolle.toUpperCase())}</span>
+            <h1>${esc(k.name)}</h1>
+            ${k.spruch ? `<p class="spruch">„${esc(k.spruch)}“</p>` : ''}
+            <div class="knoepfe">
+              <button type="button" class="los" data-los="${kn.aktion}" ${kn.aus ? 'disabled' : ''}>${esc(kn.text)}</button>
+              ${a.status === 'bereit' && u.update ? '<button type="button" class="zweit" data-los="oeffnen">Trotzdem öffnen</button>' : ''}
+            </div>
+            <span class="info">${ver && ver !== '0' ? `Version ${esc(ver)}` : a.status === 'bald' ? 'Ist in Arbeit' : ''}${ver && ver !== '0' ? (u.update ? ` · ${esc(u.neu)} ist da` : ' · aktuell') : ''}</span>
+          </div>
+          <div class="held-vogel" data-held>${bild(a.id, RUHE[a.id] || 'ruhezustand-3', 320)}</div>
+        </div>
+        <div class="weiter">
+          <span class="weiter-titel">${dateien.length ? `Weitermachen mit ${esc(k.name)}` : 'Zuletzt bearbeitet'}</span>
+          <div class="weiter-liste">${weiter.length ? weiter.map((d) => { const x = S.apps.find((q) => q.id === d.app) || {}; return `<button type="button" class="datei" data-datei="${esc(d.id)}" data-app="${esc(d.app)}"><b>${esc(d.name)}</b><span>${esc(art(x).name || '')} · ${esc(wann(d.geaendert))}</span></button>`; }).join('') : '<span class="leer">Noch nichts bearbeitet – öffne einen Vogel und leg los.</span>'}</div>
         </div>
       </main>`;
-    document.getElementById('frage').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); fragen(); } });
+    document.getElementById('frage').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); fragen(); } });
+  }
+  function waehle(id) {
+    if (S.wahl === id) return;
+    S.wahl = id; try { localStorage.setItem('wahl', id); } catch { /* egal */ }
+    render();
+    const h = app.querySelector('[data-held]'); if (h) { h.classList.add('neu'); }
   }
 
   async function starte(id, args = [], karteEl) {
     const a = S.apps.find((x) => x.id === id);
-    if (!a || a.status === 'bald') { meldung(`${a?.name || 'Das'} kommt bald.`); return; }
+    if (!a || a.status === 'bald') { meldung(`${a ? art(a).name : 'Das'} kommt bald.`); return; }
     if (a.status === 'adresse') { einstellungen(); return; }
-    const bild = karteEl?.querySelector('.bild');
-    if (bild && window.VOEGEL?.[id]) bild.innerHTML = vogel(id, 'senden', 140);
+    const held = app.querySelector('[data-held]');
+    if (held && window.VOEGEL?.[id] && id === S.wahl) held.innerHTML = bild(id, 'senden', 320);
     const r = await N.starte(id, args);
     if (r?.fehler === 'fehlt') { if (S.updates[id]?.installierbar) aktualisiere(id); else meldung(`${a.name} ist noch nicht installiert.`); }
     else if (r?.fehler === 'adresse') einstellungen();
@@ -157,36 +200,39 @@
 
   app.addEventListener('click', (e) => {
     if (e.target.closest('[data-alle]')) return (async () => { for (const id of Object.keys(S.updates).filter((k) => k !== 'start' && S.updates[k].update)) await aktualisiere(id); if (S.updates.start?.update) await aktualisiere('start'); })();
-    const u = e.target.closest('[data-update]');
-    if (u) { e.stopPropagation(); return aktualisiere(u.dataset.update); }
-    const d = e.target.closest('[data-datei]');
-    if (d) return starte(d.dataset.app, [`--oeffne=${d.dataset.datei}`]);
-    const v = e.target.closest('.vogel');
-    if (v) return starte(v.dataset.app, [], v);
+    const w = e.target.closest('[data-wahl]'); if (w) return waehle(w.dataset.wahl);
+    const d = e.target.closest('[data-datei]'); if (d) return starte(d.dataset.app, [`--oeffne=${d.dataset.datei}`]);
+    const l = e.target.closest('[data-los]');
+    if (l) { const id = S.wahl; if (l.dataset.los === 'oeffnen') return starte(id); if (l.dataset.los === 'update') return aktualisiere(id); if (l.dataset.los === 'einst') return einstellungen(); }
     const a = e.target.closest('[data-aktion]');
     if (a?.dataset.aktion === 'einst') return einstellungen();
-    if (a?.dataset.aktion === 'fragen') return fragen();
   });
-  // Drüberfahren: der Vogel winkt
-  app.addEventListener('mouseover', (e) => {
-    const v = e.target.closest('.vogel');
-    if (!v || v.dataset.winkt || !window.VOEGEL?.[v.dataset.app] || v.classList.contains('bald')) return;
-    // erst winken, beim nächsten Mal etwas Eigenes
-    const n = Number(v.dataset.mal || 0); v.dataset.mal = n + 1;
-    zeigeKurz(v, n % 2 ? eigenes(v.dataset.app) : 'winkt', n % 2 ? 3400 : 2300);
+  app.addEventListener('dblclick', (e) => { const w = e.target.closest('[data-wahl]'); if (w) starte(w.dataset.wahl); });
+  // Pfeiltasten in der Vogel-Liste, Enter öffnet
+  document.addEventListener('keydown', (e) => {
+    if (document.querySelector('.schleier') || e.target.closest('input,textarea')) return;
+    const ids = S.apps.map((x) => x.id); const i = ids.indexOf(S.wahl);
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); waehle(ids[(i + (e.key === 'ArrowDown' ? 1 : -1) + ids.length) % ids.length]); app.querySelector('.zeile.an')?.focus(); }
+    if (e.key === 'Enter' && e.target === document.body) { const g = gewaehlt(); if (knopf(g).aktion === 'oeffnen') starte(g.id); }
   });
-  // Eigene Animationen je Vogel (passend zur App), nie zweimal dasselbe hintereinander
+  // Der große Vogel macht zwischendurch etwas Eigenes, beim Drüberfahren winkt er
   const zuletzt = {};
   function eigenes(id) {
     const l = window.VOEGEL_EIGEN?.[id] || ['winkt', 'erledigt'];
-    let a; do { a = l[Math.floor(Math.random() * l.length)]; } while (l.length > 1 && a === zuletzt[id]);
-    zuletzt[id] = a; return a;
+    let x; do { x = l[Math.floor(Math.random() * l.length)]; } while (l.length > 1 && x === zuletzt[id]);
+    zuletzt[id] = x; return x;
   }
-  function zeigeKurz(v, anim, dauer) {
-    v.dataset.winkt = '1';
-    v.querySelector('.bild').innerHTML = vogel(v.dataset.app, anim, 140);
-    setTimeout(() => { if (!v.isConnected) return; v.querySelector('.bild').innerHTML = vogel(v.dataset.app, ['ruhezustand-2', 'ruhezustand-3', 'ruhezustand-4'][Math.floor(Math.random() * 3)], 140); delete v.dataset.winkt; }, dauer);
+  function zeigeKurz(anim, dauer) {
+    const h = app.querySelector('[data-held]'); const id = S.wahl;
+    if (!h || h.dataset.macht || !window.VOEGEL?.[id]) return;
+    h.dataset.macht = '1'; h.innerHTML = bild(id, anim, 320);
+    setTimeout(() => { if (!h.isConnected || S.wahl !== id) return; h.innerHTML = bild(id, RUHE[id] || 'ruhezustand-3', 320); delete h.dataset.macht; }, dauer);
   }
+  app.addEventListener('mouseover', (e) => {
+    const h = e.target.closest('[data-held]'); if (!h) return;
+    const n = Number(h.dataset.mal || 0); h.dataset.mal = n + 1;
+    zeigeKurz(n % 2 ? eigenes(S.wahl) : 'winkt', n % 2 ? 3400 : 2300);
+  });
 
   async function laden() {
     [S.apps, S.zuletzt, S.version] = await Promise.all([N.apps(), N.zuletzt(), N.version()]);
@@ -194,17 +240,11 @@
     const u = await N.updates();
     if (u && !u.fehler) { S.updates = u; render(); }
   }
-  N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; const el = document.querySelector(`.vogel[data-app="${id}"] .chip`); if (el && id !== 'start') el.lastChild.textContent = `Lädt ${pct} %`; else render(); });
+  N.beiFortschritt(({ id, pct }) => { S.laedt[id] = pct; const b = app.querySelector('.los'); if (id === S.wahl && b) b.textContent = pct >= 100 ? 'Wird installiert …' : `Lädt ${pct} %`; else if (id === 'start') render(); });
   laden();
   setTimeout(() => document.body.classList.add('ruhig'), 2000);
   setTimeout(() => { if (!document.querySelector('.schleier')) N.standFoto?.('startfenster'); }, 3000);
   setInterval(async () => { const u = await N.updates(); if (u && !u.fehler) { S.updates = u; if (!document.querySelector('.schleier')) render(); } }, 5 * 60 * 1000);
-  // Zwischendurch macht ein Vogel von selbst etwas
-  setInterval(() => {
-    if (document.hidden) return;
-    const v = [...document.querySelectorAll('.vogel:not(.bald)')].filter((x) => window.VOEGEL?.[x.dataset.app] && !x.dataset.winkt);
-    const k = v[Math.floor(Math.random() * v.length)];
-    if (!k) return;
-    zeigeKurz(k, eigenes(k.dataset.app), 3600);
-  }, 7000);
+  // Zwischendurch macht der gewählte Vogel von selbst etwas
+  setInterval(() => { if (!document.hidden) zeigeKurz(eigenes(S.wahl), 3600); }, 9000);
 })();

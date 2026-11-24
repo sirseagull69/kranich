@@ -21,16 +21,11 @@ button{transition:transform .12s var(--sanft),background-color .15s,box-shadow .
 button:active:not(:disabled){transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
 /* Startfenster */
-body:not(.ruhig) header{animation:von-oben .55s var(--sanft) both}
-body:not(.ruhig) .marke .markenbild{animation:marke-falten .9s var(--feder) .2s both}
-body:not(.ruhig) .gruss .hand{animation:hoch .6s var(--sanft) .15s both}
-body:not(.ruhig) .gruss h1{animation:hoch .6s var(--sanft) .25s both}
-body:not(.ruhig) .gruss h1::after{content:"";display:block;width:180px;height:6px;margin-top:6px;border-radius:3px;background:linear-gradient(90deg,#ffd9c2,#ddd2fb,#cfe9d8);animation:falz-ziehen .9s var(--sanft) .55s both}
-body:not(.ruhig) .vogel{animation:hoch .6s var(--sanft) both}
-body:not(.ruhig) .vogel:nth-child(1){animation-delay:.35s}.vogel:nth-child(2){animation-delay:.43s}.vogel:nth-child(3){animation-delay:.51s}.vogel:nth-child(4){animation-delay:.59s}
-body:not(.ruhig) .zeile2>*{animation:hoch .6s var(--sanft) .7s both}
-body:not(.ruhig) .zeile2>*:nth-child(2){animation-delay:.8s}
-body:not(.ruhig) .band{animation:aufklappen .6s var(--sanft) .2s both;transform-origin:top center}
-.chip.update i{animation:puls-gruen 1.8s ease-out infinite}
-.papier{animation:schweben 4.5s ease-in-out infinite}
-.meldung{animation:meldung-an .35s var(--sanft) both}
+body:not(.ruhig) .seite .kopf{animation:von-links .55s var(--sanft) both}
+body:not(.ruhig) .zeile{animation:von-links .5s var(--sanft) both}
+body:not(.ruhig) .zeile:nth-child(2){animation-delay:.06s}body:not(.ruhig) .zeile:nth-child(3){animation-delay:.12s}body:not(.ruhig) .zeile:nth-child(4){animation-delay:.18s}body:not(.ruhig) .zeile:nth-child(5){animation-delay:.24s}
+body:not(.ruhig) .held-text > *{animation:hoch .6s var(--sanft) both}
+body:not(.ruhig) .held-text h1{animation-delay:.08s}body:not(.ruhig) .held-text .spruch{animation-delay:.16s}body:not(.ruhig) .knoepfe{animation-delay:.24s}
+body:not(.ruhig) .held-vogel{animation:von-rechts .7s var(--sanft) .1s both}
+body:not(.ruhig) .datei{animation:hoch .5s var(--sanft) .3s both}
+.meldung{animation:meldung-an .3s var(--sanft) both}
