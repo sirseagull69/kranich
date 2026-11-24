@@ -10,8 +10,8 @@ const still = (svg) => svg
   .replace(/<ellipse[^>]*>(<\/ellipse>)?/g, '')
   .replace(/ style="[^"]*"/, '').replace(/ aria-hidden="true"/, '');
 const platziere = (svg, x, y, g) => still(svg).replace(/ width="[^"]*" height="[^"]*"/, ` width="${g}" height="${g}"`).replace('<svg ', `<svg x="${x}" y="${y}" `);
-const KARTE = 'M262 96 H700 L928 324 V762 A166 166 0 0 1 762 928 H262 A166 166 0 0 1 96 762 V262 A166 166 0 0 1 262 96Z';
-const OHR = 'M700 96 L928 324 H760 A60 60 0 0 1 700 264Z';
+const KARTE = 'M262 96 H758 L928 266 V762 A166 166 0 0 1 762 928 H262 A166 166 0 0 1 96 762 V262 A166 166 0 0 1 262 96Z';
+const OHR = 'M758 96 L928 266 H806 A48 48 0 0 1 758 218Z';
 const karte = (hell, farbe, innen) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024"><path d="${KARTE}" fill="${hell}"/><path d="${OHR}" fill="${farbe}"/>${innen}</svg>`;
 const vogel = (id) => (V[id].find((x) => x.name === 'ruhezustand-2') || V[id][0]).svg;
 
@@ -37,7 +37,7 @@ for (const [ordner, hell, farbe, quelle, x0, y0, g0] of APPS) {
 }
 
 // Startfenster: cremefarbene Karte, Eselsohr in Tinte, darauf die vier Apps als kleine Kacheln (wie ein App-Ordner)
-const KACHEL = 262; const LUECKE = 30; const X0 = 196; const Y0 = 286;
+const KACHEL = 250; const LUECKE = 30; const X0 = 247; const Y0 = 318;
 const KREIS = [['kranich', '#ece6fd', '#7c5cd6', 0, 0], ['albatros', '#dcf0e3', '#2f8a55', 1, 0], ['schwalbe', '#dbe6f7', '#2c5aa0', 0, 1], ['specht', '#f8e2dc', '#b23a28', 1, 1]];
 const [fx, fy, fs2] = LAGEN.startfenster || [0, 0, 1];
 const familie = KREIS.map(([id, hell, farbe, sp, ze]) => { const x = X0 + sp * (KACHEL + LUECKE); const y = Y0 + ze * (KACHEL + LUECKE); return `<rect x="${x}" y="${y}" width="${KACHEL}" height="${KACHEL}" rx="62" fill="${hell}"/><path d="M${x + KACHEL - 70} ${y} H${x + KACHEL - 62} A62 62 0 0 1 ${x + KACHEL} ${y + 62} V${y + 70} Z" fill="${farbe}"/>${platziere(vogel(id), x + 22, y + 26, KACHEL - 44)}`; }).join('');

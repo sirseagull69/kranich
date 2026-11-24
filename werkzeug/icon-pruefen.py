@@ -4,7 +4,7 @@
 import json, subprocess, os
 from PIL import Image
 HIER = os.path.dirname(os.path.abspath(__file__)); WURZEL = os.path.dirname(HIER)
-ZIEL = 120          # Mindestabstand zur Falte (senkrecht, in px bei 1024)
+ZIEL = 56           # Mindestabstand zum umgeklappten Eselsohr (Fläche x 758–928, y 96–266), in px bei 1024
 START = {'.': [150, 150, 720], 'albatros': [132, 150, 760], 'schwalbe': [150, 150, 740], 'specht': [150, 150, 720], 'origami': [150, 150, 720], 'startfenster': [0, 0, 1]}
 def name(o): return 'kranich' if o == '.' else o
 def messen(o):
@@ -12,7 +12,9 @@ def messen(o):
     px = a.load(); w, h = a.size; m = 9999
     for y in range(0, h, 2):
         for x in range(0, w, 2):
-            if px[x, y] > 40: m = min(m, (y - (x - 604)) / 1.414)
+            if px[x, y] > 40:
+                dx = max(758 - x, 0); dy = max(y - 266, 0)
+                m = min(m, (dx * dx + dy * dy) ** 0.5)
     return m, a.getbbox()
 def bauen(lagen, nur_vogel=True):
     json.dump(lagen, open(os.path.join(HIER, 'icon-lagen.json'), 'w'), indent=1)
