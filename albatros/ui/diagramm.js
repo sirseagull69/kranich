@@ -75,7 +75,7 @@
     const max = Math.max(0, ...alle); const min = Math.min(0, ...alle);
     const s = schritt(max - min || 1); const hoch = Math.ceil(max / s) * s || s; const tief = Math.floor(min / s) * s;
     const L = quer ? Math.min(160, 18 + Math.max(...Array.from({ length: n }, (_, i) => kuerzen(nameVon(i), 20).length)) * 7) : 62;
-    const R = 20; const O = oben + (mehr ? 14 : 4); const U = quer ? 34 : (n > 8 ? 74 : 40);
+    const R = 20; const O = oben + (mehr ? 14 : 4); const U = quer ? 34 : ((n > 6 || (W - 82) / Math.max(1, n) < 70) ? 84 : 40);
     const lg = mehr ? legende(reihen.map((r) => r.name)) : '';
     let g = '';
     if (art === 'punkte') {
@@ -102,8 +102,11 @@
     const Y = (v) => O + (H - O - U) * (1 - (v - tief) / (hoch - tief || 1));
     for (let v = tief; v <= hoch + 1e-9; v += s) g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="#ebe5d8"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end" ${SCHRIFT} font-size="11.5" fill="#7a7f8e">${esc(kurz(v))}</text>`;
     const feld = (W - L - R) / n;
-    const jede = Math.ceil(n / Math.max(1, Math.floor((W - L - R) / 46)));
-    for (let i = 0; i < n; i += jede) g += `<text transform="translate(${L + feld * i + feld / 2},${H - U + 16}) rotate(${n > 8 ? -35 : 0})" text-anchor="${n > 8 ? 'end' : 'middle'}" ${TEXT} font-size="12" fill="#1d2742">${esc(kuerzen(nameVon(i), 16))}</text>`;
+    // Beschriftung: schräg, sobald es eng wird – und dann alle zeigen, solange je Name ~13 px Platz da sind
+    const schraeg = n > 6 || feld < 70;
+    const jede = schraeg ? Math.ceil(13 / Math.max(1, feld)) : 1;
+    const lang = schraeg ? 13 : 16;
+    for (let i = 0; i < n; i += jede) g += `<text transform="translate(${L + feld * i + feld / 2 + (schraeg ? 4 : 0)},${H - U + 14}) rotate(${schraeg ? -40 : 0})" text-anchor="${schraeg ? 'end' : 'middle'}" ${TEXT} font-size="${schraeg ? 11.5 : 12}" fill="#1d2742">${esc(kuerzen(nameVon(i), lang))}</text>`;
     if (art === 'linie' || art === 'flaeche') {
       reihen.forEach((r, ri) => {
         const pkt = r.werte.map((v, i) => (typeof v === 'number' ? [L + feld * i + feld / 2, Y(v)] : null)).filter(Boolean);
