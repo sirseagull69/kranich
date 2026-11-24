@@ -68,3 +68,24 @@ test('docx: Tabellenraster ist gültiges XML, Marker nach Farbton', async () => 
   assert.match(xml, /w:highlight w:val="cyan"/);
   assert.match(xml, /w:highlight w:val="(red|magenta)"/);
 });
+
+test('Word: Kommentare und nachverfolgte Änderungen hin und zurück', async () => {
+  const bl = [
+    { art: 'p', laeufe: [{ t: 'Der ' }, { t: 'Router', kom: 'k1' }, { t: ' steht ', kom: 'k1' }, { t: 'im Keller', del: { autor: 'Nils', zeit: '2026-11-24T10:00:00Z' } }, { t: 'im Flur', ins: { autor: 'Nils', zeit: '2026-11-24T10:00:00Z' } }, { t: '.' }] },
+    { art: 'p', laeufe: [{ t: 'Zweiter Absatz', kom: 'k2' }] },
+  ];
+  const buf = await docxSchreiben(bl, 'Test', { kommentare: [{ id: 'k1', autor: 'Nils Pohler', text: 'Welcher Router?', zeit: '2026-11-24T10:00:00.000Z', antworten: [{ autor: 'Marco', text: 'Die Fritzbox' }] }, { id: 'k2', autor: 'Nils', text: 'Kürzen' }, { id: 'weg', autor: 'x', text: 'nicht im Text' }] });
+  const zip = await JSZip.loadAsync(buf);
+  const doc = await zip.file('word/document.xml').async('string');
+  assert.strictEqual((doc.match(/commentRangeStart/g) || []).length, 2);
+  assert.match(doc, /<w:del w:id="\d+" w:author="Nils" w:date="2026-11-24T10:00:00Z"><w:r><w:delText xml:space="preserve">im Keller<\/w:delText><\/w:r><\/w:del>/);
+  assert.match(doc, /<w:ins [^>]*><w:r><w:t xml:space="preserve">im Flur<\/w:t><\/w:r><\/w:ins>/);
+  const kom = await zip.file('word/comments.xml').async('string');
+  assert.match(kom, /Welcher Router\?/); assert.match(kom, /Die Fritzbox/); assert.doesNotMatch(kom, /nicht im Text/);
+  const r = await docxLesen(buf);
+  assert.strictEqual(r.kommentare.length, 2);
+  assert.strictEqual(r.kommentare[0].autor, 'Nils Pohler');
+  assert.match(r.html, /⟦K:0⟧Router steht ⟦\/K:0⟧/);
+  assert.match(r.html, /⟦D:\d+⟧im Keller⟦\/D⟧⟦I:\d+⟧im Flur⟦\/I⟧/);
+  assert.strictEqual(Object.values(r.aenderungen)[0].autor, 'Nils');
+});

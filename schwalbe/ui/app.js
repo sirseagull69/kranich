@@ -7,6 +7,12 @@
 
   // ---------- Kleinkram ----------
   const ICON = {
+    kommentar: 'M4 5h16v11H9l-5 4zM8 9h8M8 12h5',
+    spur: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3M4 4h7',
+    haken: 'M5 12l5 5L20 7',
+    kreuz: 'M6 6l12 12M18 6L6 18',
+    abc: 'M4 16l3-9 3 9M5 13h4M13 8v8h3a2 2 0 0 0 0-4h-3m0 0h2.5a2 2 0 0 0 0-4H13M3 20l3 2 5-5',
+    auge: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z',
     links: 'M15 18l-6-6 6-6', zahnrad: 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z',
     zurueck: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3', vor: 'M15 14l5-5-5-5M20 9H9a5 5 0 0 0 0 10h3', plus: 'M12 5v14M5 12h14', muell: 'M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6',
     export: 'M12 3v12M7 10l5 5 5-5M5 21h14', oeffnen: 'M3 7h6l2 2h10v10H3z', senden: 'M12 19V5M5 12l7-7 7 7', drucker: 'M6 9V3h12v6M6 18H4v-6h16v6h-2M6 14h12v7H6z',
@@ -69,6 +75,8 @@
         const tag = k.tagName;
         if (['SCRIPT', 'STYLE', 'META', 'LINK', 'TITLE', 'SVG', 'IFRAME', 'OBJECT', 'BUTTON', 'INPUT'].includes(tag)) return;
         if (k.classList?.contains('nicht-speichern')) return;
+        if ((tag === 'INS' || tag === 'DEL') && k.classList.contains('aend')) { const t2 = tag.toLowerCase(); s += `<${t2} class="aend" data-autor="${esc(k.dataset.autor || '')}" data-zeit="${esc(k.dataset.zeit || '')}">${raus(k)}</${t2}>`; return; }
+        if (tag === 'SPAN' && k.classList.contains('kom') && /^[\w-]{1,40}$/.test(k.dataset.kom || '')) { const st = stilVon(k); s += `<span class="kom" data-kom="${k.dataset.kom}"${st.length ? ` style="${esc(st.join(';'))}"` : ''}>${raus(k)}</span>`; return; }
         const neu = ERLAUBT[tag];
         if (neu === undefined || neu === '') { s += raus(k); return; }
         if (neu === 'br') { s += '<br>'; return; }
@@ -119,7 +127,9 @@
         if (/^(STRONG|B)$/.test(k.tagName)) n.f = true;
         if (/^(EM|I)$/.test(k.tagName)) n.k = true;
         if (k.tagName === 'U') n.u = true;
-        if (/^(S|STRIKE|DEL)$/.test(k.tagName)) n.s = true;
+        if ((k.tagName === 'INS' || k.tagName === 'DEL') && k.classList.contains('aend')) n[k.tagName === 'INS' ? 'ins' : 'del'] = { autor: k.dataset.autor, zeit: k.dataset.zeit };
+        else if (/^(S|STRIKE|DEL)$/.test(k.tagName)) n.s = true;
+        if (k.classList?.contains('kom') && k.dataset.kom) n.kom = k.dataset.kom;
         if (k.tagName === 'SUP') n.hoch = true;
         if (k.tagName === 'SUB') n.tief = true;
         if (k.tagName === 'A' && k.getAttribute('href')) n.link = k.getAttribute('href');
@@ -186,6 +196,7 @@
     S.ansicht = 'start'; S.d = null;
     S.liste = await A.dokumente.liste();
     S.einst = await A.einstellungen.lesen();
+    if (!S.autorGesetzt) { S.autorGesetzt = true; Pruefen.setzeAutor(S.einst?.name || await A.systemName?.() || 'Ich'); }
     const wer = S.einst?.weg === 'api' ? 'API' : S.einst?.weg === 'heim' ? 'Heim-PC' : `Claude · ${esc(S.einst?.claudeModell || 'opus')}`;
     app.innerHTML = `<header class="kopf"><span class="marke">${vogel('ruhezustand-2', 34)}<b>Schwalbe</b></span><div class="platz"></div>
         <span class="chip">${wer}</span>
@@ -213,6 +224,11 @@
   async function oeffne(id) {
     const d = await A.dokumente.lesen(id);
     if (d?.fehler) { meldung('Dokument nicht gefunden.'); return zeigeStart(); }
+    if (/⟦/.test(d.html || '')) {
+      d.html = saeubern(Pruefen.markerAufloesen(d.html, d.aenderungen || {}));
+      await A.dokumente.speichern({ id: d.id, name: d.name, html: d.html, kommentare: d.kommentare || [], markerFertig: true });
+    }
+    d.kommentare ||= [];
     S.d = d; S.verlauf = []; zeigeDokument();
   }
   let speicherUhr = null;
@@ -222,23 +238,35 @@
     clearTimeout(speicherUhr);
     speicherUhr = setTimeout(async () => {
       S.d.html = blatt() ? saeubern(blatt().innerHTML) : S.d.html;
-      const r = await A.dokumente.speichern({ id: S.d.id, name: S.d.name, html: S.d.html, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen) });
+      const r = await A.dokumente.speichern({ id: S.d.id, name: S.d.name, html: S.d.html, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [], verfolgen: Boolean(S.d.verfolgen) });
       const c = app.querySelector('.gespeichert'); if (c) c.textContent = r?.fehler ? 'nicht gespeichert!' : 'gespeichert';
     }, 600);
     zaehle(); gliederung(); clearTimeout(S.ivUhr); S.ivUhr = setTimeout(inhaltAktualisieren, 400);
+    clearTimeout(S.komUhr); S.komUhr = setTimeout(() => { zeichneKommentare(); if (S.reiter === 'pruefen') { const z = app.querySelector('.aend-zahl'); const n = Pruefen.alle(blatt()).length; if (z) z.textContent = n ? `${n} Änderung${n === 1 ? '' : 'en'}` : ''; } }, 250);
   }
   const blatt = () => app.querySelector('.seite');
 
-  const REITER = [['start', 'Start'], ['einfuegen', 'Einfügen'], ['seite', 'Seite']];
+  const REITER = [['start', 'Start'], ['einfuegen', 'Einfügen'], ['seite', 'Seite'], ['pruefen', 'Überprüfen']];
   const GROESSEN = [8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36, 48, 72];
   const MARKER = ['#fff59d', '#c8f7c5', '#b3e5fc', '#f8bbd0', '#ffe0b2', 'transparent'];
   const TEXTFARBEN = ['#1d1d1d', '#1e3f75', '#2c5aa0', '#b23a28', '#d2541b', '#2f7a4d', '#6a4fc7', '#7a7f8e'];
   function wz(cmd, inhalt, titel, extra = '') { return `<button type="button" class="wz" data-cmd="${cmd}" title="${esc(titel)}" aria-label="${esc(titel)}"${extra}>${inhalt}</button>`; }
   function wa(akt, inhalt, titel, extra = '') { return `<button type="button" class="wz" data-aktion="${akt}" title="${esc(titel)}" aria-label="${esc(titel)}"${extra}>${inhalt}</button>`; }
   const TZ = '<span class="tz"></span>';
+  function wz2(akt, inhalt, titel, aus) { return `<button type="button" class="wz" data-aktion="${akt}" title="${esc(titel)}" aria-label="${esc(titel)}"${aus ? ' disabled' : ''}>${inhalt}</button>`; }
   function leiste() {
     const r = S.reiter || 'start';
     if (r === 'einfuegen') return `${wa('tabelle', `${sym('tabelle', 17)} Tabelle`, 'Tabelle einfügen')}${wa('bild', `${sym('bild', 17)} Bild`, 'Bild einfügen')}${wa('link', `${sym('link', 17)} Link`, 'Link einfügen (Strg+K)')}${TZ}${wa('umbruch', `${sym('umbruch', 17)} Seitenumbruch`, 'Seitenumbruch (Strg+Enter)')}${wa('inhalt', `${sym('ul', 17)} Inhaltsverzeichnis`, 'Inhaltsverzeichnis einfügen')}${wa('linie', `${sym('strich', 17)} Linie`, 'Trennlinie')}${TZ}${wa('datum', `${sym('kalender', 17)} Datum`, 'Heutiges Datum')}${wz('superscript', 'x²', 'Hochgestellt')}${wz('subscript', 'x₂', 'Tiefgestellt')}`;
+    if (r === 'pruefen') {
+      const n = blatt() ? Pruefen.alle(blatt()).length : 0;
+      return `${wa('kommentar', `${sym('kommentar', 17)} Kommentar`, 'Kommentar zur Markierung (Strg+Alt+M)')}${TZ}
+        ${wa('verfolgen', `${sym('spur', 17)} Verfolgen`, 'Änderungen verfolgen an/aus (Strg+Umschalt+E)', ` aria-pressed="${Boolean(S.d.verfolgen)}"`)}
+        ${wa('endfassung', `${sym('auge', 17)} ${S.endfassung ? 'Endfassung' : 'Markiert'}`, 'Umschalten: Änderungen zeigen oder Endfassung ansehen', ` aria-pressed="${Boolean(S.endfassung)}"`)}${TZ}
+        ${wz2('aend-zurueck', sym('zurueck', 16), 'Vorherige Änderung', !n)}${wz2('aend-vor', sym('vor', 16), 'Nächste Änderung', !n)}
+        ${wa('aend-an', `${sym('haken', 16)} Annehmen`, 'Änderung an der Schreibmarke annehmen')}${wa('aend-ab', `${sym('kreuz', 16)} Ablehnen`, 'Änderung an der Schreibmarke ablehnen')}
+        ${wa('aend-alle-an', `${sym('haken', 16)} Alle`, 'Alle Änderungen annehmen')}${wa('aend-alle-ab', `${sym('kreuz', 16)} Alle`, 'Alle Änderungen ablehnen')}${TZ}
+        ${wa('rechtschreibung', `${sym('abc', 17)} Rechtschreibung`, 'Rote Wellenlinien an/aus – Rechtsklick zeigt Vorschläge', ` aria-pressed="${S.rechtschreibung !== false}"`)}<span class="leise aend-zahl">${n ? `${n} Änderung${n === 1 ? '' : 'en'}` : ''}</span>`;
+    }
     if (r === 'seite') return `<label class="wz-feld">Kopfzeile<input class="kf" data-kf="kopf" value="${esc(S.d.kopf || '')}" placeholder="z. B. Firma · Thema"></label><label class="wz-feld">Fußzeile<input class="kf" data-kf="fuss" value="${esc(S.d.fuss || '')}" placeholder="z. B. Name"></label><label class="wz-haken"><input type="checkbox" class="kf-seiten" ${S.d.seitenzahlen ? 'checked' : ''}> Seitenzahlen</label>${TZ}${wa('suchen', `${sym('lupe', 17)} Suchen & Ersetzen`, 'Suchen & Ersetzen (Strg+F)')}`;
     return `${wz('undo', sym('zurueck', 16), 'Rückgängig (Strg+Z)')}${wz('redo', sym('vor', 16), 'Wiederholen (Strg+Y)')}${TZ}
       <select class="absatz" aria-label="Absatzart" title="Absatzart"><option value="p">Text</option><option value="h1">Überschrift 1</option><option value="h2">Überschrift 2</option><option value="h3">Überschrift 3</option><option value="blockquote">Zitat</option></select>
@@ -287,9 +315,10 @@
                 <nav class="gliederung" aria-label="Gliederung"></nav>
                 <div class="blattrahmen"><div class="perforation" aria-hidden="true"></div>
                   <div class="kopfzeile nicht-speichern" aria-label="Kopfzeile" data-aktion="reiter-seite" title="Kopfzeile ändern: Reiter „Seite“"></div>
-                  <article class="seite" contenteditable="true" spellcheck="true" aria-label="Dokument">${saeubern(S.d.html)}</article>
+                  <article class="seite${S.endfassung ? ' endfassung' : ''}" contenteditable="true" spellcheck="${S.rechtschreibung !== false}" aria-label="Dokument">${saeubern(S.d.html)}</article>
                   <div class="fusszeile nicht-speichern" aria-label="Fußzeile" data-aktion="reiter-seite" title="Fußzeile ändern: Reiter „Seite“"></div>
                 </div>
+                <aside class="randspalte" aria-label="Kommentare"></aside>
               </div>
               <div class="schwebeleiste" hidden></div>
               <footer class="statuszeile"><span class="zahlen"></span><div class="platz"></div><span class="markiert"></span><span class="zoom"><button type="button" data-aktion="zoom" data-d="-10" aria-label="Kleiner">−</button><b>${S.zoom || 100} %</b><button type="button" data-aktion="zoom" data-d="10" aria-label="Größer">+</button></span></footer>
@@ -300,12 +329,15 @@
     const s = blatt();
     if (S.zoom && S.zoom !== 100) app.querySelector('.blattrahmen').style.zoom = S.zoom / 100;
     s.addEventListener('input', geaendert);
+    s.addEventListener('beforeinput', (ev) => { if (S.d.verfolgen && Pruefen.vorEingabe(ev)) geaendert(); });
+    s.addEventListener('click', (ev) => { const k = ev.target.closest?.('span.kom'); if (k) komAktiv(k.dataset.kom); });
     s.addEventListener('paste', (ev) => {
       const bild = [...(ev.clipboardData.items || [])].find((i) => i.type.startsWith('image/'));
       if (bild) { ev.preventDefault(); bildEinfuegen(bild.getAsFile()); return; }
       ev.preventDefault();
       const html = ev.clipboardData.getData('text/html');
       const text = ev.clipboardData.getData('text/plain');
+      if (S.d.verfolgen) { Pruefen.textEinfuegen(text); geaendert(); return; }
       if (html) document.execCommand('insertHTML', false, saeubern(html));
       else document.execCommand('insertText', false, text);
     });
@@ -328,6 +360,8 @@
       if (ev.ctrlKey && k === 'p') { ev.preventDefault(); aktionen.drucken(); }
       if (ev.ctrlKey && (k === 'f' || k === 'h')) { ev.preventDefault(); aktionen.suchen(); }
       if (ev.ctrlKey && k === 'k') { ev.preventDefault(); aktionen.link(); }
+      if (ev.ctrlKey && ev.altKey && k === 'm') { ev.preventDefault(); aktionen.kommentar(); }
+      if (ev.ctrlKey && ev.shiftKey && k === 'e') { ev.preventDefault(); aktionen.verfolgen(); }
       if (ev.ctrlKey && ev.key === 'Enter') { ev.preventDefault(); aktionen.umbruch(); }
       if ((ev.key === 'Delete' || ev.key === 'Backspace') && S.bild && S.bild.classList.contains('gewaehlt')) { ev.preventDefault(); aktionen['bild-weg'](); }
       if (ev.key === 'Tab') {
@@ -338,7 +372,7 @@
     });
     app.querySelector('.schreibtisch').addEventListener('scroll', zeigeSchwebe, { passive: true });
     document.addEventListener('selectionchange', auswahlGeaendert);
-    zeichneHelfer(); zaehle(); gliederung(); kopfFussZeigen(); inhaltAktualisieren(); auswahlGeaendert();
+    zeichneHelfer(); zaehle(); gliederung(); kopfFussZeigen(); inhaltAktualisieren(); auswahlGeaendert(); zeichneKommentare();
     // Neues, leeres Dokument: Schreibmarke in den ersten Absatz nach der Überschrift (nicht die Überschrift markieren)
     if (!s.textContent.trim() || s.textContent.trim() === 'Neues Dokument') {
       let ziel = s.querySelector('h1 + p') || s.querySelector('p');
@@ -540,7 +574,7 @@
     const text = s.innerText.replace(/\s+/g, ' ').trim();
     const woerter = text ? text.split(' ').length : 0;
     const seiten = Math.max(1, Math.ceil(s.scrollHeight / 1123) + s.querySelectorAll('hr.umbruch').length);
-    z.textContent = `${woerter} ${woerter === 1 ? 'Wort' : 'Wörter'} · ${text.length} Zeichen · ${seiten} ${seiten === 1 ? 'Seite' : 'Seiten'} · Lesezeit ${Math.max(1, Math.round(woerter / 200))} Min.`;
+    z.innerHTML = `${woerter} ${woerter === 1 ? 'Wort' : 'Wörter'} · ${text.length} Zeichen · ${seiten} ${seiten === 1 ? 'Seite' : 'Seiten'} · Lesezeit ${Math.max(1, Math.round(woerter / 200))} Min.${S.d?.verfolgen ? ' · <b class="spur-an" data-aktion="verfolgen" title="Klicken zum Ausschalten">Änderungen werden verfolgt</b>' : ''}`;
     const sz = app.querySelector('.seitenzahl'); if (sz) sz.textContent = seiten;
   }
   function gliederung() {
@@ -620,7 +654,10 @@
     let bildNr = 0;
     const html = r.html ? saeubern(String(r.html).replace(/\[Bild\]/g, () => bilderVorher[bildNr++] || '')) : '';
     if (html && r.aktion !== 'keine') {
-      if (r.aktion === 'dokument') { const s = blatt(); s.focus(); const rg = document.createRange(); rg.selectNodeContents(s); sel.removeAllRanges(); sel.addRange(rg); document.execCommand('insertHTML', false, html); geaendertJa = true; }
+      if (S.d.verfolgen && r.aktion === 'dokument') { const s = blatt(); s.innerHTML = saeubern(Pruefen.alsAenderungen(saeubern(s.innerHTML), html)); geaendertJa = true; }
+      else if (S.d.verfolgen && r.aktion === 'auswahl' && auswahl) { bereichZurueck(); const rg = getSelection().getRangeAt(0); Pruefen.vorEingabe({ inputType: 'deleteContentForward', preventDefault() {} }); const neuHtml = Pruefen.alsEinfuegung(html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i))); Pruefen.htmlEinfuegen(blatt(), neuHtml); geaendertJa = Boolean(rg); }
+      else if (S.d.verfolgen && r.aktion === 'einfuegen') { bereichZurueck(); Pruefen.htmlEinfuegen(blatt(), Pruefen.alsEinfuegung(html)); geaendertJa = true; }
+      else if (r.aktion === 'dokument') { const s = blatt(); s.focus(); const rg = document.createRange(); rg.selectNodeContents(s); sel.removeAllRanges(); sel.addRange(rg); document.execCommand('insertHTML', false, html); geaendertJa = true; }
       else if (r.aktion === 'auswahl' && auswahl) { bereichZurueck(); document.execCommand('insertHTML', false, html.replace(/^<p>([\s\S]*)<\/p>$/, (m, i) => (/<\/?(p|h\d|ul|ol)/.test(i) ? m : i))); geaendertJa = true; }
       else { bereichZurueck(); if (!S.bereich) { const s = blatt(); const rg = document.createRange(); rg.selectNodeContents(s); rg.collapse(false); sel.removeAllRanges(); sel.addRange(rg); } document.execCommand('insertHTML', false, html); geaendertJa = true; }
     }
@@ -643,6 +680,7 @@
       table{border-collapse:collapse;width:100%;margin:0 0 10pt;page-break-inside:auto}td,th{border:.6pt solid #b9c4d6;padding:4pt 6pt;vertical-align:top;font-size:10.5pt}th{background:#dbe6f7;text-align:left}
       img{max-width:100%;height:auto}img[data-aus=center]{display:block;margin:6pt auto}img[data-aus=right]{display:block;margin:6pt 0 6pt auto}
       hr{border:0;border-top:.6pt solid #ccc;margin:10pt 0}hr.umbruch{border:0;margin:0;page-break-after:always;break-after:page}
+      ${S.endfassung ? 'del.aend{display:none}ins.aend{text-decoration:none}' : 'ins.aend{color:#1f6b3d;text-decoration:underline}del.aend{color:#b23a28}'}
       a{color:#1e4fa0}nav.inhalt{margin:0 0 14pt}nav.inhalt b{display:block;font:700 14pt Arial,sans-serif;color:#1e3f75;margin-bottom:6pt}nav.inhalt div{padding:2pt 0}nav.inhalt .h2{padding-left:14pt}nav.inhalt .h3{padding-left:28pt;color:#555}
     </style></head><body>${(() => {
       const h = [...blatt().querySelectorAll('h1,h2,h3')].filter((x) => x.textContent.trim() && !x.closest('nav.inhalt'));
@@ -707,6 +745,47 @@
   ] });
 
   // ---------- Aktionen ----------
+  // ---------- Kommentare ----------
+  const komAnker = (id) => [...(blatt()?.querySelectorAll(`span.kom[data-kom="${CSS.escape(id)}"]`) || [])];
+  function zeichneKommentare() {
+    const rand = app.querySelector('.randspalte'); const tisch = app.querySelector('.schreibtisch'); if (!rand || !blatt()) return;
+    const liste = (S.d.kommentare || []).filter((k) => komAnker(k.id).length && (S.zeigeErledigte || !k.erledigt));
+    const erledigt = (S.d.kommentare || []).filter((k) => k.erledigt && komAnker(k.id).length).length;
+    blatt().querySelectorAll('span.kom').forEach((a) => { const k = S.d.kommentare?.find((x) => x.id === a.dataset.kom); a.classList.toggle('erledigt', !k || k.erledigt); a.classList.toggle('aktiv', a.dataset.kom === S.komAktiv); });
+    tisch.classList.toggle('mit-rand', liste.length > 0 || erledigt > 0);
+    if (!liste.length && !erledigt) { if (!rand.contains(document.activeElement)) rand.innerHTML = ''; return; }
+    const tippt = rand.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA';
+    if (tippt && liste.every((k) => rand.querySelector(`.kom-karte[data-kom="${CSS.escape(k.id)}"]`))) { komPositionen(rand); return; }
+    if (tippt) return;
+    const offen = (k) => k.id === S.komBearbeiten || !k.text;
+    rand.innerHTML = `${erledigt ? `<button type="button" class="kom-erledigte" data-aktion="kom-erledigte">${S.zeigeErledigte ? 'Erledigte ausblenden' : `${erledigt} erledigt – zeigen`}</button>` : ''}${liste.map((k) => `<div class="kom-karte${k.id === S.komAktiv ? ' aktiv' : ''}${k.erledigt ? ' ist-erledigt' : ''}" data-kom="${esc(k.id)}">
+        <div class="kom-kopf"><span class="kom-avatar">${esc((k.autor || '?').split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase())}</span><b>${esc(k.autor || 'Unbekannt')}</b><small>${esc(wann(k.zeit))}</small>
+          <span class="platz"></span><button type="button" class="kom-knopf" data-aktion="kom-erledigt" title="${k.erledigt ? 'Wieder öffnen' : 'Erledigt'}" aria-label="Erledigt">${sym(k.erledigt ? 'zurueck' : 'haken', 14)}</button><button type="button" class="kom-knopf" data-aktion="kom-loeschen" title="Kommentar löschen" aria-label="Löschen">${sym('muell', 14)}</button></div>
+        ${offen(k) ? `<textarea class="kom-text" rows="2" placeholder="Kommentar schreiben …">${esc(k.text || '')}</textarea>` : `<p class="kom-inhalt" data-aktion="kom-bearbeiten" title="Klicken zum Ändern">${esc(k.text).replace(/\n/g, '<br>')}</p>`}
+        ${(k.antworten || []).map((a) => `<div class="kom-antwort"><b>${esc(a.autor)}</b> <small>${esc(wann(a.zeit))}</small><p>${esc(a.text).replace(/\n/g, '<br>')}</p></div>`).join('')}
+        ${k.id === S.komAktiv && k.text ? '<textarea class="kom-neu-antwort" rows="1" placeholder="Antworten …"></textarea>' : ''}
+      </div>`).join('')}`;
+    S.zeichnet = true; requestAnimationFrame(() => { S.zeichnet = false; });
+    komPositionen(rand);
+    const t = rand.querySelector('.kom-karte.aktiv textarea.kom-text'); if (t && S.komFokus) { t.focus(); S.komFokus = false; }
+  }
+  // An die Höhe der Textstelle setzen, ohne Überlappung
+  function komPositionen(rand) {
+    const oben0 = rand.getBoundingClientRect().top; let frei = rand.querySelector('.kom-erledigte') ? 34 : 0;
+    rand.querySelectorAll('.kom-karte').forEach((c) => {
+      const a = komAnker(c.dataset.kom)[0]; const soll = a ? a.getBoundingClientRect().top - oben0 : frei;
+      const top = Math.max(soll, frei); c.style.top = `${top}px`; frei = top + c.offsetHeight + 8;
+    });
+    rand.style.minHeight = `${frei}px`;
+  }
+  function komAktiv(id) { if (S.komAktiv === id) return; S.komAktiv = id; zeichneKommentare(); }
+  function komSpeichernAusFeld(t) {
+    const c = t.closest('.kom-karte'); const k = S.d.kommentare.find((x) => x.id === c?.dataset.kom); if (!k) return;
+    if (t.classList.contains('kom-text')) { k.text = t.value.trim(); if (k.text) S.komBearbeiten = null; }
+    else if (t.value.trim()) { (k.antworten ||= []).push({ autor: Pruefen.autor(), text: t.value.trim(), zeit: new Date().toISOString() }); }
+    geaendert(); zeichneKommentare();
+  }
+
   const aktionen = {
     dateimenue: (el) => dateiMenue(el),
     farbmenue: (el) => farbMenue(el, el.dataset.art),
@@ -757,7 +836,31 @@
       frageSchwalbe(`Schreib mir dazu einen vollständigen ersten Entwurf als ganzes Dokument: ${w}`, w);
     },
     importieren: async () => { const r = await A.datei.importieren(); if (r?.abgebrochen) return; if (r?.fehler) return meldung(`Öffnen ging nicht: ${r.fehler.nachricht}`); oeffne(r.id); },
-    docx: async () => { const r = await A.datei.docx({ bloecke: bloecke(blatt()), name: S.d.name, opt: { kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen) } }); if (r?.ok) meldung('Als Word gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); else if (r?.fehler) meldung(`Ging nicht: ${r.fehler.nachricht}`); },
+    kommentar: () => {
+      bereichZurueck();
+      const sel = getSelection(); if (!sel.rangeCount || !inBlatt(sel.anchorNode)) { meldung('Erst Text markieren, dann Kommentar.'); return; }
+      if (sel.isCollapsed) { sel.modify('move', 'backward', 'word'); sel.modify('extend', 'forward', 'word'); }
+      if (sel.isCollapsed) { meldung('Erst Text markieren, dann Kommentar.'); return; }
+      const id = `k${Date.now().toString(36)}`;
+      const teile = Pruefen.wickle(sel.getRangeAt(0), () => { const e = document.createElement('span'); e.className = 'kom'; e.dataset.kom = id; return e; });
+      if (!teile.length) return;
+      (S.d.kommentare ||= []).push({ id, autor: Pruefen.autor(), text: '', zeit: new Date().toISOString(), erledigt: false, antworten: [] });
+      S.komAktiv = id; S.komFokus = true; sel.collapseToEnd(); geaendert(); zeichneKommentare();
+    },
+    'kom-erledigt': (el) => { const k = S.d.kommentare.find((x) => x.id === el.closest('.kom-karte').dataset.kom); if (!k) return; k.erledigt = !k.erledigt; if (k.erledigt && S.komAktiv === k.id) S.komAktiv = null; geaendert(); zeichneKommentare(); },
+    'kom-loeschen': (el) => { const id = el.closest('.kom-karte').dataset.kom; komAnker(id).forEach((a) => Pruefen.entpacken(a)); S.d.kommentare = S.d.kommentare.filter((x) => x.id !== id); geaendert(); zeichneKommentare(); },
+    'kom-bearbeiten': (el) => { S.komBearbeiten = el.closest('.kom-karte').dataset.kom; S.komAktiv = S.komBearbeiten; S.komFokus = true; zeichneKommentare(); },
+    'kom-erledigte': () => { S.zeigeErledigte = !S.zeigeErledigte; zeichneKommentare(); },
+    verfolgen: () => { S.d.verfolgen = !S.d.verfolgen; meldung(S.d.verfolgen ? 'Änderungen werden jetzt verfolgt.' : 'Änderungen werden nicht mehr verfolgt.'); geaendert(); zeigeLeiste(); zaehle(); },
+    endfassung: () => { S.endfassung = !S.endfassung; blatt()?.classList.toggle('endfassung', S.endfassung); zeigeLeiste(); },
+    rechtschreibung: () => { S.rechtschreibung = S.rechtschreibung === false; const b = blatt(); if (b) { b.spellcheck = S.rechtschreibung; b.blur(); b.focus(); } zeigeLeiste(); },
+    'aend-vor': () => { if (!Pruefen.springe(blatt(), 1)) meldung('Keine Änderungen im Dokument.'); },
+    'aend-zurueck': () => { if (!Pruefen.springe(blatt(), -1)) meldung('Keine Änderungen im Dokument.'); },
+    'aend-an': () => { bereichZurueck(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.annehmen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
+    'aend-ab': () => { bereichZurueck(); const l = Pruefen.betroffen(blatt()); if (!l.length) { Pruefen.springe(blatt(), 1); return; } l.forEach(Pruefen.ablehnen); geaendert(); Pruefen.springe(blatt(), 1); zeigeLeiste(); },
+    'aend-alle-an': () => { const l = Pruefen.alle(blatt()); l.forEach(Pruefen.annehmen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen angenommen.`); },
+    'aend-alle-ab': () => { const l = Pruefen.alle(blatt()); l.forEach(Pruefen.ablehnen); geaendert(); zeigeLeiste(); meldung(`${l.length} Änderungen abgelehnt.`); },
+    docx: async () => { const r = await A.datei.docx({ bloecke: bloecke(blatt()), name: S.d.name, opt: { kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen), kommentare: S.d.kommentare || [] } }); if (r?.ok) meldung('Als Word gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); else if (r?.fehler) meldung(`Ging nicht: ${r.fehler.nachricht}`); },
     pdf: async () => { const r = await A.datei.pdf({ html: druckHtml(), name: S.d.name, kopf: S.d.kopf || '', fuss: S.d.fuss || '', seitenzahlen: Boolean(S.d.seitenzahlen) }); if (r?.ok) meldung('PDF gespeichert.', { knopf: 'Zeigen', aktion: () => A.datei.zeigen(r.datei) }); else if (r?.fehler) meldung(`Ging nicht: ${r.fehler.nachricht}`); },
     drucken: async () => { const r = await A.datei.drucken({ html: druckHtml() }); if (r?.fehler) meldung(`Drucken ging nicht: ${r.fehler.nachricht}`); },
     umbenennen: (el) => {
@@ -780,7 +883,15 @@
     const c = ev.target.closest('[data-cmd]');
     if (c) { bereichZurueck(); document.execCommand(c.dataset.cmd); geaendert(); auswahlGeaendert(); return; }
     const a = ev.target.closest('[data-aktion]');
-    if (a && aktionen[a.dataset.aktion]) aktionen[a.dataset.aktion](a, ev);
+    if (a && aktionen[a.dataset.aktion]) { aktionen[a.dataset.aktion](a, ev); return; }
+    const karte = ev.target.closest('.kom-karte');
+    if (karte && !ev.target.closest('textarea')) { komAktiv(karte.dataset.kom); komAnker(karte.dataset.kom)[0]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  });
+  app.addEventListener('focusout', (ev) => { if (ev.target.matches?.('.kom-text, .kom-neu-antwort') && ev.target.isConnected && !S.zeichnet) setTimeout(() => komSpeichernAusFeld(ev.target), 0); });
+  app.addEventListener('keydown', (ev) => {
+    if (!ev.target.matches?.('.kom-text, .kom-neu-antwort')) return;
+    if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); ev.target.blur(); }
+    if (ev.key === 'Escape') { ev.preventDefault(); const c = ev.target.closest('.kom-karte'); const k = S.d.kommentare.find((x) => x.id === c?.dataset.kom); if (k && !k.text && ev.target.classList.contains('kom-text')) { komAnker(k.id).forEach((x) => Pruefen.entpacken(x)); S.d.kommentare = S.d.kommentare.filter((x) => x !== k); S.komBearbeiten = null; geaendert(); zeichneKommentare(); } else ev.target.blur(); }
   });
   app.addEventListener('change', (ev) => {
     if (ev.target.matches('.absatz')) { bereichZurueck(); document.execCommand('formatBlock', false, ev.target.value); geaendert(); }

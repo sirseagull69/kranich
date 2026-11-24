@@ -6,8 +6,9 @@
 //   { art: 'bild', daten: '<base64>', typ: 'png'|'jpeg'|'gif', breite: px, hoehe: px, ausrichtung? }
 //   { art: 'umbruch' }            – Seitenumbruch
 //   { art: 'inhalt' }             – Inhaltsverzeichnis (Word aktualisiert es beim Öffnen)
-// lauf: { t, f?, k?, u?, s?, groesse?: pt, farbe?: '#rrggbb', mark?: '#rrggbb', schrift?, link?, hoch?, tief? }
-// Optionen: { kopf?: text, fuss?: text, seitenzahlen?: bool, quer?: bool }
+// lauf: { t, f?, k?, u?, s?, groesse?: pt, farbe?: '#rrggbb', mark?: '#rrggbb', schrift?, link?, hoch?, tief?,
+//         kom?: Kommentar-Id, ins?: { autor, zeit }, del?: { autor, zeit } }
+// Optionen: { kopf?: text, fuss?: text, seitenzahlen?: bool, quer?: bool, kommentare?: [{ id, autor, text, zeit, antworten? }] }
 const JSZip = require('jszip');
 
 const x = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -29,7 +30,8 @@ function markerName(c) {
 }
 
 class Schreiber {
-  constructor() { this.rels = []; this.medien = []; this.listen = 2; }
+  constructor() { this.rels = []; this.medien = []; this.listen = 2; this.komIds = new Map(); this.aendNr = 100; }
+  komNr(id) { if (!this.komIds.has(id)) this.komIds.set(id, this.komIds.size); return this.komIds.get(id); }
   rel(typ, ziel, extern) { const id = `rId${10 + this.rels.length}`; this.rels.push({ id, typ, ziel, extern }); return id; }
 
   lauf(l) {
@@ -46,7 +48,11 @@ class Schreiber {
     if (l.hoch) eig += '<w:vertAlign w:val="superscript"/>';
     if (l.tief) eig += '<w:vertAlign w:val="subscript"/>';
     const teile = String(l.t ?? '').split('\n');
-    const r = teile.map((t, i) => `<w:r>${eig ? `<w:rPr>${eig}</w:rPr>` : ''}${i ? '<w:br/>' : ''}<w:t xml:space="preserve">${x(t)}</w:t></w:r>`).join('');
+    const tt = l.del ? 'w:delText' : 'w:t';
+    let r = teile.map((t, i) => `<w:r>${eig ? `<w:rPr>${eig}</w:rPr>` : ''}${i ? '<w:br/>' : ''}<${tt} xml:space="preserve">${x(t)}</${tt}></w:r>`).join('');
+    const rev = (a) => `w:id="${this.aendNr++}" w:author="${x(a?.autor || 'Schwalbe')}"${/^\d{4}-\d\d-\d\dT/.test(a?.zeit || '') ? ` w:date="${x(a.zeit)}"` : ''}`;
+    if (l.del) r = `<w:del ${rev(l.del)}>${r}</w:del>`;
+    else if (l.ins) r = `<w:ins ${rev(l.ins)}>${r}</w:ins>`;
     if (l.link && /^(https?:|mailto:)/i.test(l.link)) return `<w:hyperlink r:id="${this.rel('http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink', l.link, true)}">${r}</w:hyperlink>`;
     return r;
   }
@@ -59,7 +65,18 @@ class Schreiber {
     const p = `${stil ? `<w:pStyle w:val="${stil}"/>` : ''}${num}${abst}${aus ? `<w:jc w:val="${aus}"/>` : ''}${extra}`;
     return p ? `<w:pPr>${p}</w:pPr>` : '';
   }
-  absatz(b) { return `<w:p>${this.ppr(b)}${(b.laeufe || []).map((l) => this.lauf(l)).join('')}</w:p>`; }
+  // Läufe mit Kommentar-Bereichen; Start/Ende werden am Schluss über alle Absätze bereinigt
+  laeufe(liste) {
+    let s = ''; let offen = null;
+    for (const l of liste || []) {
+      const k = l.kom || null;
+      if (k !== offen) { if (offen) s += `\u0001E${this.komNr(offen)}\u0001`; if (k) s += `\u0001S${this.komNr(k)}\u0001`; offen = k; }
+      s += this.lauf(l);
+    }
+    if (offen) s += `\u0001E${this.komNr(offen)}\u0001`;
+    return s;
+  }
+  absatz(b) { return `<w:p>${this.ppr(b)}${this.laeufe(b.laeufe)}</w:p>`; }
 
   bild(b) {
     const typ = { jpg: 'jpeg', jpeg: 'jpeg', png: 'png', gif: 'gif' }[String(b.typ || '').toLowerCase()];
@@ -88,7 +105,7 @@ class Schreiber {
       for (let i = 0; i < spalten; i++) {
         const c = z[i] || { laeufe: [] };
         const laeufe = (c.laeufe || []).map((l) => (c.kopf ? { ...l, f: true } : l));
-        s += `<w:tc><w:tcPr><w:tcW w:w="${breite}" w:type="dxa"/>${c.kopf ? '<w:shd w:val="clear" w:color="auto" w:fill="DBE6F7"/>' : ''}</w:tcPr><w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${laeufe.map((l) => this.lauf(l)).join('')}</w:p></w:tc>`;
+        s += `<w:tc><w:tcPr><w:tcW w:w="${breite}" w:type="dxa"/>${c.kopf ? '<w:shd w:val="clear" w:color="auto" w:fill="DBE6F7"/>' : ''}</w:tcPr><w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${this.laeufe(laeufe)}</w:p></w:tc>`;
       }
       s += '</w:tr>';
     });
@@ -109,6 +126,16 @@ class Schreiber {
   }
 
   body(bloecke) {
+    const roh = this.bodyRoh(bloecke);
+    const erst = new Map(); const letzt = new Map();
+    for (const m of roh.matchAll(/\u0001([SE])(\d+)\u0001/g)) { if (m[1] === 'S' && !erst.has(m[2])) erst.set(m[2], m.index); if (m[1] === 'E') letzt.set(m[2], m.index); }
+    return roh.replace(/\u0001([SE])(\d+)\u0001/g, (t, art, id, pos) => {
+      if (art === 'S') return erst.get(id) === pos ? `<w:commentRangeStart w:id="${id}"/>` : '';
+      return letzt.get(id) === pos ? `<w:commentRangeEnd w:id="${id}"/><w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:commentReference w:id="${id}"/></w:r>` : '';
+    });
+  }
+
+  bodyRoh(bloecke) {
     let vorher = '';
     return bloecke.map((b) => {
       if (b.art === 'ol') { if (vorher !== 'ol') this.listen += 1; vorher = 'ol'; return this.absatz({ ...b, liste: this.listen }); }
@@ -151,6 +178,8 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:style w:type="paragraph" w:styleId="ListParagraph"><w:name w:val="List Paragraph"/><w:basedOn w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/><w:ind w:left="720"/></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="Header"><w:name w:val="header"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0"/></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="Footer"><w:name w:val="footer"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0"/></w:pPr></w:style>
+<w:style w:type="paragraph" w:styleId="CommentText"><w:name w:val="annotation text"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="0"/></w:pPr><w:rPr><w:sz w:val="20"/></w:rPr></w:style>
+<w:style w:type="character" w:styleId="CommentReference"><w:name w:val="annotation reference"/><w:rPr><w:sz w:val="16"/></w:rPr></w:style>
 <w:style w:type="paragraph" w:styleId="TOCHeading"><w:name w:val="TOC Heading"/><w:basedOn w:val="Heading1"/><w:next w:val="Normal"/><w:qFormat/></w:style>
 <w:style w:type="paragraph" w:styleId="TOC1"><w:name w:val="toc 1"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60"/></w:pPr></w:style>
 <w:style w:type="paragraph" w:styleId="TOC2"><w:name w:val="toc 2"/><w:basedOn w:val="Normal"/><w:pPr><w:spacing w:after="60"/><w:ind w:left="284"/></w:pPr></w:style>
@@ -164,9 +193,21 @@ async function docxSchreiben(bloecke, titel = 'Dokument', opt = {}) {
   let sect = '';
   if (opt.kopf || opt.kopfSeitenzahlen) { const id = sw.rel('http://schemas.openxmlformats.org/officeDocument/2006/relationships/header', 'header1.xml'); zip.file('word/header1.xml', kopfFussXml('kopf', opt.kopf || '', false, sw)); sect += `<w:headerReference w:type="default" r:id="${id}"/>`; }
   if (opt.fuss || opt.seitenzahlen) { const id = sw.rel('http://schemas.openxmlformats.org/officeDocument/2006/relationships/footer', 'footer1.xml'); zip.file('word/footer1.xml', kopfFussXml('fuss', opt.fuss || '', Boolean(opt.seitenzahlen), sw)); sect += `<w:footerReference w:type="default" r:id="${id}"/>`; }
+  const komListe = (opt.kommentare || []).filter((k) => sw.komIds.has(k.id));
+  if (komListe.length) {
+    sw.rel('http://schemas.openxmlformats.org/officeDocument/2006/relationships/comments', 'comments.xml');
+    const absatz = (t, erster) => `<w:p><w:pPr><w:pStyle w:val="CommentText"/></w:pPr>${erster ? '<w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr><w:annotationRef/></w:r>' : ''}<w:r><w:t xml:space="preserve">${x(t)}</w:t></w:r></w:p>`;
+    zip.file('word/comments.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:comments ${NS}>${komListe.map((k) => {
+      const zeilen = String(k.text || '').split('\n');
+      for (const a of k.antworten || []) zeilen.push(`↳ ${a.autor || ''}: ${a.text || ''}`);
+      if (k.erledigt) zeilen.push('(erledigt)');
+      const ini = String(k.autor || 'S').split(/\s+/).map((w) => w[0]).join('').slice(0, 3);
+      return `<w:comment w:id="${sw.komNr(k.id)}" w:author="${x(k.autor || 'Schwalbe')}" w:initials="${x(ini)}"${/^\d{4}-/.test(k.zeit || '') ? ` w:date="${x(String(k.zeit).replace(/\.\d+Z$/, 'Z'))}"` : ''}>${zeilen.map((t, i) => absatz(t, i === 0)).join('')}</w:comment>`;
+    }).join('')}</w:comments>`);
+  }
   const pg = opt.quer ? '<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/>' : '<w:pgSz w:w="11906" w:h="16838"/>';
   zip.file('word/document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document ${NS}><w:body>${body}<w:sectPr>${sect}${pg}<w:pgMar w:top="1417" w:right="1417" w:bottom="1134" w:left="1417" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>`);
-  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="gif" ContentType="image/gif"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>${opt.kopf ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : ''}${opt.fuss || opt.seitenzahlen ? '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' : ''}<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`);
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="jpg" ContentType="image/jpeg"/><Default Extension="gif" ContentType="image/gif"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/word/numbering.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml"/><Override PartName="/word/settings.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.settings+xml"/>${opt.kopf ? '<Override PartName="/word/header1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml"/>' : ''}${opt.fuss || opt.seitenzahlen ? '<Override PartName="/word/footer1.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml"/>' : ''}${komListe.length ? '<Override PartName="/word/comments.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.comments+xml"/>' : ''}<Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`);
   zip.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>');
   const rels = [
     '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>',
@@ -200,14 +241,41 @@ async function kopfFussLesen(puffer) {
   } catch { return { kopf: '', fuss: '', seitenzahlen: false }; }
 }
 
-async function docxLesen(puffer) {
+// Kommentare und nachverfolgte Änderungen als Marker in den Text holen (mammoth kennt sie nicht)
+async function vorbereiten(puffer) {
+  const zip = await JSZip.loadAsync(puffer);
+  const dok = zip.file('word/document.xml'); if (!dok) return { puffer, kommentare: [], aenderungen: {} };
+  let xml = await dok.async('string');
+  const ent = (t) => String(t).replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  const at = (s, n) => { const m = new RegExp(`w:${n}="([^"]*)"`).exec(s); return m ? ent(m[1]) : ''; };
+  const mk = (t) => `<w:r><w:t xml:space="preserve">${t}</w:t></w:r>`;
+  const aenderungen = {};
+  if (!/commentRange|<w:ins\b|<w:del\b/.test(xml)) return { puffer, kommentare: [], aenderungen };
+  xml = xml.replace(/<w:r\b[^>]*>(?:(?!<\/w:r>)[\s\S])*?<w:commentReference\b[^>]*\/>[\s\S]*?<\/w:r>/g, '');
+  xml = xml.replace(/<w:commentRangeStart\b[^>]*w:id="(\d+)"[^>]*\/>/g, (m, id) => mk(`⟦K:${id}⟧`));
+  xml = xml.replace(/<w:commentRangeEnd\b[^>]*w:id="(\d+)"[^>]*\/>/g, (m, id) => mk(`⟦/K:${id}⟧`));
+  xml = xml.replace(/<w:ins\b([^>]*[^/])>/g, (m, a) => { const id = at(a, 'id'); aenderungen[`I${id}`] = { autor: at(a, 'author'), zeit: at(a, 'date') }; return mk(`⟦I:${id}⟧`); }).replace(/<\/w:ins>/g, mk('⟦/I⟧'));
+  xml = xml.replace(/<w:del\b([^>]*[^/])>/g, (m, a) => { const id = at(a, 'id'); aenderungen[`D${id}`] = { autor: at(a, 'author'), zeit: at(a, 'date') }; return mk(`⟦D:${id}⟧`); }).replace(/<\/w:del>/g, mk('⟦/D⟧'));
+  xml = xml.replace(/<w:delText\b/g, '<w:t').replace(/<\/w:delText>/g, '</w:t>');
+  zip.file('word/document.xml', xml);
+  const kommentare = [];
+  const kx = zip.file('word/comments.xml') ? await zip.file('word/comments.xml').async('string') : '';
+  for (const m of kx.matchAll(/<w:comment\b([^>]*)>([\s\S]*?)<\/w:comment>/g)) {
+    const text = [...m[2].matchAll(/<w:p\b[\s\S]*?<\/w:p>/g)].map((p) => [...p[0].matchAll(/<w:t(?:\s[^>]*)?>([^<]*)<\/w:t>/g)].map((t) => ent(t[1])).join('')).join('\n').trim();
+    kommentare.push({ id: `w${at(m[1], 'id')}`, autor: at(m[1], 'author') || 'Unbekannt', zeit: at(m[1], 'date'), text, antworten: [] });
+  }
+  return { puffer: await zip.generateAsync({ type: 'nodebuffer' }), kommentare, aenderungen };
+}
+
+async function docxLesen(eingang) {
   const mammoth = require('mammoth');
+  const { puffer, kommentare, aenderungen } = await vorbereiten(eingang);
   const r = await mammoth.convertToHtml({ buffer: puffer }, {
     styleMap: ["p[style-name='Title'] => h1:fresh", "p[style-name='Quote'] => blockquote:fresh", "p[style-name='Intense Quote'] => blockquote:fresh", 'u => u', 'strike => s', "r[style-name='Hyperlink'] => "],
     convertImage: mammoth.images.imgElement((bild) => bild.read('base64').then((d) => ({ src: `data:${bild.contentType};base64,${d}` }))),
   });
-  const kf = await kopfFussLesen(puffer);
-  return { html: r.value, ...kf };
+  const kf = await kopfFussLesen(eingang);
+  return { html: r.value, ...kf, kommentare, aenderungen };
 }
 
 module.exports = { docxSchreiben, docxLesen, Schreiber };

@@ -2,6 +2,7 @@
 // Schwalbe – Hauptprozess: Fenster, Dokumente, .docx, PDF, Claude.
 const { app, BrowserWindow, ipcMain, dialog, shell, session, Menu } = require('electron');
 const path = require('node:path');
+const os = require('node:os');
 const fs = require('node:fs');
 const { Dokumente } = require('../kern/dokumente');
 const { docxSchreiben, docxLesen } = require('../kern/docx');
@@ -41,6 +42,7 @@ async function druckFenster(html) {
 
 function registriere() {
   handle('dok:liste', () => dokumente.liste());
+  handle('system:name', () => { try { const n = os.userInfo().username || ''; return n.replace(/[._]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()); } catch { return ''; } });
   handle('dok:neu', (name, html) => dokumente.neu(name, html));
   handle('dok:lesen', (id) => dokumente.lesen(id));
   handle('dok:speichern', (d) => dokumente.speichern(d));
@@ -108,7 +110,19 @@ function oeffneFenster() {
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false, spellcheck: true },
   });
-  fenster.webContents.session.setSpellCheckerLanguages?.(['de-DE']);
+  try { fenster.webContents.session.setSpellCheckerLanguages?.(['de-DE', 'en-US']); } catch { /* macOS nimmt die Systemsprache */ }
+  // Rechtsklick: Rechtschreibvorschläge, Wörterbuch, Ausschneiden/Kopieren/Einfügen
+  fenster.webContents.on('context-menu', (_e, p) => {
+    const vorlage = [];
+    if (p.misspelledWord) {
+      for (const v of p.dictionarySuggestions.slice(0, 6)) vorlage.push({ label: v, click: () => fenster.webContents.replaceMisspelling(v) });
+      if (!p.dictionarySuggestions.length) vorlage.push({ label: 'Keine Vorschläge', enabled: false });
+      vorlage.push({ type: 'separator' }, { label: `„${p.misspelledWord}“ ins Wörterbuch`, click: () => fenster.webContents.session.addWordToSpellCheckerDictionary(p.misspelledWord) }, { type: 'separator' });
+    }
+    if (p.isEditable) vorlage.push({ label: 'Ausschneiden', role: 'cut', enabled: p.editFlags.canCut }, { label: 'Kopieren', role: 'copy', enabled: p.editFlags.canCopy }, { label: 'Einfügen', role: 'paste', enabled: p.editFlags.canPaste }, { type: 'separator' }, { label: 'Alles markieren', role: 'selectAll' });
+    else if (p.selectionText) vorlage.push({ label: 'Kopieren', role: 'copy' });
+    if (vorlage.length) Menu.buildFromTemplate(vorlage).popup({ window: fenster });
+  });
   fenster.loadFile(path.join(__dirname, '..', 'ui', 'index.html'));
   fenster.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   fenster.webContents.on('will-navigate', (e) => e.preventDefault());

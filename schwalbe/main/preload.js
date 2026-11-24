@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('SCH', {
   assistent: rufe('assistent'),
   einstellungen: { lesen: rufe('einstellungen:lesen'), setzen: rufe('einstellungen:setzen') },
   hirnTesten: rufe('hirn:testen'),
+  systemName: rufe('system:name'),
   linkOeffnen: rufe('link:oeffnen'),
   pfadVon: (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } },
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, o) => cb(o)),
