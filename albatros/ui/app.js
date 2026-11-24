@@ -212,24 +212,29 @@
     S.ansicht = 'tabelle';
     rechne();
     app.innerHTML = `<header class="oo-kopf">
-        <button type="button" class="oo-ikon" data-aktion="start" title="Alle Tabellen" aria-label="Alle Tabellen">${vogel('ruhezustand-3', 30)}</button>
-        <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small>Albatros · <span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
-        <nav class="oo-menue" aria-label="Menü">${REITER.map(([k, t]) => `<button type="button" class="m${S.reiter === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}</nav>
+        <button type="button" class="oo-ikon" data-aktion="start" title="Alle Tabellen" aria-label="Alle Tabellen">${vogel('ruhezustand-3', 30)}</button><b class="oo-app">Albatros</b>
+        <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
+        <nav class="oo-menue" aria-label="Menü">${REITER.map(([k, t]) => `<button type="button" class="m${(S.reiter || 'start') === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}</nav>
         <div class="platz"></div>
         <div style="position:relative"><button type="button" class="oo-teilen" data-aktion="exportmenue">Teilen</button></div>
         <button type="button" class="oo-ori" data-aktion="ori" title="Ori fragen">${oriVogel(24)}Ori</button>
       </header>
       <main class="oo-flaeche">
-        <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1420 822" preserveAspectRatio="none"><polygon points="0,822 0,70 180,34 360,78 560,22 800,84 1010,30 1220,76 1420,40 1420,822" fill="#27683f"/><polygon points="560,22 800,84 650,84" fill="#3d8c5c"/><polygon points="1010,30 1220,76 1090,76" fill="#3d8c5c"/><polygon points="0,822 0,100 240,64 470,108 700,62 960,112 1180,68 1420,104 1420,822" fill="#1f5633"/></svg>
-        <div class="oo-titel"><h1>Albatros</h1><span class="hand">Tabellen. Bis auf den Cent.</span></div>
-        <div class="blatt leiste oo-leiste" role="toolbar" aria-label="Werkzeuge">${leiste()}</div>
+        <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1440 220" preserveAspectRatio="none"><path d="M0 130 C 300 80 600 170 900 120 S 1300 90 1440 120 V220 H0Z" fill="#4f9a6b" opacity=".35"/><path d="M0 180 C 360 150 700 210 1000 175 S 1340 165 1440 180 V220 H0Z" fill="#2f7a4d" opacity=".85"/></svg>
         <div class="oo-inhalt${S.helferZu ? ' zu' : ''}">
-          <div class="oo-karte">
-            <div class="formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"><span class="erklaerung leise"></span></div>
-            <div class="raster"><div class="rasterscroll" tabindex="0" aria-label="Tabelle"></div><div class="blaetter"></div></div>
+          <div class="oo-links">
+            <div class="oo-sitzvogel" aria-hidden="true">${vogel('ruhezustand-3', 84)}</div>
+            <aside class="blatt helfer oo-seite" aria-label="Albatros hilft"></aside>
+            <div class="oo-schiene"><button type="button" class="oo-klapp" data-aktion="helfer-klappen" title="Albatros zeigen" aria-label="Seitenleiste umschalten">›</button><button type="button" class="oo-schienenvogel" data-aktion="helfer-klappen" aria-label="Albatros">${vogel('ruhezustand-3', 34)}</button></div>
           </div>
-          <aside class="blatt helfer oo-seite" aria-label="Albatros hilft"></aside>
-          <div class="oo-schiene"><button type="button" class="oo-klapp" data-aktion="helfer-klappen" title="${S.helferZu ? 'Albatros zeigen' : 'Albatros einklappen'}" aria-label="Seitenleiste umschalten">${S.helferZu ? '‹' : '›'}</button><button type="button" class="oo-schienenvogel" data-aktion="helfer-klappen" aria-label="Albatros">${vogel('ruhezustand-3', 34)}</button></div>
+          <div class="oo-rechts">
+            <div class="blatt leiste oo-leiste" role="toolbar" aria-label="Werkzeuge">${leiste()}</div>
+            <div class="oo-karte">
+              <div class="oo-blattkopf"><h1 class="blattname2" title="Zum Umbenennen klicken">${esc(blatt().name)}</h1><span class="hand">bis auf den Cent</span></div>
+              <div class="formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"><span class="erklaerung leise"></span></div>
+              <div class="raster"><div class="rasterscroll" tabindex="0" aria-label="Tabelle"></div><div class="blaetter"></div></div>
+            </div>
+          </div>
         </div>
       </main>`;
     const fz = document.getElementById('formel');
@@ -632,7 +637,7 @@
   // ---------- Helfer rechts ----------
   function zeichneHelfer() {
     const h = app.querySelector('.helfer'); if (!h) return;
-    h.innerHTML = `<header class="oo-seitenkopf"><span class="helfervogel">${vogel(S.denkt ? 'denkt-nach' : 'ruhezustand-3', 40)}</span><span class="oo-wer"><b class="h">Albatros</b><small>${S.denkt ? 'rechnet …' : 'Buchhalter, nimmt es genau'}</small></span><button type="button" class="oo-pfeil" data-aktion="helfer-klappen" title="Einklappen" aria-label="Albatros einklappen">›</button></header>
+    h.innerHTML = `<header class="oo-seitenkopf"><span class="helfervogel">${vogel(S.denkt ? 'denkt-nach' : 'ruhezustand-3', 40)}</span><span class="oo-wer"><b class="h">Albatros</b><small>${S.denkt ? 'rechnet …' : 'Buchhalter, nimmt es genau'}</small></span><button type="button" class="oo-pfeil" data-aktion="helfer-klappen" title="Einklappen" aria-label="Albatros einklappen">‹</button></header>
       <div class="werte" aria-live="polite"></div>
       <div class="tipp-karte" hidden><b class="h">Kleiner Tipp</b><span></span></div>
       <div class="schnell">
@@ -1382,7 +1387,7 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     'aufnahme-stopp': () => aufnahmeStoppen(),
     drucken: () => druckFenster(),
     'aufnahme-start': () => aufnahmeStarten(),
-    'helfer-klappen': () => { S.helferZu = !S.helferZu; const i = app.querySelector('.oo-inhalt'); i?.classList.toggle('zu', S.helferZu); const k = app.querySelector('.oo-klapp'); if (k) k.textContent = S.helferZu ? '‹' : '›'; zeigeLeiste(); setTimeout(() => zeichneTabelle(), 220); },
+    'helfer-klappen': () => { S.helferZu = !S.helferZu; const i = app.querySelector('.oo-inhalt'); i?.classList.toggle('zu', S.helferZu); zeigeLeiste(); setTimeout(() => zeichneTabelle(), 220); },
     ori: () => { if (S.helferZu) aktionen['helfer-klappen'](); setTimeout(() => app.querySelector('#frage')?.focus(), 60); },
   });
 
