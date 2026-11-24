@@ -4,11 +4,11 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const ori = require('./ori-quelle.json');
-const NAMEN = ['ruhezustand-2', 'ruhezustand-3', 'denkt-nach', 'sassy', 'winkt', 'erledigt'];
+const NAMEN = ['ruhezustand-2', 'ruhezustand-3', 'denkt-nach', 'sassy', 'winkt', 'erledigt', 'start-landung', 'plant', 'agent-arbeitet', 'team', 'fertig', 'schreibt', 'tabelle-baut', 'folien', 'fehler', 'ratlos'];
 const platz = (svg) => svg.replace(/(<svg[^>]*?)\swidth="[^"]*"\sheight="[^"]*"/, '$1 width="__G__" height="__G__"');
 const aus = {};
 for (const n of NAMEN) { const a = ori.find((x) => x.name === n); if (!a) throw new Error(`${n} fehlt`); aus[n] = platz(a.svg); }
-for (const app of ['albatros', 'specht', '.']) {
+for (const app of ['albatros', 'specht', 'schwalbe', '.']) {
   const ziel = path.join(__dirname, '..', app, 'ui', 'ori.js');
   if (!fs.existsSync(path.dirname(ziel))) continue;
   fs.writeFileSync(ziel, `'use strict';\n// Ori-Animationen für den gemeinsamen Ori-Office-Rahmen. Nicht von Hand ändern: werkzeug/ori-fuer-apps.js\nwindow.ORI=${JSON.stringify(aus)};\n`);

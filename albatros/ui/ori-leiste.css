@@ -1,0 +1,46 @@
+/* Ori Office – Ori als Copilot (Quelle: gemeinsam/ori-leiste.css, nicht in den Apps ändern). Oris Farbe: Orange. */
+.ori-knopf{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px 0 6px;border:0;border-radius:999px;background:#ffeadb;color:#a8431a;font:700 14px 'Bricolage Grotesque',sans-serif;cursor:pointer;box-shadow:0 0 0 1px rgba(232,116,59,.35);transition:transform .15s,box-shadow .15s,background .15s;flex:none}
+.ori-knopf:hover{transform:translateY(-1px);box-shadow:0 0 0 2px rgba(232,116,59,.55),0 8px 16px -8px rgba(232,116,59,.7)}
+.ori-knopf:active{transform:scale(.96)}
+.ori-knopf.an{background:#e8743b;color:#fff;box-shadow:0 0 0 2px #fff6ee,0 0 0 4px #e8743b}
+.ori-knopf-vogel{display:grid;place-items:center;width:26px;height:26px;margin:-4px 0}
+.ori-knopf-vogel svg{overflow:visible}
+
+.ori-leiste{position:fixed;top:58px;right:12px;bottom:12px;z-index:3000;width:min(410px,calc(100vw - 24px));display:flex;flex-direction:column;background:#fffdf8;border-radius:20px;box-shadow:0 0 0 1px #efe1d3,0 30px 60px -20px rgba(60,30,10,.45),0 12px 24px -12px rgba(60,30,10,.25);transform:translateX(calc(100% + 30px)) rotate(2deg);transform-origin:top right;opacity:0;transition:transform .5s cubic-bezier(.2,1.25,.35,1),opacity .2s;overflow:hidden;font-family:'Bricolage Grotesque',sans-serif;color:#1d2742}
+.ori-leiste.offen{transform:none;opacity:1}
+.ori-leiste::before{content:'';position:absolute;right:0;top:0;width:44px;height:44px;background:linear-gradient(225deg,#e8743b 50%,transparent 50%);border-radius:0 20px 0 0;opacity:.9}
+.ori-kopf{position:relative;display:flex;align-items:center;gap:10px;padding:16px 56px 10px 20px}
+.ori-titel{display:flex;flex-direction:column;line-height:1.2}.ori-titel b{font-size:19px;font-weight:800}.ori-titel small{font:400 13px 'Source Serif 4',serif;color:#8b8574}
+.ori-zu{position:absolute;right:52px;top:16px;width:30px;height:30px;border:0;border-radius:50%;background:#f5efe3;color:#5b6170;cursor:pointer;font-size:13px}
+.ori-zu:hover{background:#efe1d3}
+.ori-verlauf{flex:1;min-height:0;overflow:auto;padding:4px 18px 14px;display:flex;flex-direction:column;gap:12px}
+.ori-hallo{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 0 4px}
+.ori-gross{display:grid;place-items:center;width:132px;height:132px;border-radius:50%;background:radial-gradient(circle at 50% 60%,#ffeadb 0 62%,transparent 63%)}
+.ori-hand{font:600 22px 'Caveat',cursive;color:#c2410c;text-align:center}
+.ori-offen{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ori-klein{font:400 13px 'Source Serif 4',serif;color:#8b8574;margin-right:2px}
+.ori-chip{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;background:var(--h);color:var(--f);padding:5px 10px;font:700 12.5px 'Bricolage Grotesque',sans-serif;cursor:pointer}
+.ori-chip i{width:7px;height:7px;border-radius:50%;background:var(--f)}
+.ori-chip small{font:400 12px 'Source Serif 4',serif;color:#5b6170;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ori-vorschlaege{display:flex;flex-direction:column;gap:6px}
+.ori-vorschlaege button{border:0;text-align:left;background:#fff;border-radius:12px;padding:10px 12px;box-shadow:0 0 0 1px #efe1d3;font:500 14px 'Source Serif 4',serif;color:#1d2742;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.ori-vorschlaege button:hover{box-shadow:0 0 0 2px #e8743b;transform:translateX(-2px)}
+.ori-ich{align-self:flex-end;max-width:85%;background:#e8743b;color:#fff;border-radius:16px 16px 4px 16px;padding:9px 13px;font:400 14.5px/1.45 'Source Serif 4',serif;animation:ori-rein .25s ease-out}
+.ori-sie{display:flex;gap:8px;align-items:flex-start;animation:ori-rein .3s ease-out}
+.ori-sie>div{flex:1;min-width:0}
+.ori-sie p{margin:2px 0 6px;background:#f7efe4;border-radius:4px 16px 16px 16px;padding:9px 13px;font:400 14.5px/1.45 'Source Serif 4',serif}
+.ori-sie.fehler p{background:#fdeceb}
+.ori-sie.denkt p{color:#8b8574;font-style:italic}
+.ori-ava{display:grid;place-items:center;width:34px;height:34px;flex:none}
+@keyframes ori-rein{from{opacity:0;transform:translateY(6px)}}
+.ori-karte{position:relative;display:flex;flex-direction:column;gap:2px;margin-top:6px;padding:10px 12px 10px 16px;border-radius:12px;background:var(--h);overflow:hidden;animation:ori-rein .35s ease-out}
+.ori-karte::before{content:'';position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--f)}
+.ori-karte-app{font:800 11px 'Bricolage Grotesque',sans-serif;letter-spacing:.07em;text-transform:uppercase;color:var(--f)}
+.ori-karte b{font-size:15px}
+.ori-karte small{font:400 13px 'Source Serif 4',serif;color:#8e2a20}
+.ori-karte button{align-self:flex-start;margin-top:4px;border:0;border-radius:8px;background:var(--f);color:#fff;font:700 13px 'Bricolage Grotesque',sans-serif;padding:6px 12px;cursor:pointer}
+.ori-eingabe{display:flex;gap:8px;align-items:flex-end;padding:12px 14px 14px;border-top:1px solid #f1e6d8;background:#fffaf3}
+.ori-eingabe textarea{flex:1;resize:none;border:1.5px solid #efe1d3;border-radius:14px;padding:10px 12px;font:400 14.5px/1.4 'Source Serif 4',serif;color:#1d2742;background:#fff;outline:none;max-height:140px}
+.ori-eingabe textarea:focus{border-color:#e8743b;box-shadow:0 0 0 3px rgba(232,116,59,.18)}
+.ori-eingabe button{width:42px;height:42px;border:0;border-radius:50%;background:#e8743b;color:#fff;font:800 18px 'Bricolage Grotesque',sans-serif;cursor:pointer;flex:none;transition:transform .15s}
+.ori-eingabe button:hover{transform:scale(1.06)}.ori-eingabe button:disabled{opacity:.5}

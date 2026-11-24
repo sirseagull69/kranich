@@ -473,6 +473,7 @@
         <button type="button" class="klappknopf kr-datei" data-aktion="datei-ansicht">Datei</button>
         <div class="platz"></div><div class="reihe knopfreihe">${kopfKnoepfe()}</div>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
+        <span data-ori-ort></span>
         <button type="button" class="kl-rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button>
       </header>
       <div class="wb-raster">

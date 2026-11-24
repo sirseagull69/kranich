@@ -124,6 +124,7 @@
       <nav class="oo-menue" aria-label="Bereiche">${OO_REITER.map(([k, t]) => `<button type="button" class="m${offen === k ? ' an' : ''}" data-a="ansicht" data-z="${k}">${t}</button>`).join('')}</nav>
       <div class="platz"></div>
       <button type="button" class="oo-hilfe" data-a="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
+      <span data-ori-ort></span>
 </header>`;
   }
   function kopfleiste() {

@@ -442,3 +442,7 @@ body.zieht .ablage{transform:scale(1.02);box-shadow:0 0 0 6px rgba(47,138,85,.15
 @media (max-width:1450px){.oo-leiste .wz{padding:0 5px}.oo-leiste .klapp svg{display:none}}
 :root{--oo-f:#2f7a4d;--oo-fm:#4f9a6b;--oo-fd:#1f5a37;--oo-fh:#d8eedf}
 .oo-teilen svg{vertical-align:-3px;margin-right:4px}
+/* Schriftfarbe-Knopf: A und Farbbalken mittig, nicht zu hoch */
+.oo-leiste .wz.schriftfarbe{flex-direction:column;justify-content:center;align-items:center;gap:2px;padding:0 8px;height:34px;min-height:34px}
+.oo-leiste .wz.schriftfarbe .A{font:800 14px/1 'Bricolage Grotesque',sans-serif;margin:0}
+.oo-leiste .wz.schriftfarbe i{display:block;width:16px;height:3px;border-radius:2px;margin:0}

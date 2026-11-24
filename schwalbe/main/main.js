@@ -220,6 +220,7 @@ function drehscheibeStarten() {
     scheibe = Drehscheibe.starte({ name: 'schwalbe', titel: 'Schwalbe', ordner: path.join(app.getPath('appData'), 'Ori Office'), beiAnfrage: Drehscheibe.anOberflaeche(() => fenster) });
     ipcMain.handle('ori:frage', (_e, an, typ, extra) => scheibe.frage(String(an), String(typ), extra && typeof extra === 'object' ? extra : {}));
     ipcMain.handle('ori:apps', () => scheibe.apps());
+    require('../kern/ori-kern').einschalten({ ipcMain, scheibe, hirn: Hirn, einstellungen: () => einstellungen.alle(), fenster: () => fenster });
     app.on('before-quit', () => { scheibe?.stopp(); });
   } catch (f) { console.error('Drehscheibe:', f); }
 }

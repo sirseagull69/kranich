@@ -4,7 +4,7 @@ const { contextBridge, ipcRenderer, webUtils } = require('electron');
 const rufe = (kanal) => (...args) => ipcRenderer.invoke(kanal, ...args);
 
 contextBridge.exposeInMainWorld('kranich', {
-  ori: { frage: (an, typ, extra) => ipcRenderer.invoke('ori:frage', an, typ, extra), apps: () => ipcRenderer.invoke('ori:apps') },
+  ori: { frage: (an, typ, extra) => ipcRenderer.invoke('ori:frage', an, typ, extra), apps: () => ipcRenderer.invoke('ori:apps'), kontext: () => ipcRenderer.invoke('ori:kontext'), zeigen: (app) => ipcRenderer.invoke('ori:zeigen', app), auftrag: (w, v) => ipcRenderer.invoke('ori:auftrag', w, v), beiStand: (cb) => ipcRenderer.on('ori:stand', (_e, d) => cb(d)) },
   standFoto: rufe('stand:foto'),
   vollbild: rufe('fenster:vollbild'),
   pfadVon: (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } },

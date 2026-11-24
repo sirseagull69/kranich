@@ -368,6 +368,7 @@
         <div class="platz"></div>
         <button type="button" class="oo-teilen" data-aktion="speichern" title="Speichern (Strg+S)">${sym('speichern', 15)} Speichern</button>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
+        <span data-ori-ort></span>
       </header>
       <main class="oo-flaeche">
         <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1440 220" preserveAspectRatio="none"><path d="M0 130 C 300 80 600 170 900 120 S 1300 90 1440 120 V220 H0Z" fill="#4f7cc0" opacity=".35"/><path d="M0 180 C 360 150 700 210 1000 175 S 1340 165 1440 180 V220 H0Z" fill="#2c5aa0" opacity=".85"/></svg>
