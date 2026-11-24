@@ -547,3 +547,15 @@ body{background:var(--oo-kraft)!important;background-image:none!important}
 .oo-wand .widget b,.oo-wand .k b,.oo-wand .zahl{font-variant-numeric:tabular-nums}
 .nachschlag{top:62px}
 @media (max-width:1250px){.oo-menue .m{padding:7px 6px;font-size:13px}.oo-inhalt{grid-template-columns:300px minmax(0,1fr)}.oo-flaeche{padding:14px 18px 0}}
+
+/* Anhänge an Specht (reinziehen oder Strg+V) */
+.anhaenge{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 6px}
+.anhang{display:inline-flex;align-items:center;gap:7px;background:#fff;border-radius:9px;padding:4px 6px 4px 4px;box-shadow:0 0 0 1px #ecd6cf;font-size:12.5px;max-width:260px}
+.anhang img{width:36px;height:26px;object-fit:cover;border-radius:5px}
+.anhang b{font:600 12.5px 'Bricolage Grotesque',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anhang button{border:0;background:none;color:#8a6a62;cursor:pointer;border-radius:5px;padding:2px 5px}
+.anhang button:hover{background:#f8e2dc}
+.zieh-hinweis{position:fixed;inset:10px;z-index:9500;border:3px dashed #b23a28;border-radius:18px;background:rgba(248,226,220,.86);display:grid;place-items:center;pointer-events:none}
+.zieh-hinweis>div{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fffdf8;padding:26px 40px;border-radius:16px;box-shadow:0 20px 50px -20px rgba(10,14,30,.45)}
+.zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:#7a2416}
+.zieh-hinweis small{color:#6b6f80}

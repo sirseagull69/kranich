@@ -140,6 +140,7 @@
           <span class="vogel">${specht(150, S.denkt ? 'denkt' : '', true)}</span></div>
           ${S.denkt ? `<div class="antwort"><div class="wer-zeile">${specht(28, 'klopft')}<span class="denkt"><i></i><i></i><i></i></span></div></div>` : ''}`;
     return `<section class="k frage" aria-label="Specht fragen">${kopfz}${inhalt}
+      ${S.anhaenge?.length ? `<div class="anhaenge">${S.anhaenge.map((a, i) => `<span class="anhang">${a.bild ? `<img src="${a.bild}" alt="">` : '📄'}<b>${esc(a.name)}</b><button type="button" data-a="anhang-weg" data-i="${i}" aria-label="Anhang entfernen">✕</button></span>`).join('')}</div>` : ''}
       <div class="eing"><textarea id="frage" rows="1" placeholder="${verlauf.length ? 'Nachfragen …' : 'Beschreib\'s in einem Satz …'}" aria-label="Deine Frage an Specht"></textarea><button type="button" class="btn senden" data-a="fragen" ${S.denkt ? 'disabled' : ''}>Fragen</button></div></section>`;
   }
   const kopfzeile = (w, titel, rechts = '') => `<div class="kopfz"><h3><button type="button" class="wtitel" data-a="ansicht" data-z="${w}">${esc(titel)}</button></h3>${rechts}${S.anpassen ? `<button type="button" class="mini" data-a="w-gross" data-id="${w}" title="Größer oder kleiner">↔</button><button type="button" class="mini" data-a="w-weg" data-id="${w}" title="Ausblenden">✕</button>` : ''}</div>`;
@@ -562,11 +563,14 @@
     S.d.eintraege = S.d.eintraege.filter((e) => e.id !== id);
   }
   async function fragen(text) {
-    text = String(text || '').trim(); if (!text || S.denkt) return;
-    const verlauf = [...chatVerlauf(), { wer: 'ich', text }];
+    text = String(text || '').trim();
+    if (!text && S.anhaenge?.length) text = S.anhaenge.some((a) => a.bild) ? 'Was bedeutet diese Meldung und was soll ich tun?' : 'Schau dir die Datei an: Was ist das Problem und was soll ich tun?';
+    if (!text || S.denkt) return;
+    const verlauf = [...chatVerlauf(), { wer: 'ich', text: S.anhaenge?.length ? `${text}\n📎 ${S.anhaenge.map((a) => a.name).join(', ')}` : text }];
     await setze('chat', CHAT_ID, { verlauf: verlauf.slice(-40) });
     S.denkt = true; if (verlauf.filter((m) => m.wer === 'ich').length > 1 || text.length > 120) S.gross = true; zeichne(false);
-    const r = await SP.frage(text, verlauf);
+    const anhaenge = S.anhaenge || []; S.anhaenge = [];
+    const r = await SP.frage(text, verlauf, anhaenge.map((a) => ({ pfad: a.pfad })));
     S.denkt = false;
     const antwort = r?.fehler
       ? { wer: 'er', fehler: true, text: `${r.fehler.nachricht}${r.fehler.art === 'nicht-installiert' ? '' : '\nProbier es gleich nochmal oder sieh in den Einstellungen unter „Claude“ nach.'}` }
@@ -676,6 +680,7 @@
     'tagebuch-filter': (el) => { S.tagebuchFilter = el.dataset.z; zeichne(false); },
     fragen: () => { const f = document.getElementById('frage'); const t = f.value; f.value = ''; fragen(t); },
     vorschlag: (el) => fragen(el.dataset.t),
+    'anhang-weg': (el) => { S.anhaenge.splice(Number(el.dataset.i), 1); zeichne(false); },
     'chat-neu': async () => { await setze('chat', CHAT_ID, { verlauf: [] }); S.gross = false; zeichne(false); },
     schalter: async (el) => { const k = el.dataset.k; const r = await SP.einstellungen({ [k]: el.getAttribute('aria-checked') !== 'true' }); if (!r?.fehler) { S.d.einstellungen = r; zeichne(false); } },
     'lizenz-speichern': async () => { const r = await SP.einstellungen({ lizenzUrl: document.getElementById('liz-url').value.trim(), lizenzSchluessel: document.getElementById('liz-key').value.trim() }); if (!r?.fehler) { S.d.einstellungen = r; S.lizenzen = null; meldung('Gespeichert.'); zeichne(false); } },
@@ -748,4 +753,37 @@
     setTimeout(() => { if (!document.querySelector('.schleier')) SP.standFoto?.('specht-uebersicht'); }, 4000);
     window.App = { S, zeichne, AKTIONEN };
   })();
+  // Datei oder Bildschirmfoto an Specht geben: reinziehen oder Strg+V
+  async function anhangDazu(pfad, name, bild) {
+    if (!pfad) { meldung('Die Datei konnte ich nicht lesen.', { fehler: true }); return; }
+    if (!/\.(png|jpe?g|webp|gif|txt|log|csv|json|xml|ini|cfg|conf|ps1|bat|cmd|reg|md|ya?ml|html?|err|out)$/i.test(pfad)) { meldung('Das kann ich nicht lesen – Bildschirmfotos und Text-/Logdateien gehen.', { fehler: true }); return; }
+    (S.anhaenge ||= []).push({ pfad, name, bild }); if (S.anhaenge.length > 4) S.anhaenge.shift();
+    S.gross = true; zeichne(false);
+    setTimeout(() => { const f = document.getElementById('frage'); if (f) { f.placeholder = 'Frag dazu – oder einfach Enter'; f.focus(); } }, 30);
+  }
+  let ziehUhr = null;
+  const ziehAnzeige = (an) => {
+    let z = document.querySelector('.zieh-hinweis');
+    if (an && !z) { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${specht(70, 'klopft')}<b>Loslassen – Specht schaut drauf</b><small>Bildschirmfoto einer Fehlermeldung oder eine Log-/Textdatei</small></div>`; document.body.appendChild(z); }
+    if (!an) z?.remove();
+  };
+  document.addEventListener('dragover', (ev) => {
+    if (![...(ev.dataTransfer?.types || [])].includes('Files')) return;
+    ev.preventDefault(); try { ev.dataTransfer.dropEffect = 'copy'; } catch { /* egal */ }
+    ziehAnzeige(true); clearTimeout(ziehUhr); ziehUhr = setTimeout(() => ziehAnzeige(false), 180);
+  });
+  document.addEventListener('drop', async (ev) => {
+    const f = ev.dataTransfer?.files?.[0]; if (!f) return;
+    ev.preventDefault(); clearTimeout(ziehUhr); ziehAnzeige(false);
+    const bild = f.type.startsWith('image/') && f.size < 15e6 ? await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = () => ok(null); r.readAsDataURL(f); }) : null;
+    anhangDazu(SP.pfadVon(f), f.name, bild);
+  });
+  document.addEventListener('paste', async (ev) => {
+    if (document.activeElement && /INPUT/.test(document.activeElement.tagName)) return;
+    const it = [...(ev.clipboardData?.items || [])].find((i) => i.type.startsWith('image/')); if (!it) return;
+    ev.preventDefault();
+    const dataUrl = await new Promise((ok) => { const r = new FileReader(); r.onload = () => ok(r.result); r.readAsDataURL(it.getAsFile()); });
+    const r = await SP.anhangSpeichern(dataUrl); if (r?.fehler) { meldung(r.fehler.nachricht, { fehler: true }); return; }
+    anhangDazu(r.pfad, 'Bildschirmfoto', dataUrl);
+  });
 })();

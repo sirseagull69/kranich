@@ -1,5 +1,5 @@
 'use strict';
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 const rufe = (k) => (...a) => ipcRenderer.invoke(k, ...a);
 const hoere = (k) => (cb) => ipcRenderer.on(k, (_e, d) => cb(d));
 contextBridge.exposeInMainWorld('SP', {
@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld('SP', {
   sync: rufe('sync:jetzt'),
   klopfen: rufe('klopfen:jetzt'),
   frage: rufe('frage'),
+  anhangSpeichern: rufe('anhang:speichern'),
+  pfadVon: (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } },
   lizenzen: rufe('lizenzen'),
   rdp: rufe('rdp'),
   standFoto: rufe('stand:foto'),

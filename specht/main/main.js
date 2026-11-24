@@ -153,7 +153,23 @@ async function lizenzenLesen() {
 }
 
 // ---------- Claude ----------
-async function frage(text, verlauf) {
+// Angehängte Dateien: Bilder gehen als Bild an Claude, Text-/Logdateien als Auszug in die Frage
+function anhaengeLesen(anhaenge) {
+  const bilder = []; let extra = '';
+  for (const a of (Array.isArray(anhaenge) ? anhaenge : []).slice(0, 4)) {
+    const p = String(a?.pfad || ''); if (!p || !fs.existsSync(p)) continue;
+    const groesse = fs.statSync(p).size;
+    if (/\.(png|jpe?g|webp|gif)$/i.test(p) && groesse < 15e6) bilder.push(p);
+    else if (/\.(txt|log|csv|json|xml|ini|cfg|conf|ps1|bat|cmd|reg|md|ya?ml|html?|err|out)$/i.test(p) && groesse < 50e6) {
+      const fd = fs.openSync(p, 'r'); const n = Math.min(groesse, 60000); const buf = Buffer.alloc(n); fs.readSync(fd, buf, 0, n, groesse - n); fs.closeSync(fd);
+      extra += `\n\nAngehängte Datei „${path.basename(p)}“ (${groesse > n ? 'die letzten 60 KB' : 'vollständig'}):\n\`\`\`\n${buf.toString('utf8')}\n\`\`\``;
+    }
+  }
+  return { bilder, extra };
+}
+
+async function frage(text, verlauf, anhaenge) {
+  const an = anhaengeLesen(anhaenge);
   const wissen = {
     grund: grund(),
     notizen: speicher.alle('notiz'), stoerungen: speicher.alle('stoerung'), anleitungen: speicher.alle('anleitung'),
@@ -164,7 +180,7 @@ async function frage(text, verlauf) {
     const st = speicher.alle('stoerung')[0]; const an = speicher.alle('anleitung')[0];
     return { antwort: 'Spiel-Antwort: Das läuft auf dem genannten Server. Das Kennwort liegt in Passbolt.', befehle: [{ zweck: 'Prüfen, ob der Dienst läuft', befehl: 'sc query dienst' }], aehnlich: st ? [st.id] : [], anleitung: an ? an.id : '', weg: 'spiel' };
   }
-  const { text: roh, weg } = await Hirn.frage({ system: H.SYSTEM, auftrag: H.auftrag({ frage: text, verlauf, ...wissen }) }, einstellungen.alle(), { zeitlimitMs: 240000 });
+  const { text: roh, weg } = await Hirn.frage({ system: H.SYSTEM, auftrag: H.auftrag({ frage: text + (an.bilder.length ? `\n\n(${an.bilder.length} Bildschirmfoto${an.bilder.length > 1 ? 's' : ''} angehängt – schau sie dir genau an.)` : '') + an.extra, verlauf, ...wissen }), bilder: an.bilder }, einstellungen.alle(), { zeitlimitMs: 240000 });
   return { ...H.leseAntwort(roh), weg };
 }
 
@@ -234,7 +250,14 @@ function registriere() {
   handle('konto:abmelden', () => { konto = null; kontoSichern(); syncJetzt(); return true; });
   handle('sync:jetzt', () => syncJetzt());
   handle('klopfen:jetzt', () => klopfen());
-  handle('frage', (text, verlauf) => frage(String(text), Array.isArray(verlauf) ? verlauf : []));
+  handle('frage', (text, verlauf, anhaenge) => frage(String(text), Array.isArray(verlauf) ? verlauf : [], anhaenge));
+  // Eingefügtes Bildschirmfoto (Strg+V) als Datei ablegen
+  handle('anhang:speichern', (dataUrl) => {
+    const m = /^data:image\/(png|jpeg|webp);base64,(.+)$/.exec(String(dataUrl || '')); if (!m) throw new Error('Kein Bild.');
+    const ordner = path.join(os.tmpdir(), 'specht-anhaenge'); fs.mkdirSync(ordner, { recursive: true });
+    const datei = path.join(ordner, `bildschirmfoto-${Date.now()}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`);
+    fs.writeFileSync(datei, Buffer.from(m[2], 'base64')); return { pfad: datei, name: 'Bildschirmfoto' };
+  });
   handle('lizenzen', () => lizenzenLesen());
   handle('rdp', (ip) => {
     if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(String(ip))) throw new Error('Keine gültige IP.');
