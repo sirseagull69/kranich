@@ -66,7 +66,7 @@
       <span class="txt"><b>${esc(k.name)}</b><span>${esc(k.rolle)}</span></span>${marke}</button>`;
   }
   function huegel(k) {
-    return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,686 0,430 240,330 520,420 850,300 850,686" fill="${k.farbe}" opacity=".5"/><polygon points="0,686 0,540 300,470 600,560 850,480 850,686" fill="${k.farbe}"/><polygon points="520,0 850,0 850,260" fill="#fff" opacity=".05"/></svg>`;
+    return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><path d="M0 600 C 200 560 420 630 620 590 S 800 570 850 585 V686 H0Z" fill="${k.hell}"/><path d="M0 640 C 260 615 520 670 850 640 V686 H0Z" fill="${k.mittel}" opacity=".55"/></svg>`;
   }
 
   function render() {

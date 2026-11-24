@@ -119,3 +119,23 @@ header .ver{margin-right:6px}
 .weiter .datei:hover{background:#fff!important;transform:translateY(-2px)}
 .weiter .datei b{font:700 14.5px 'Bricolage Grotesque',sans-serif;color:#1d2742!important;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .weiter .datei span{font:500 12.5px 'Bricolage Grotesque',sans-serif;color:#5d6478!important}
+/* Ruhige Bühne: helles Papier, Farbe nur als Akzent */
+.buehne{background:#f6f2ea!important;color:var(--tinte,#1d2742)}
+.huegel{top:auto;height:100%}
+.ori-feld{background:#fffdf8;box-shadow:0 0 0 1px #e8e1d3,0 6px 14px -10px rgba(29,39,66,.35)}
+.ori-feld:focus-within{background:#fff;box-shadow:0 0 0 2px var(--mittel)}
+.ori-feld input{color:#1d2742}
+.ori-feld input::placeholder{color:#8a8f9c}
+.rolle{color:var(--farbe)}
+.held h1{color:#1d2742}
+.spruch{color:var(--farbe);opacity:1}
+.los{background:var(--farbe);color:#fff;box-shadow:0 12px 22px -12px var(--farbe)}
+.los:hover:not(:disabled){filter:brightness(1.06)}
+.los:disabled{background:#e9e3d6;color:#7a7f8e}
+.zweit{background:#fffdf8;color:#1d2742;box-shadow:0 0 0 1px #e8e1d3}
+.info{color:#7a7f8e}
+.held-vogel{filter:drop-shadow(0 18px 18px rgba(29,39,66,.18))}
+.held-vogel::before{background:var(--hell)!important;opacity:.9!important}
+.weiter-titel{color:#1d2742;opacity:.75}
+.weiter .datei{box-shadow:0 0 0 1px #e8e1d3,0 10px 20px -14px rgba(29,39,66,.4)!important}
+.weiter .leer{color:#7a7f8e}
