@@ -134,7 +134,8 @@ function netzSperren() {
 
 function oeffneFenster() {
   fenster = new BrowserWindow({
-    width: 1360, height: 860, minWidth: 980, minHeight: 640, title: 'Albatros', backgroundColor: '#f2f0e9', autoHideMenuBar: true,
+    width: 1400, height: 900, minWidth: 1000, minHeight: 660, title: 'Albatros', backgroundColor: '#141b31', autoHideMenuBar: true,
+    titleBarStyle: 'hidden', titleBarOverlay: { color: '#141b31', symbolColor: '#c9d1ea', height: 48 },
     icon: path.join(__dirname, '..', 'bau', 'icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, nodeIntegration: false },
   });

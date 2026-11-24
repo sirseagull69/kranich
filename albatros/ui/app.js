@@ -190,45 +190,48 @@
     if (t.vba?.length && !t.vbaGezeigt) { t.vbaGezeigt = true; meldung(`Diese Datei hat ${t.vba.length} Excel-Makro${t.vba.length > 1 ? 's' : ''}. Albatros führt sie nicht aus, kann sie aber übersetzen.`, { knopf: 'Ansehen', aktion: () => makroFenster(), dauer: 12000 }); }
   }
 
+  // ---------- Menü wie bei Office: Reiter wechseln die Werkzeugleiste ----------
+  const REITER = [['datei', 'Datei'], ['start', 'Start'], ['einfuegen', 'Einfügen'], ['formeln', 'Formeln'], ['daten', 'Daten'], ['makros', 'Makros'], ['ansicht', 'Ansicht']];
+  // Ori: unsere echte Ori aus origami (ui/ori.js), ohne Schatten
+  const oriVogel = (g, anim = 'ruhezustand-2') => { const v = window.ORI?.[anim] || window.ORI?.['ruhezustand-2'] || ''; return v.replace(/__G__/g, g).replace(/<ellipse[\s\S]*?<\/ellipse>/, '').replace(' aria-hidden="true"', ' aria-hidden="true" class="ori-bild"'); };
+  const ORI_SPRUECHE = ['Er hat meistens recht. Leider.', 'Frag ihn ruhig, er rechnet gern nach.', 'Zahlen sind seins. Small Talk eher nicht.', 'Wenn er „bis auf den Cent“ sagt, meint er das.', 'Ich halt mich raus. Fast.'];
+  const wzk = (aktion, inhalt, titel, extra = '') => `<button type="button" class="wz" data-aktion="${aktion}" title="${titel}" ${extra}>${inhalt}</button>`;
+  function leiste() {
+    const r = S.reiter || 'start'; const tz = '<span class="tz"></span>';
+    if (r === 'datei') return `${wzk('start', `${sym('links', 15)} Alle Tabellen`, 'Zurück zur Übersicht')}${wzk('neu', `${sym('plus', 15, 2.4)} Neu`, 'Neue Tabelle')}${tz}<span style="position:relative">${wzk('exportmenue', `${sym('export', 15)} Exportieren`, 'Als Excel, CSV oder PDF')}</span>${wzk('drucken', `${sym('drucker', 15)} Drucken / PDF`, 'Strg+P')}${tz}${wzk('umbenennen', 'Umbenennen', 'Tabelle umbenennen')}${wzk('einstellungen', `${sym('zahnrad', 15)} Einstellungen`, 'Einstellungen')}`;
+    if (r === 'einfuegen') return `${wzk('zeile-dazu', `${sym('zeile', 15)} Zeile`, 'Zeile darunter einfügen')}${wzk('spalte-dazu', `${sym('spalte', 15)} Spalte`, 'Spalte rechts einfügen')}${wzk('blatt-dazu', `${sym('plus', 15, 2.4)} Blatt`, 'Neues Blatt')}${tz}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Übersicht (Pivot): Summen je Kategorie, Monat …')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}`;
+    if (r === 'formeln') return `<button type="button" class="wz" data-aktion="unten" data-fn="SUMME" title="Summe unter die Markierung">${sym('summe', 15)} Summe</button><button type="button" class="wz" data-aktion="unten" data-fn="MITTELWERT" title="Durchschnitt unter die Markierung">Mittelwert</button><button type="button" class="wz" data-aktion="unten" data-fn="ANZAHL" title="Anzahl unter die Markierung">Zählen</button><button type="button" class="wz" data-aktion="unten" data-fn="MAX" title="Größter Wert unter die Markierung">Max</button><button type="button" class="wz" data-aktion="unten" data-fn="MIN" title="Kleinster Wert unter die Markierung">Min</button>${tz}${wzk('erklaeren', `${sym('fx', 15)} Formel erklären`, 'Albatros erklärt die Formel')}`;
+    if (r === 'daten') return `${wzk('sortieren', `${sym('sortieren', 15)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 15)} Filter`, 'Filter an/aus (Strg+Umschalt+L)')}${wzk('hervorheben', `${sym('hervor', 15)} Hervorheben`, 'Automatisch färben')}${wzk('liste', `${sym('liste', 15)} Auswahlliste`, 'Dropdown für Zellen')}${tz}${wzk('uebersicht', `${sym('pivot', 15)} Übersicht`, 'Pivot')}${blatt().pivot ? wzk('pivot-neu', 'Neu aufbauen', 'Übersicht neu aufbauen') : ''}${wzk('suchen', `${sym('lupe', 15)} Suchen`, 'Suchen & Ersetzen (Strg+F)')}`;
+    if (r === 'makros') return `${wzk('makros', `${sym('makro', 15)} Makros verwalten`, 'Aufnehmen, schreiben, ausführen')}${S.aufnahme ? '' : wzk('aufnahme-start', '<span style="color:#c0392b">●</span> Aufnehmen', 'Makro aufnehmen')}${S.t.makros.filter((m) => m.knopf).length ? tz : ''}${S.t.makros.filter((m) => m.knopf).map((m) => `<button type="button" class="wz makroknopf" data-aktion="makro-los" data-id="${esc(m.id)}" title="Makro ausführen">${sym('makro', 13)} ${esc(m.name)}</button>`).join('')}${S.t.vba?.length ? `${tz}${wzk('makros', `Excel-Makros (${S.t.vba.length})`, 'Aus der Datei')}` : ''}`;
+    if (r === 'ansicht') return `${wzk('fixieren', `${sym('fixieren', 15)} Fixieren`, 'Zeilen/Spalten festhalten')}${wzk('helfer-klappen', S.helferZu ? 'Albatros zeigen' : 'Albatros ausblenden', 'Seitenleiste')}`;
+    return `${wzk('rueckgaengig', sym('zurueck', 15), 'Rückgängig (Strg+Z)')}${wzk('wiederholen', sym('vor', 15), 'Wiederholen (Strg+Y)')}${tz}${wzk('fett', '<b style="font-size:15px">F</b>', 'Fett (Strg+B)')}<button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>${wzk('format', '€', 'Als Euro', 'data-art="eur"')}${wzk('format', '%', 'Als Prozent', 'data-art="prozent"')}<span class="farbwahl">${wzk('farbmenue', sym('farbe', 15), 'Farbe')}</span>${wzk('verbinden', sym('verbinden', 15), 'Zellen verbinden / lösen')}${tz}${wzk('summe-unten', `${sym('summe', 15)} Summe`, 'Summe unter die Markierung')}${wzk('sortieren', `${sym('sortieren', 15)} Sortieren`, 'Nach der markierten Spalte sortieren')}${wzk('filter', `${sym('filter', 15)} Filtern`, 'Filter an/aus')}${wzk('diagramm', `${sym('diagramm', 15)} Diagramm`, 'Diagramm aus der Markierung')}${tz}${wzk('suchen', sym('lupe', 15), 'Suchen & Ersetzen (Strg+F)')}`;
+  }
+  function zeigeLeiste() { const l = app.querySelector('.oo-leiste'); if (l) l.innerHTML = leiste(); app.querySelectorAll('.oo-menue .m').forEach((m) => m.classList.toggle('an', m.dataset.reiter === (S.reiter || 'start'))); }
+
   function zeigeTabelle() {
     S.ansicht = 'tabelle';
     rechne();
-    app.innerHTML = `<header class="kopf"><button type="button" class="marke" data-aktion="start" title="Alle Tabellen">${sym('links', 18)}${vogel('ruhezustand-3', 36)}<b class="h">Albatros</b></button><span class="trenner"></span>
-        <div class="dok"><b class="h" data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small><span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
+    app.innerHTML = `<header class="oo-kopf">
+        <button type="button" class="oo-ikon" data-aktion="start" title="Alle Tabellen" aria-label="Alle Tabellen">${vogel('ruhezustand-3', 30)}</button>
+        <div class="oo-dok"><b data-aktion="umbenennen" title="Zum Umbenennen klicken">${esc(S.t.name)}</b><small>Albatros · <span class="blattname">${esc(blatt().name)}</span> · <span class="gespeichert">gespeichert</span></small></div>
+        <nav class="oo-menue" aria-label="Menü">${REITER.map(([k, t]) => `<button type="button" class="m${S.reiter === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}</nav>
         <div class="platz"></div>
-        <div style="position:relative"><button type="button" class="btn" data-aktion="exportmenue">${sym('export', 16)} Exportieren</button></div>
-        <button type="button" class="rund" data-aktion="einstellungen" title="Einstellungen" aria-label="Einstellungen">${sym('zahnrad', 18)}</button></header>
-      <div class="werk mitleiste">
-        <aside class="blatt seite" aria-label="Blätter und Schnell rechnen"></aside>
-        <div class="links">
-          <div class="blattueber"><span class="hand">${esc(S.t.name)}</span><b class="h blattname2" title="Doppelklick zum Umbenennen">${esc(blatt().name)}</b></div>
-          <div class="blatt leiste" role="toolbar" aria-label="Werkzeuge">
-            <button type="button" class="wz" data-aktion="rueckgaengig" title="Rückgängig (Strg+Z)">${sym('zurueck', 15)}</button>
-            <button type="button" class="wz" data-aktion="wiederholen" title="Wiederholen (Strg+Y)">${sym('vor', 15)}</button><span class="tz"></span>
-            <button type="button" class="wz" data-aktion="fett" title="Fett (Strg+B)"><b style="font-size:15px">F</b></button>
-            <button type="button" class="wz" data-aktion="formatmenue" data-schwebe-auf title="Zahlenformat: Euro, Prozent, Datum, Uhrzeit …"><b style="font:700 12.5px var(--mono)">123</b> ▾</button>
-            <button type="button" class="wz" data-aktion="format" data-art="eur" title="Als Euro">€</button>
-            <button type="button" class="wz" data-aktion="format" data-art="prozent" title="Als Prozent">%</button>
-            <span class="farbwahl"><button type="button" class="wz" data-aktion="farbmenue" title="Farbe">${sym('farbe', 15)}</button></span>
-            <button type="button" class="wz" data-aktion="verbinden" title="Zellen verbinden / lösen">${sym('verbinden', 15)}</button><span class="tz"></span>
-            <button type="button" class="wz" data-aktion="zeile-dazu" title="Zeile darunter einfügen">${sym('zeile', 15)} Zeile</button>
-            <button type="button" class="wz" data-aktion="spalte-dazu" title="Spalte rechts einfügen">${sym('spalte', 15)} Spalte</button>
-            <button type="button" class="wz" data-aktion="fixieren" title="Zeilen/Spalten beim Scrollen festhalten (oberhalb und links der markierten Zelle)">${sym('fixieren', 15)} Fixieren</button><span class="tz"></span>
-            <button type="button" class="wz" data-aktion="sortieren" title="Nach der markierten Spalte sortieren">${sym('sortieren', 15)} Sortieren</button>
-            <button type="button" class="wz" data-aktion="filter" title="Filter an/aus (Strg+Umschalt+L)">${sym('filter', 15)} Filter</button>
-            <button type="button" class="wz" data-aktion="hervorheben" title="Automatisch färben, z. B. alles unter 0 rot">${sym('hervor', 15)} Hervorheben</button>
-            <button type="button" class="wz" data-aktion="liste" title="Auswahlliste (Dropdown) für Zellen">${sym('liste', 15)} Liste</button><span class="tz"></span>
-            <button type="button" class="wz" data-aktion="diagramm" title="Diagramm aus der Markierung">${sym('diagramm', 15)} Diagramm</button>
-            <button type="button" class="wz" data-aktion="uebersicht" title="Übersicht (Pivot): Summen je Kategorie, Monat …">${sym('pivot', 15)} Übersicht</button>
-            <button type="button" class="wz" data-aktion="summe-unten" title="Summe unter die Markierung">${sym('summe', 15)} Summe</button><span class="tz"></span>
-            <button type="button" class="wz" data-aktion="suchen" title="Suchen & Ersetzen (Strg+F / Strg+H)">${sym('lupe', 15)}</button>
-            <button type="button" class="wz" data-aktion="makros" title="Makros: aufnehmen, schreiben, ausführen">${sym('makro', 15)} Makros</button>
+        <div style="position:relative"><button type="button" class="oo-teilen" data-aktion="exportmenue">Teilen</button></div>
+        <button type="button" class="oo-ori" data-aktion="ori" title="Ori fragen">${oriVogel(24)}Ori</button>
+      </header>
+      <main class="oo-flaeche">
+        <svg class="oo-berge" aria-hidden="true" viewBox="0 0 1420 822" preserveAspectRatio="none"><polygon points="0,822 0,70 180,34 360,78 560,22 800,84 1010,30 1220,76 1420,40 1420,822" fill="#27683f"/><polygon points="560,22 800,84 650,84" fill="#3d8c5c"/><polygon points="1010,30 1220,76 1090,76" fill="#3d8c5c"/><polygon points="0,822 0,100 240,64 470,108 700,62 960,112 1180,68 1420,104 1420,822" fill="#1f5633"/></svg>
+        <div class="oo-titel"><h1>Albatros</h1><span class="hand">Tabellen. Bis auf den Cent.</span></div>
+        <div class="blatt leiste oo-leiste" role="toolbar" aria-label="Werkzeuge">${leiste()}</div>
+        <div class="oo-inhalt${S.helferZu ? ' zu' : ''}">
+          <div class="oo-karte">
+            <div class="formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"><span class="erklaerung leise"></span></div>
+            <div class="raster"><div class="rasterscroll" tabindex="0" aria-label="Tabelle"></div><div class="blaetter"></div></div>
           </div>
-          <div class="blatt formelzeile"><span class="adr">A1</span><span class="fx">fx</span><input id="formel" aria-label="Inhalt der Zelle" spellcheck="false"><span class="erklaerung leise"></span></div>
-          <div class="blatt raster"><div class="rasterscroll" tabindex="0" aria-label="Tabelle"></div><div class="blaetter"></div></div>
+          <aside class="blatt helfer oo-seite" aria-label="Albatros hilft"></aside>
+          <div class="oo-schiene"><button type="button" class="oo-klapp" data-aktion="helfer-klappen" title="${S.helferZu ? 'Albatros zeigen' : 'Albatros einklappen'}" aria-label="Seitenleiste umschalten">${S.helferZu ? '‹' : '›'}</button><button type="button" class="oo-schienenvogel" data-aktion="helfer-klappen" aria-label="Albatros">${vogel('ruhezustand-3', 34)}</button></div>
         </div>
-        <aside class="blatt helfer" aria-label="Albatros hilft"></aside>
-      </div>`;
+      </main>`;
     const fz = document.getElementById('formel');
     fz.addEventListener('focus', () => { S.bearbeiten = { a: Fo.adresse(S.anker.sp, S.anker.ze), ort: 'formel' }; });
     fz.addEventListener('input', () => liveZeigen(Fo.adresse(S.anker.sp, S.anker.ze), fz.value));
@@ -629,7 +632,7 @@
   // ---------- Helfer rechts ----------
   function zeichneHelfer() {
     const h = app.querySelector('.helfer'); if (!h) return;
-    h.innerHTML = `<header><span class="helfervogel">${vogel(S.denkt ? 'denkt-nach' : 'ruhezustand-3', 34)}</span><b class="h">Albatros hilft</b><div class="platz"></div><span class="chip grau" style="box-shadow:none;background:var(--mint)"><i style="background:${S.denkt ? '#e8a53a' : 'var(--gruen)'}"></i>${S.denkt ? 'Rechnet …' : 'Bereit'}</span></header>
+    h.innerHTML = `<header class="oo-seitenkopf"><span class="helfervogel">${vogel(S.denkt ? 'denkt-nach' : 'ruhezustand-3', 40)}</span><span class="oo-wer"><b class="h">Albatros</b><small>${S.denkt ? 'rechnet …' : 'Buchhalter, nimmt es genau'}</small></span><button type="button" class="oo-pfeil" data-aktion="helfer-klappen" title="Einklappen" aria-label="Albatros einklappen">›</button></header>
       <div class="werte" aria-live="polite"></div>
       <div class="tipp-karte" hidden><b class="h">Kleiner Tipp</b><span></span></div>
       <div class="schnell">
@@ -639,6 +642,7 @@
         <button type="button" data-aktion="frage" data-text="Markiere doppelte oder auffällige Einträge (z. B. Tippfehler, ungewöhnlich hohe Beträge) und sag mir kurz, was du gefunden hast.">${sym('lupe', 15)} Auffälliges</button>
       </div>
       <div class="gespraech"></div>
+      <div class="oo-ori-karte">${oriVogel(30)}<span><small>Ori mischt sich ein</small><b>${esc(ORI_SPRUECHE[Math.floor(Math.random() * ORI_SPRUECHE.length)])}</b></span></div>
       <div class="frage"><textarea id="frage" rows="2" placeholder="Was soll ich tun? z. B. „Alles über 200 € orange markieren“" aria-label="Wunsch an Albatros"></textarea>
         <div class="reihe"><span class="leise auswahlhinweis" style="font-size:12.5px"></span><div class="platz"></div><button type="button" class="btn klein" data-aktion="senden" ${S.denkt ? 'disabled' : ''}>Los ${sym('senden', 14, 2.4)}</button></div></div>`;
     const f = h.querySelector('#frage');
@@ -1304,7 +1308,7 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
   function aufnahmeStarten() {
     S.aufnahme = [];
     document.querySelectorAll('.schleier').forEach((x) => x.remove());
-    const k = app.querySelector('.kopf .platz');
+    const k = app.querySelector('.oo-kopf .platz, .kopf .platz');
     k?.insertAdjacentHTML('afterend', `<button type="button" class="aufnahme" data-aktion="aufnahme-stopp" title="Aufnahme beenden">● Aufnahme läuft · Stopp</button>`);
     meldung('Aufnahme läuft: Mach jetzt die Schritte in der Tabelle. Danach oben auf „Stopp“.', { dauer: 7000 });
   }
@@ -1377,6 +1381,9 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
     'makro-los': (el) => { const m = S.t.makros.find((x) => x.id === el.dataset.id); if (m) makroAusfuehren(m); },
     'aufnahme-stopp': () => aufnahmeStoppen(),
     drucken: () => druckFenster(),
+    'aufnahme-start': () => aufnahmeStarten(),
+    'helfer-klappen': () => { S.helferZu = !S.helferZu; const i = app.querySelector('.oo-inhalt'); i?.classList.toggle('zu', S.helferZu); const k = app.querySelector('.oo-klapp'); if (k) k.textContent = S.helferZu ? '‹' : '›'; zeigeLeiste(); setTimeout(() => zeichneTabelle(), 220); },
+    ori: () => { if (S.helferZu) aktionen['helfer-klappen'](); setTimeout(() => app.querySelector('#frage')?.focus(), 60); },
   });
 
   // ---------- Eigene Abfrage statt Windows-Box ----------
@@ -1392,6 +1399,7 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
 
   // ---------- Ereignisse ----------
   app.addEventListener('click', (ev) => {
+    const rt = ev.target.closest('[data-reiter]'); if (rt) { S.reiter = rt.dataset.reiter; zeigeLeiste(); return; }
     if (!ev.target.closest('.menue, [data-aktion="exportmenue"]')) document.querySelector('.menue')?.remove();
     if (!ev.target.closest('.farbwahl, .farben')) document.querySelector('.farben')?.remove();
     const el = ev.target.closest('[data-aktion]');
