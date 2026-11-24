@@ -856,7 +856,7 @@
     const erledigt = (S.d.kommentare || []).filter((k) => k.erledigt && komAnker(k.id).length).length;
     blatt().querySelectorAll('span.kom').forEach((a) => { const k = S.d.kommentare?.find((x) => x.id === a.dataset.kom); a.classList.toggle('erledigt', !k || k.erledigt); a.classList.toggle('aktiv', a.dataset.kom === S.komAktiv); });
     tisch.classList.toggle('mit-rand', liste.length > 0 || erledigt > 0);
-    if (!liste.length && !erledigt) { if (!rand.contains(document.activeElement)) rand.innerHTML = ''; return; }
+    if (!liste.length && !erledigt) { rand.innerHTML = ''; tisch.classList.remove('mit-rand'); return; }
     const tippt = rand.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA';
     if (tippt && liste.every((k) => rand.querySelector(`.kom-karte[data-kom="${CSS.escape(k.id)}"]`))) { komPositionen(rand); return; }
     if (tippt) return;
