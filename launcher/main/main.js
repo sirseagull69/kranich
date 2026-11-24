@@ -118,9 +118,14 @@ async function installiert(id) {
 let neueste = {};
 async function pruefeUpdates() {
   try {
-    const r = await net.fetch(DOWNLOADS, { headers: { 'User-Agent': 'Selbst-gfaltet', Accept: 'application/vnd.github+json' } });
-    if (!r.ok) return { fehler: `GitHub antwortet nicht (${r.status}).` };
-    const releases = await r.json();
+    // GitHub liefert seitenweise und nicht streng nach Datum – darum alle Seiten holen
+    const releases = [];
+    for (let seite = 1; seite <= 5; seite++) {
+      const r = await net.fetch(`${DOWNLOADS.replace(/per_page=\d+/, 'per_page=100')}&page=${seite}`, { headers: { 'User-Agent': 'Selbst-gfaltet', Accept: 'application/vnd.github+json' } });
+      if (!r.ok) { if (seite === 1) return { fehler: `GitHub antwortet nicht (${r.status}).` }; break; }
+      const teil = await r.json(); if (!Array.isArray(teil) || !teil.length) break;
+      releases.push(...teil); if (teil.length < 100) break;
+    }
     neueste = {};
     for (const rel of releases) {
       if (rel.draft) continue;
