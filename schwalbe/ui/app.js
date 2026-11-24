@@ -20,7 +20,7 @@
     radier: 'M7 21h10M5 15l9-9 5 5-9 9H6z', tabelle: 'M3 4h18v16H3zM3 10h18M3 15h18M9 4v16M15 4v16', bild: 'M3 5h18v14H3zM3 16l5-5 4 4 3-3 6 6M15 9.5a1.5 1.5 0 1 0 0-.01',
     link: 'M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1', umbruch: 'M4 4v5h16V4M4 20v-5h16v5M2 12h3M8 12h3M13 12h3M19 12h3', kalender: 'M4 6h16v14H4zM4 10h16M9 3v4M15 3v4',
     marker: 'M15 4l5 5-9 9H6v-5zM4 21h16', einzug: 'M3 6h18M11 10h10M11 14h10M3 18h18M3 9l4 3-4 3', einzugweg: 'M3 6h18M11 10h10M11 14h10M3 18h18M7 9l-4 3 4 3', block: 'M3 6h18M3 12h18M3 18h18',
-    lupe: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3', minus: 'M5 12h14', zitat: 'M7 8h4v4H7zM7 12c0 3-1 4-3 5M15 8h4v4h-4zM15 12c0 3-1 4-3 5', strich: 'M4 12h16', pdf: 'M6 2h9l5 5v15H6zM14 2v6h6', word: 'M6 2h9l5 5v15H6zM9 12l1.5 6 1.5-4 1.5 4 1.5-6',
+    lupe: 'M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM21 21l-4.3-4.3', minus: 'M5 12h14', zitat: 'M7 8h4v4H7zM7 12c0 3-1 4-3 5M15 8h4v4h-4zM15 12c0 3-1 4-3 5', strich: 'M4 12h16', pdf: 'M6 2h9l5 5v15H6zM14 2v6h6', word: 'M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6', speichern: 'M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6',
   };
   const sym = (n, g = 16, d = 2) => `<svg width="${g}" height="${g}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${d}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${ICON[n]}"/></svg>`;
   const vogel = (anim, g) => { const v = window.VOGEL?.[anim] || window.VOGEL?.['ruhezustand-2']; return v ? v.replace(/__G__/g, g).replace(' aria-hidden="true"', ' role="img" aria-label="Schwalbe"') : ''; };
@@ -366,7 +366,7 @@
           ${REITER.map(([k, t]) => `<button type="button" class="m${(S.reiter || 'start') === k ? ' an' : ''}" data-reiter="${k}">${t}</button>`).join('')}
         </nav>
         <div class="platz"></div>
-        <button type="button" class="oo-teilen" data-aktion="speichern" title="Speichern (Strg+S)">${sym('word', 15)} Speichern</button>
+        <button type="button" class="oo-teilen" data-aktion="speichern" title="Speichern (Strg+S)">${sym('speichern', 15)} Speichern</button>
         <button type="button" class="oo-hilfe" data-aktion="rundgang" title="Kurzer Rundgang" aria-label="Kurzer Rundgang">?</button>
         <button type="button" class="oo-ori" data-aktion="ori" title="Schwalbe fragen">${oriVogel(24)}Ori</button>
       </header>
@@ -880,7 +880,7 @@
   async function backstage(bereich = 'info') {
     document.querySelector('.backstage')?.remove();
     const b = document.createElement('div'); b.className = 'backstage';
-    const NAV = [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'kommentar', 'Info'], ['-'], ['speichern', 'word', 'Speichern'], ['unter', 'export', 'Speichern unter'], ['export', 'pdf', 'Exportieren'], ['drucken', 'drucker', 'Drucken'], ['-'], ['optionen', 'zahnrad', 'Optionen'], ['zu', 'links', 'Schließen']];
+    const NAV = [['neu', 'plus', 'Neu'], ['oeffnen', 'oeffnen', 'Öffnen'], ['info', 'kommentar', 'Info'], ['-'], ['speichern', 'speichern', 'Speichern'], ['unter', 'export', 'Speichern unter'], ['export', 'pdf', 'Exportieren'], ['drucken', 'drucker', 'Drucken'], ['-'], ['optionen', 'zahnrad', 'Optionen'], ['zu', 'links', 'Schließen']];
     b.innerHTML = `<nav class="bs-nav"><button type="button" class="bs-zurueck" data-bs="zurueck">${sym('links', 18)}<span>Zurück</span></button>${NAV.map(([k, ic, t]) => (k === '-' ? '<hr>' : `<button type="button" data-bs="${k}" class="${k === bereich ? 'an' : ''}">${sym(ic, 17)}<span>${t}</span></button>`)).join('')}<div class="platz"></div><div class="bs-vogel">${vogel('ruhezustand-2', 54)}</div></nav><section class="bs-inhalt"></section>`;
     document.body.appendChild(b);
     const inhalt = b.querySelector('.bs-inhalt');
@@ -902,7 +902,7 @@
         const komOffen = (S.d.kommentare || []).filter((x) => !x.erledigt).length; const aend = Pruefen.alle(blatt()).length;
         const zeile = (t, w) => `<div class="bs-info"><span>${t}</span><b>${w}</b></div>`;
         inhalt.innerHTML = `<h1>Info</h1><div class="bs-titel">${sym('word', 26)}<div><b>${esc(dateiName())}</b><small>${S.d.datei ? esc(S.d.datei) : 'Noch nicht als Datei gespeichert – liegt nur in der Schwalbe.'}</small></div></div>
-          <div class="bs-knoepfe">${S.d.datei ? `<button type="button" class="btn weiss" data-bs-ordner>${sym('oeffnen', 15)} Im Ordner zeigen</button>` : `<button type="button" class="btn" data-bs="speichern">${sym('word', 15)} Als Datei speichern</button>`}<button type="button" class="btn weiss" data-bs-umbenennen>Umbenennen</button></div>
+          <div class="bs-knoepfe">${S.d.datei ? `<button type="button" class="btn weiss" data-bs-ordner>${sym('oeffnen', 15)} Im Ordner zeigen</button>` : `<button type="button" class="btn" data-bs="speichern">${sym('speichern', 15)} Als Datei speichern</button>`}<button type="button" class="btn weiss" data-bs-umbenennen>Umbenennen</button></div>
           <div class="bs-spalten"><div>
             <h2>Eigenschaften</h2>${zeile('Größe', info?.da ? `${Math.max(1, Math.round(info.groesse / 1024))} KB` : '–')}${zeile('Wörter', woerter.toLocaleString('de-DE'))}${zeile('Zeichen', text.length.toLocaleString('de-DE'))}${zeile('Seiten', app.querySelector('.seitenzahl')?.textContent || '1')}${zeile('Autor', esc(Pruefen.autor()))}
             ${zeile('Zuletzt in Datei gespeichert', S.d.dateiStand ? esc(wann(S.d.dateiStand)) : '–')}${zeile('Erstellt', esc(wann(S.d.erstellt)))}
@@ -922,7 +922,7 @@
       if (n === 'zurueck') return zu();
       if (n === 'speichern') { zu(); speichern(); return; }
       if (n === 'drucken') { zu(); aktionen.drucken(); return; }
-      if (n === 'optionen') { zu(); optionen(); return; }
+      if (n === 'optionen') { b.querySelectorAll('.bs-nav [data-bs]').forEach((x) => x.classList.toggle('an', x.dataset.bs === 'optionen')); optionen('allgemein', { ziel: inhalt, schliessen: zu, zurueck: () => zeige('info') }); return; }
       if (n === 'zu') { zu(); dokumentSchliessen(); return; }
       if (n) return zeige(n);
       const v = ev.target.closest('[data-vorlage]'); if (v) { zu(); aktionen.vorlage(v.closest('[data-vorlage]').dataset.vorlage ? { dataset: { k: v.dataset.vorlage } } : v); return; }
@@ -944,13 +944,14 @@
     });
     b.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') zu(); });
     b.tabIndex = -1; b.focus();
-    zeige(bereich);
+    if (bereich === 'optionen') b.querySelector('[data-bs="optionen"]').click(); else zeige(bereich);
   }
 
   // ---------- Optionen (wie in Office) ----------
-  async function optionen(bereich = 'allgemein') {
+  async function optionen(bereich = 'allgemein', inline = null) {
     const e = await A.einstellungen.lesen(); const eb = e.eingebaut || {};
-    const s2 = document.createElement('div'); s2.className = 'schleier';
+    const s2 = document.createElement('div'); s2.className = inline ? 'op-inline' : 'schleier';
+    const weg = (fertig) => { if (!inline) s2.remove(); else if (fertig) inline.schliessen(); else inline.zurueck(); };
     const BEREICHE = [['allgemein', 'Allgemein'], ['speichern', 'Speichern'], ['bearbeiten', 'Bearbeiten'], ['ki', 'Schwalbe (KI)'], ['ueber', 'Über']];
     const an = (k, t, x, wert) => `<label class="op-zeile op-haken"><input type="checkbox" data-op="${k}" ${wert ? 'checked' : ''}><span><b>${t}</b><small>${x}</small></span></label>`;
     const feld = (t, x, inp) => `<div class="op-zeile"><span><b>${t}</b><small>${x}</small></span>${inp}</div>`;
@@ -984,7 +985,7 @@
           <div class="reihe" style="gap:8px"><button type="button" class="btn weiss" data-op-rundgang>Rundgang starten</button></div></section>
       </div>
       <div class="op-fuss"><button type="button" class="btn weiss" data-zu>Abbrechen</button><button type="button" class="btn" data-speichern>OK</button></div></div>`;
-    document.body.appendChild(s2);
+    if (inline) { inline.ziel.innerHTML = '<h1>Optionen</h1>'; inline.ziel.appendChild(s2); } else document.body.appendChild(s2);
     const zeigeB = (k) => { s2.querySelectorAll('[data-ops]').forEach((x) => { x.hidden = x.dataset.ops !== k; }); s2.querySelectorAll('[data-opb]').forEach((x) => x.classList.toggle('an', x.dataset.opb === k)); };
     const zeigeWeg = () => { const w = s2.querySelector('input[name="weg"]:checked')?.value; s2.querySelectorAll('.w-heim').forEach((x) => { x.hidden = w !== 'heim'; }); s2.querySelectorAll('.w-api').forEach((x) => { x.hidden = w !== 'api'; }); s2.querySelectorAll('.w-modell').forEach((x) => { x.hidden = w === 'api'; }); };
     zeigeB(bereich); zeigeWeg(); s2.addEventListener('change', zeigeWeg);
@@ -995,13 +996,13 @@
     };
     s2.addEventListener('click', async (ev) => {
       const b2 = ev.target.closest('[data-opb]'); if (b2) return zeigeB(b2.dataset.opb);
-      if (ev.target === s2 || ev.target.closest('[data-zu]')) return s2.remove();
+      if ((!inline && ev.target === s2) || ev.target.closest('[data-zu]')) return weg(false);
       if (ev.target.closest('[data-op-ordner]')) { const o = await A.datei.ordnerWaehlen?.(); if (o && !o.fehler) s2.querySelector('[data-op="standardOrdner"]').value = o; return; }
-      if (ev.target.closest('[data-op-rundgang]')) { s2.remove(); aktionen.rundgang?.(); return; }
-      if (ev.target.closest('[data-speichern]')) { S.einst = await A.einstellungen.setzen(werte()); einstellungenAnwenden(); s2.remove(); meldung('Optionen gespeichert.'); if (S.ansicht === 'start') zeigeStart(); return; }
+      if (ev.target.closest('[data-op-rundgang]')) { weg(true); aktionen.rundgang?.(); return; }
+      if (ev.target.closest('[data-speichern]')) { S.einst = await A.einstellungen.setzen(werte()); einstellungenAnwenden(); weg(true); meldung('Optionen gespeichert.'); if (S.ansicht === 'start') zeigeStart(); return; }
       if (ev.target.closest('[data-testen]')) { await A.einstellungen.setzen(werte()); const st = s2.querySelector('.status'); st.textContent = 'Frage Claude …'; const r = await A.hirnTesten(); st.textContent = r?.fehler ? `Klappt nicht: ${r.fehler.nachricht}` : `Claude ist da (${r.weg === 'heim' ? 'über den Heim-PC' : r.weg === 'eingebaut' ? 'eingebautes Claude' : r.weg === 'api' ? 'API' : 'dieser PC'}).`; }
     });
-    s2.addEventListener('keydown', (ev) => { if (ev.key === 'Escape') s2.remove(); });
+    s2.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !inline) s2.remove(); });
   }
   function einstellungenAnwenden() {
     const e = S.einst || {};
@@ -1209,7 +1210,7 @@
     'bild-weg': () => { const b = S.bild; if (!b) return; b.remove(); S.bild = null; geaendert(); zeigeSchwebe(); },
     zoom: (el) => { S.zoom = Math.max(50, Math.min(200, (S.zoom || 100) + Number(el.dataset.d))); const r = app.querySelector('.blattrahmen'); if (r) r.style.zoom = S.zoom / 100; const b = app.querySelector('.zoom b'); if (b) b.textContent = `${S.zoom} %`; },
     start: () => (S.ansicht === 'dokument' ? dokumentSchliessen() : zeigeStart()),
-    einstellungen: () => optionen(),
+    einstellungen: () => backstage('optionen'),
     rundgang: () => window.Rundgang?.start(S.ansicht === 'start' ? RUNDGANG_START() : RUNDGANG(), true),
     oeffne: (el, ev) => { if (ev?.target?.closest('[data-aktion="loeschen"]')) return; oeffne(el.dataset.id); },
     loeschen: async (el) => {
