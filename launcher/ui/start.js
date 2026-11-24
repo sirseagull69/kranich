@@ -66,7 +66,7 @@
       <span class="txt"><b>${esc(k.name)}</b><span>${esc(k.rolle)}</span></span>${marke}</button>`;
   }
   function huegel(k) {
-    return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><path d="M0 600 C 200 560 420 630 620 590 S 800 570 850 585 V686 H0Z" fill="${k.hell}"/><path d="M0 640 C 260 615 520 670 850 640 V686 H0Z" fill="${k.mittel}" opacity=".55"/></svg>`;
+    return `<svg class="huegel" viewBox="0 0 850 686" preserveAspectRatio="none" aria-hidden="true"><path d="M0 600 C 200 560 420 630 620 590 S 800 570 850 585 V686 H0Z" fill="${k.hell}"/><path d="M0 640 C 260 615 520 670 850 640 V686 H0Z" fill="${k.mittel}" opacity=".55"/><path d="M0 0 H850 V70 C 640 100 430 40 230 78 S 40 92 0 84Z" fill="${k.hell}"/><path d="M0 0 H850 V34 C 600 56 330 14 0 40Z" fill="${k.mittel}" opacity=".45"/></svg>`;
   }
 
   // Ori kommentiert oben rechts – passend zum Vogel und zur Tageszeit
