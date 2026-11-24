@@ -406,3 +406,12 @@ main.inhalt{background-attachment:fixed!important}
 .bd-leiste button:hover{background:#dcf0e3}
 .bd-ecke{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,#2f8a55 50%);opacity:.6}
 .d-arten{flex-wrap:wrap;margin:8px 0}
+
+/* Datei reinziehen: sichtbare Rückmeldung */
+.ablage{transition:transform .15s,background .15s,box-shadow .15s}
+body.zieht .ablage{transform:scale(1.02);box-shadow:0 0 0 6px rgba(47,138,85,.15)}
+.zieh-hinweis{position:fixed;inset:10px;z-index:3000;border:3px dashed #2f8a55;border-radius:18px;background:rgba(220,240,227,.85);display:grid;place-items:center;pointer-events:none}
+.zieh-hinweis>div{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fffdf8;padding:26px 40px;border-radius:16px;box-shadow:0 20px 50px -20px rgba(10,14,30,.45)}
+.zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:#1d5e3a}
+.zieh-hinweis small{color:#7a7f8e}
+.zieh-hinweis.lade{border-style:solid}

@@ -358,8 +358,8 @@
     Praesentation.starten(alle, start, { titel: S.projekt.name, master: S.projekt.master });
   }
 
-  async function pptxEinlesen(neuAnlegen = false) {
-    const r = await K.datei.pptxOeffnen();
+  async function pptxEinlesen(neuAnlegen = false, pfad) {
+    const r = await K.datei.pptxOeffnen(pfad);
     if (!r) return;
     if (r.fehler) { H.meldung(r.fehler.nachricht, { art: 'fehler' }); return; }
     if (!r.folien?.length) { H.meldung('In der Datei sind keine Folien.'); return; }
@@ -1390,6 +1390,28 @@
     const fn = aktionen[el.dataset.aktion];
     if (fn) Promise.resolve(fn(el, e)).catch((f) => H.meldung(f.message || String(f), { art: 'fehler' }));
   });
+  // Dateien aufs Fenster ziehen: deutliche Rückmeldung, PowerPoint überall, Bilder auf der Startseite
+  let ziehUhr = null;
+  const ziehAnzeige = (an) => {
+    let z = document.querySelector('.zieh-hinweis');
+    if (an && !z) { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${figur('fertig', 70)}<b>Loslassen zum Öffnen</b><small>${S.ansicht === 'werkbank' ? 'Bild kommt in den Entwurf · PowerPoint wird angehängt' : 'PowerPoint (.pptx) oder Bild'}</small></div>`; document.body.appendChild(z); }
+    if (!an) z?.remove();
+  };
+  document.addEventListener('dragover', (e) => {
+    if (![...(e.dataTransfer?.types || [])].includes('Files')) return;
+    e.preventDefault(); try { e.dataTransfer.dropEffect = 'copy'; } catch { /* egal */ }
+    ziehAnzeige(true); clearTimeout(ziehUhr); ziehUhr = setTimeout(() => ziehAnzeige(false), 180);
+  });
+  document.addEventListener('drop', async (e) => {
+    clearTimeout(ziehUhr); ziehAnzeige(false);
+    const f = e.dataTransfer?.files?.[0]; if (!f) return;
+    if (/\.pptx$/i.test(f.name)) { e.preventDefault(); const lade = document.createElement('div'); lade.className = 'zieh-hinweis lade'; lade.innerHTML = `<div>${figur('arbeitend', 70)}<b>Öffne „${esc(f.name)}“ …</b></div>`; document.body.appendChild(lade); try { await pptxEinlesen(S.ansicht !== 'werkbank', K.pfadVon(f)); } finally { lade.remove(); } return; }
+    if (e.defaultPrevented) return; // Bild auf der Leinwand: macht die Leinwand selbst
+    e.preventDefault();
+    if (f.type.startsWith('image/') && S.ansicht !== 'werkbank') { const dataUrl = await H.dateiAlsDataUrl(f); neuesProjekt('bild', { anhang: { name: f.name, dataUrl } }); return; }
+    H.meldung('Das kann ich nicht öffnen – nur PowerPoint (.pptx) und Bilder.');
+  });
+
   // Vortrag: Notizen und Übergang je Folie
   app.addEventListener('input', (e) => {
     if (e.target.id === 'vt-notiz' && seite()) { seite().notiz = e.target.value; geaendert({ vorschau: false }); }

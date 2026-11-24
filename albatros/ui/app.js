@@ -1721,16 +1721,26 @@ tab.adresse("C", 7) → "C7" · tab.heute() · tab.auswahl() · tab.meldung("Fer
   document.addEventListener('paste', (ev) => { if (S.ansicht === 'tabelle' && !S.bearbeiten && !/INPUT|TEXTAREA/.test(document.activeElement?.tagName)) fuegeEin(ev); });
 
   // Datei reinziehen
-  document.addEventListener('dragover', (ev) => { ev.preventDefault(); if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy'; document.body.classList.add('zieht'); });
-  document.addEventListener('dragleave', (ev) => { if (!ev.relatedTarget) document.body.classList.remove('zieht'); });
+  let ziehUhr = null;
+  const ziehAnzeige = (an, text) => {
+    document.body.classList.toggle('zieht', an);
+    let z = document.querySelector('.zieh-hinweis');
+    if (an && !z) { z = document.createElement('div'); z.className = 'zieh-hinweis'; z.innerHTML = `<div>${vogel('rechnet', 70)}<b>${text || 'Loslassen zum Öffnen'}</b><small>Excel-Datei (.xlsx) oder .csv</small></div>`; document.body.appendChild(z); }
+    if (!an) z?.remove();
+  };
+  document.addEventListener('dragover', (ev) => {
+    ev.preventDefault(); if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'copy';
+    if (![...(ev.dataTransfer?.types || [])].includes('Files')) return;
+    ziehAnzeige(true); clearTimeout(ziehUhr); ziehUhr = setTimeout(() => ziehAnzeige(false), 180);
+  });
   document.addEventListener('drop', async (ev) => {
-    ev.preventDefault(); document.body.classList.remove('zieht');
+    ev.preventDefault(); clearTimeout(ziehUhr); ziehAnzeige(false);
     const f = ev.dataTransfer?.files?.[0]; if (!f) return;
     const pfad = A.pfadVon(f);
-    if (!pfad || !/\.(xlsx|xlsm|csv)$/i.test(f.name)) { meldung('Nur Excel-Dateien (.xlsx, .xlsm) und .csv gehen.'); return; }
-    const r = await A.datei.importieren(pfad);
+    if (!pfad || !/\.(xlsx|xlsm|csv)$/i.test(f.name)) { meldung('Das kann ich nicht öffnen – nur Excel-Dateien (.xlsx, .xlsm) und .csv.'); return; }
+    const lade = document.createElement('div'); lade.className = 'zieh-hinweis lade'; lade.innerHTML = `<div>${vogel('rechnet', 70)}<b>Öffne „${esc(f.name)}“ …</b></div>`; document.body.appendChild(lade);
+    const r = await A.datei.importieren(pfad); lade.remove();
     if (r?.fehler) { meldung(r.fehler.nachricht); return; }
-    meldung(`„${r.name}“ wird geöffnet …`);
     try { await oeffne(r.id); } catch (f) { meldung(`Öffnen klappt nicht: ${f.message}`, { dauer: 8000 }); }
   });
 

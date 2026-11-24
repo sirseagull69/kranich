@@ -376,11 +376,15 @@ function registriere() {
     const puffer = await require('../kern/pptx').pptxSchreiben(folien, { titel: name });
     return { datei: schreibeExport(basis, name, 'pptx', puffer) };
   });
-  handle('datei:pptxOeffnen', async () => {
-    const r = await dialog.showOpenDialog(fenster, { title: 'PowerPoint öffnen', properties: ['openFile'], filters: [{ name: 'PowerPoint', extensions: ['pptx'] }] });
-    if (r.canceled || !r.filePaths[0]) return null;
-    const erg = await require('../kern/pptx').pptxLesen(fs.readFileSync(r.filePaths[0]));
-    return { name: path.basename(r.filePaths[0]).replace(/\.pptx$/i, ''), ...erg };
+  handle('datei:pptxOeffnen', async (pfad) => {
+    let datei = typeof pfad === 'string' && /\.pptx$/i.test(pfad) ? pfad : null;
+    if (!datei) {
+      const r = await dialog.showOpenDialog(fenster, { title: 'PowerPoint öffnen', properties: ['openFile'], filters: [{ name: 'PowerPoint', extensions: ['pptx'] }] });
+      if (r.canceled || !r.filePaths[0]) return null;
+      datei = r.filePaths[0];
+    }
+    const erg = await require('../kern/pptx').pptxLesen(fs.readFileSync(datei));
+    return { name: path.basename(datei).replace(/\.pptx$/i, ''), ...erg };
   });
   const alba = new (require('../kern/albatros').Albatros)(app.getPath('appData'));
   handle('albatros:liste', () => alba.liste());

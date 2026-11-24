@@ -294,3 +294,10 @@ body{background:var(--oo-kraft)}
 .vortragsfeld input:not([type=checkbox]){width:100%;box-sizing:border-box;font:13px/1.4 inherit;border:1px solid var(--linie,#e3dccd);border-radius:8px;background:#fffdf8;padding:6px 8px;color:inherit}
 .vt-haken{display:flex;align-items:center;gap:6px;font-size:13px!important;color:inherit!important}
 .vt-logo{display:flex;align-items:center;gap:8px}.vt-logo img{height:34px;max-width:90px;object-fit:contain;border:1px solid var(--linie,#e3dccd);border-radius:6px;background:#fff;padding:2px}
+
+/* Datei reinziehen: sichtbare Rückmeldung */
+.zieh-hinweis{position:fixed;inset:10px;z-index:9500;border:3px dashed #7c5cd6;border-radius:18px;background:rgba(236,230,253,.85);display:grid;place-items:center;pointer-events:none}
+.zieh-hinweis>div{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fffdf8;padding:26px 40px;border-radius:16px;box-shadow:0 20px 50px -20px rgba(10,14,30,.45)}
+.zieh-hinweis b{font:800 22px 'Bricolage Grotesque',sans-serif;color:#3d2a8a}
+.zieh-hinweis small{color:#6b6f80}
+.zieh-hinweis.lade{border-style:solid}

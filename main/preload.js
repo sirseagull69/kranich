@@ -1,11 +1,12 @@
 'use strict';
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 const rufe = (kanal) => (...args) => ipcRenderer.invoke(kanal, ...args);
 
 contextBridge.exposeInMainWorld('kranich', {
   standFoto: rufe('stand:foto'),
   vollbild: rufe('fenster:vollbild'),
+  pfadVon: (f) => { try { return webUtils.getPathForFile(f); } catch { return ''; } },
   albatros: { liste: rufe('albatros:liste'), tabelle: rufe('albatros:tabelle') },
   beimOeffnen: (cb) => ipcRenderer.on('start:oeffne', (_e, id) => cb(id)),
   projekte: {
