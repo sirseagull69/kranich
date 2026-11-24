@@ -312,3 +312,12 @@ body{background:var(--oo-kraft)}
 .kl-oeffnen:hover{background:#f6f2ea}
 body.zieht-datei .kl-ablage{background:#ece6fd;border-color:#7c5cd6;transform:scale(1.02);box-shadow:0 0 0 6px rgba(124,92,214,.15)}
 @media (max-width:1150px){.kl-zeile2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.kl-mitgebracht{grid-column:1/-1}}
+/* ⋯-Menü immer über der Leinwand */
+.k-kopf{position:relative;z-index:200;overflow:visible!important}
+.k-kopf .mehrmenue{z-index:1000;background:#fffdf8;box-shadow:0 14px 36px -10px rgba(20,24,40,.35),0 0 0 1px #e6dfd0;border-radius:12px}
+.k-kopf .mehrmenue button{color:#1d2742!important}
+.wb .mehr,.ansicht .mehr{z-index:5000!important}
+.mehrmenue{z-index:5000!important;background:#fffdf8;box-shadow:0 14px 36px -10px rgba(20,24,40,.35),0 0 0 1px #e6dfd0;border-radius:12px}
+.mehrmenue button{color:#1d2742!important}
+.mehrmenue[hidden]{display:none!important}
+.mehr-schwebe{display:flex!important;flex-direction:column}

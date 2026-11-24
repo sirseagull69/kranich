@@ -1191,7 +1191,15 @@
     },
     'modus': (el) => { if (S.modus === el.dataset.modus && S.ansicht === 'werkbank') return; S.modus = el.dataset.modus; S.kranich.zustand = 'bereit'; renderWerkbank(); },
     'panel': () => { S.panelAuf = !S.panelAuf; const n = app.querySelector('.seitenleiste'); if (n) n.hidden = !S.panelAuf; renderSeitenleiste(); },
-    'mehr': (el) => { const m = el.nextElementSibling; m.hidden = !m.hidden; el.setAttribute('aria-expanded', String(!m.hidden)); if (!m.hidden) setTimeout(() => document.addEventListener('click', () => { m.hidden = true; el.setAttribute('aria-expanded', 'false'); }, { once: true }), 0); },
+    // ⋯-Menü schwebt fest über allem (sonst verdeckt es die Leinwand)
+    'mehr': (el) => {
+      const offen = app.querySelector('.mehr-schwebe'); if (offen) { offen.remove(); el.setAttribute('aria-expanded', 'false'); return; }
+      const m = el.nextElementSibling; const r = el.getBoundingClientRect();
+      const s2 = document.createElement('div'); s2.className = 'mehrmenue mehr-schwebe paper'; s2.innerHTML = m.innerHTML;
+      s2.style.cssText = `position:fixed;top:${Math.round(r.bottom + 6)}px;right:${Math.round(innerWidth - r.right)}px;z-index:9000`;
+      app.appendChild(s2); el.setAttribute('aria-expanded', 'true');
+      setTimeout(() => document.addEventListener('click', () => { s2.remove(); el.setAttribute('aria-expanded', 'false'); }, { once: true }), 0);
+    },
     'werkzeug': (el) => setzeWerkzeug(el.dataset.w),
     'werkzeug-hand': () => { S.werkzeug = 'zeiger'; S.hand = true; app.querySelector('.leinwand')?.classList.add('greifbereit', 'hand-an'); renderSeitenleiste(); },
     'werkzeug-zeiger': () => { S.werkzeug = 'zeiger'; app.querySelector('.leinwand')?.classList.remove('setzt'); S.hand = false; app.querySelector('.leinwand')?.classList.remove('greifbereit', 'hand-an'); renderSeitenleiste(); },
